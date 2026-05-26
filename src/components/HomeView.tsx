@@ -14,9 +14,11 @@ interface HomeViewProps {
   onStockClick: (id: string) => void;
   onAddClick: () => void;
   onViewAllHoldings: () => void;
+  onBellClick: () => void;
+  hasUnread: boolean;
 }
 
-export default function HomeView({ stocks, onStockClick, onViewAllHoldings }: HomeViewProps) {
+export default function HomeView({ stocks, onStockClick, onViewAllHoldings, onBellClick, hasUnread }: HomeViewProps) {
   const totalProfit = stocks.reduce((s, st) => s + calcTotalRealizedProfit(st.sells), 0);
   const totalProceeds = stocks.reduce((s, st) => s + calcTotalNetProceeds(st.sells), 0);
   const totalCurrentValue = stocks.reduce((acc, stock) => {
@@ -41,7 +43,7 @@ export default function HomeView({ stocks, onStockClick, onViewAllHoldings }: Ho
   ]).sort((a, b) => b.key.localeCompare(a.key)).slice(0, 5);
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 max-w-4xl">
+    <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -52,9 +54,9 @@ export default function HomeView({ stocks, onStockClick, onViewAllHoldings }: Ho
           <button className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
             <SearchIcon size={18} />
           </button>
-          <button className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 relative">
+          <button onClick={onBellClick} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 relative">
             <BellIcon size={18} />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-violet-500 rounded-full" />
+            {hasUnread && <span className="absolute top-2 right-2 w-2 h-2 bg-violet-500 rounded-full" />}
           </button>
         </div>
       </div>
@@ -84,41 +86,46 @@ export default function HomeView({ stocks, onStockClick, onViewAllHoldings }: Ho
         </div>
       </div>
 
-      {/* Stock Holdings */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-gray-800">我的持股</h2>
-          <button
-            onClick={onViewAllHoldings}
-            className="text-xs text-violet-600 font-medium hover:text-violet-800 transition-colors"
-          >
-            查看全部
-          </button>
+      {/* Holdings + Recent: side-by-side on desktop */}
+      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
+        {/* Stock Holdings */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-gray-800">我的持股</h2>
+            <button
+              onClick={onViewAllHoldings}
+              className="text-xs text-violet-600 font-medium hover:text-violet-800 transition-colors"
+            >
+              查看全部
+            </button>
+          </div>
+          <div className={stocks.length > 2
+            ? 'flex gap-3 overflow-x-auto scrollbar-hide pb-1 lg:grid lg:grid-cols-2 lg:overflow-visible'
+            : 'grid grid-cols-2 gap-3'
+          }>
+            {stocks.map((stock) => (
+              <StockCard key={stock.id} stock={stock} onClick={() => onStockClick(stock.id)} carousel={stocks.length > 2} />
+            ))}
+          </div>
         </div>
-        {/* Mobile: horizontal scroll / Desktop: grid */}
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide md:grid md:grid-cols-2 md:overflow-visible lg:grid-cols-3">
-          {stocks.map((stock) => (
-            <StockCard key={stock.id} stock={stock} onClick={() => onStockClick(stock.id)} />
-          ))}
-        </div>
-      </div>
 
-      {/* Recent Transactions */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-gray-800">最近交易</h2>
-        </div>
-        <div className="flex flex-col gap-2 md:grid md:grid-cols-2 lg:grid-cols-2">
-          {allTrades.map(({ key, ...tx }) => (
-            <RecentItem key={key} {...tx} />
-          ))}
+        {/* Recent Transactions */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-gray-800">最近交易</h2>
+          </div>
+          <div className="flex flex-col gap-2">
+            {allTrades.map(({ key, ...tx }) => (
+              <RecentItem key={key} {...tx} />
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function StockCard({ stock, onClick }: { stock: Stock; onClick: () => void }) {
+function StockCard({ stock, onClick, carousel = false }: { stock: Stock; onClick: () => void; carousel?: boolean }) {
   const avgCost = calcAvgCost(stock.buys);
   const remaining = calcRemainingShares(stock.buys, stock.sells);
   const realizedProfit = calcTotalRealizedProfit(stock.sells);
@@ -128,7 +135,9 @@ function StockCard({ stock, onClick }: { stock: Stock; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex-shrink-0 w-52 md:w-auto bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-left active:scale-[0.98] transition-transform"
+      className={`bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-left active:scale-[0.98] transition-transform ${
+        carousel ? 'min-w-[44%] flex-shrink-0 lg:min-w-0 lg:w-full' : 'w-full'
+      }`}
     >
       <div className="flex items-center justify-between mb-3">
         <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">

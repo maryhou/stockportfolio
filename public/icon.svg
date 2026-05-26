@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- Ghost pill: light blue, semi-transparent -->
+    <linearGradient id="ghostGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#B8D4EE" stop-opacity="0.72"/>
+      <stop offset="100%" stop-color="#CCE0F2" stop-opacity="0.55"/>
+    </linearGradient>
+    <!-- M legs: vivid sky blue → deep indigo, spanning the full shape in screen space -->
+    <linearGradient id="mGrad" gradientUnits="userSpaceOnUse"
+      x1="370" y1="170" x2="790" y2="830">
+      <stop offset="0%"   stop-color="#62BAFF"/>
+      <stop offset="30%"  stop-color="#3D88FF"/>
+      <stop offset="70%"  stop-color="#3B5EF0"/>
+      <stop offset="100%" stop-color="#5418E8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- White background -->
+  <rect width="1024" height="1024" fill="white"/>
+
+  <!-- Left ghost pill (drawn behind M) -->
+  <rect x="178" y="195" width="188" height="600" rx="94"
+    fill="url(#ghostGrad)"
+    transform="rotate(-9, 272, 495)"/>
+
+  <!-- Blue M - left leg (rotates bottom toward left) -->
+  <rect x="328" y="178" width="178" height="632" rx="89"
+    fill="url(#mGrad)"
+    transform="rotate(16, 417, 494)"/>
+
+  <!-- Blue M - right leg (rotates bottom toward right) -->
+  <rect x="578" y="178" width="178" height="632" rx="89"
+    fill="url(#mGrad)"
+    transform="rotate(-16, 667, 494)"/>
+</svg>
