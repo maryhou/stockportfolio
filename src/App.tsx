@@ -2,8 +2,10 @@ import { useState } from 'react';
 import type { Stock, ViewName, BuyTransaction, SellTransaction } from './types';
 import { INITIAL_STOCKS } from './data/initialData';
 import BottomNav from './components/BottomNav';
+import SideNav from './components/SideNav';
 import HomeView from './components/HomeView';
 import ActivityView from './components/ActivityView';
+import HoldingsView from './components/HoldingsView';
 import ProfileView from './components/ProfileView';
 import AddTransactionSheet from './components/AddTransactionSheet';
 
@@ -57,53 +59,67 @@ export default function App() {
     setView('activity');
   }
 
+  function handleNavigate(v: ViewName) {
+    setView(v);
+    setSelectedStockId(null);
+  }
+
+  const activityStocks = selectedStockId
+    ? stocks.filter((s) => s.id === selectedStockId)
+    : stocks;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Phone frame wrapper */}
-      <div className="mx-auto w-full max-w-[430px] min-h-screen bg-gray-50 relative overflow-hidden">
-        {/* Content area */}
-        <div className="overflow-y-auto" style={{ height: '100dvh' }}>
-          {view === 'home' && (
-            <HomeView
-              stocks={stocks}
-              onStockClick={handleStockClick}
-              onAddClick={() => setShowAdd(true)}
-            />
-          )}
-          {view === 'activity' && (
-            <ActivityView
-              stocks={selectedStockId ? stocks.filter((s) => s.id === selectedStockId) : stocks}
-              onUpdatePrice={handleUpdatePrice}
-              onUpdateTarget={handleUpdateTarget}
-            />
-          )}
-          {view === 'detail' && (
-            <ActivityView
-              stocks={stocks}
-              onUpdatePrice={handleUpdatePrice}
-              onUpdateTarget={handleUpdateTarget}
-            />
-          )}
-          {view === 'profile' && <ProfileView stocks={stocks} />}
-        </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Desktop side nav */}
+      <SideNav active={view} onNavigate={handleNavigate} onAddClick={() => setShowAdd(true)} />
 
-        {/* Bottom Nav */}
-        <BottomNav
-          active={view}
-          onNavigate={(v) => { setView(v); setSelectedStockId(null); }}
-          onAddClick={() => setShowAdd(true)}
-        />
+      {/* Main content — offset for sidebar on lg+ */}
+      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
+        {/* Mobile/tablet: phone-width container centred; desktop: full width */}
+        <div className="mx-auto w-full max-w-[430px] md:max-w-full min-h-screen relative">
+          <div className="overflow-y-auto h-screen">
+            {view === 'home' && (
+              <HomeView
+                stocks={stocks}
+                onStockClick={handleStockClick}
+                onAddClick={() => setShowAdd(true)}
+                onViewAllHoldings={() => handleNavigate('holdings')}
+              />
+            )}
+            {view === 'activity' && (
+              <ActivityView
+                stocks={activityStocks}
+                onUpdatePrice={handleUpdatePrice}
+                onUpdateTarget={handleUpdateTarget}
+              />
+            )}
+            {view === 'holdings' && (
+              <HoldingsView
+                stocks={stocks}
+                onStockClick={handleStockClick}
+              />
+            )}
+            {view === 'profile' && <ProfileView stocks={stocks} />}
+          </div>
 
-        {/* Add Transaction Sheet */}
-        {showAdd && (
-          <AddTransactionSheet
-            stocks={stocks}
-            onClose={() => setShowAdd(false)}
-            onAddBuy={handleAddBuy}
-            onAddSell={handleAddSell}
-            onAddStock={handleAddStock}
+          {/* Mobile/tablet bottom nav */}
+          <BottomNav
+            active={view}
+            onNavigate={handleNavigate}
+            onAddClick={() => setShowAdd(true)}
           />
-        )}
+
+          {/* Add Transaction Sheet */}
+          {showAdd && (
+            <AddTransactionSheet
+              stocks={stocks}
+              onClose={() => setShowAdd(false)}
+              onAddBuy={handleAddBuy}
+              onAddSell={handleAddSell}
+              onAddStock={handleAddStock}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
