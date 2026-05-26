@@ -94,28 +94,27 @@ export default function AddTransactionSheet({
   function handleSubmit() {
     if (!priceN || !sharesN || !date) return;
 
-    let targetId = stockId;
     if (isNewStock) {
       if (!newName || !newSymbol) return;
-      const newStock: Stock = {
-        id: newSymbol,
-        name: newName,
-        symbol: newSymbol,
-        targetPrice: 0,
-        currentPrice: priceN,
-        buys: [],
-        sells: [],
-      };
-      onAddStock(newStock);
-      targetId = newSymbol;
+      // Embed the first transaction directly in the new stock to avoid stale-state bug
+      // (calling onAddBuy after onAddStock would reference old stocks state)
+      if (txType === 'buy') {
+        const tx: BuyTransaction = { id: `b${Date.now()}`, date, price: priceN, shares: sharesN, fee };
+        onAddStock({ id: newSymbol, name: newName, symbol: newSymbol, targetPrice: 0, currentPrice: priceN, buys: [tx], sells: [] });
+      } else {
+        const tx = buildSellTransaction(`s${Date.now()}`, date, priceN, sharesN, 0);
+        onAddStock({ id: newSymbol, name: newName, symbol: newSymbol, targetPrice: 0, currentPrice: priceN, buys: [], sells: [{ ...tx, fee, tax }] });
+      }
+      onClose();
+      return;
     }
 
     if (txType === 'buy') {
       const tx: BuyTransaction = { id: `b${Date.now()}`, date, price: priceN, shares: sharesN, fee };
-      onAddBuy(targetId, tx);
+      onAddBuy(stockId, tx);
     } else {
       const tx = buildSellTransaction(`s${Date.now()}`, date, priceN, sharesN, avgCost);
-      onAddSell(targetId, { ...tx, fee, tax });
+      onAddSell(stockId, { ...tx, fee, tax });
     }
     onClose();
   }

@@ -64,10 +64,6 @@ export default function App() {
     setSelectedStockId(null);
   }
 
-  const activityStocks = selectedStockId
-    ? stocks.filter((s) => s.id === selectedStockId)
-    : stocks;
-
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Desktop side nav */}
@@ -88,7 +84,9 @@ export default function App() {
             )}
             {view === 'activity' && (
               <ActivityView
-                stocks={activityStocks}
+                stocks={stocks}
+                selectedStockId={selectedStockId}
+                onSelectStock={(id) => setSelectedStockId(id)}
                 onUpdatePrice={handleUpdatePrice}
                 onUpdateTarget={handleUpdateTarget}
               />
