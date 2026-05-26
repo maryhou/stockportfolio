@@ -42,7 +42,7 @@ export default function NotificationsView({ notifications, onMarkAllRead, onNoti
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <div className="flex flex-col px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full max-w-2xl">
+    <div className="flex flex-col px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
