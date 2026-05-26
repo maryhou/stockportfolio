@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { Stock, ViewName, BuyTransaction, SellTransaction } from './types';
-
 import { INITIAL_STOCKS } from './data/initialData';
 import BottomNav from './components/BottomNav';
 import SideNav from './components/SideNav';
@@ -9,6 +8,7 @@ import ActivityView from './components/ActivityView';
 import HoldingsView from './components/HoldingsView';
 import ProfileView from './components/ProfileView';
 import AddTransactionSheet from './components/AddTransactionSheet';
+import ToastContainer, { type ToastData } from './components/Toast';
 
 const STORAGE_KEY = 'stock-tracker-data';
 
@@ -29,6 +29,14 @@ export default function App() {
   const [view, setView] = useState<ViewName>('home');
   const [showAdd, setShowAdd] = useState(false);
   const [selectedStockId, setSelectedStockId] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<ToastData[]>([]);
+  const toastId = useRef(0);
+
+  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+    const id = ++toastId.current;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
+  }, []);
 
   function update(next: Stock[]) {
     setStocks(next);
@@ -37,14 +45,18 @@ export default function App() {
 
   function handleAddBuy(stockId: string, tx: BuyTransaction) {
     update(stocks.map((s) => s.id === stockId ? { ...s, buys: [...s.buys, tx] } : s));
+    showToast('買入交易已新增');
   }
 
   function handleAddSell(stockId: string, tx: SellTransaction) {
     update(stocks.map((s) => s.id === stockId ? { ...s, sells: [...s.sells, tx] } : s));
+    showToast('賣出交易已新增');
   }
 
   function handleAddStock(stock: Stock) {
     update([...stocks, stock]);
+    const hasTx = stock.buys.length > 0 || stock.sells.length > 0;
+    showToast(hasTx ? `${stock.name} 已新增並記錄交易` : `${stock.name} 已新增`);
   }
 
   function handleUpdatePrice(stockId: string, price: number) {
@@ -61,6 +73,7 @@ export default function App() {
       if (type === 'buy') return { ...s, buys: s.buys.map((b) => b.id === tx.id ? tx as BuyTransaction : b) };
       return { ...s, sells: s.sells.map((sv) => sv.id === tx.id ? tx as SellTransaction : sv) };
     }));
+    showToast('交易記錄已更新');
   }
 
   function handleDeleteTx(stockId: string, type: 'buy' | 'sell', txId: string) {
@@ -69,6 +82,7 @@ export default function App() {
       if (type === 'buy') return { ...s, buys: s.buys.filter((b) => b.id !== txId) };
       return { ...s, sells: s.sells.filter((sv) => sv.id !== txId) };
     }));
+    showToast('交易記錄已刪除');
   }
 
   function handleStockClick(id: string) {
@@ -83,12 +97,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Desktop side nav */}
       <SideNav active={view} onNavigate={handleNavigate} onAddClick={() => setShowAdd(true)} />
 
-      {/* Main content — offset for sidebar on lg+ */}
       <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
-        {/* Mobile/tablet: phone-width container centred; desktop: full width */}
         <div className="mx-auto w-full max-w-[430px] md:max-w-full min-h-screen relative">
           <div className="overflow-y-auto h-screen">
             {view === 'home' && (
@@ -111,22 +122,13 @@ export default function App() {
               />
             )}
             {view === 'holdings' && (
-              <HoldingsView
-                stocks={stocks}
-                onStockClick={handleStockClick}
-              />
+              <HoldingsView stocks={stocks} onStockClick={handleStockClick} />
             )}
             {view === 'profile' && <ProfileView stocks={stocks} />}
           </div>
 
-          {/* Mobile/tablet bottom nav */}
-          <BottomNav
-            active={view}
-            onNavigate={handleNavigate}
-            onAddClick={() => setShowAdd(true)}
-          />
+          <BottomNav active={view} onNavigate={handleNavigate} onAddClick={() => setShowAdd(true)} />
 
-          {/* Add Transaction Sheet */}
           {showAdd && (
             <AddTransactionSheet
               stocks={stocks}
@@ -138,6 +140,9 @@ export default function App() {
           )}
         </div>
       </div>
+
+      {/* Toast notifications — outside the constrained container, always on top */}
+      <ToastContainer toasts={toasts} />
     </div>
   );
 }

@@ -40,7 +40,7 @@ export default function BottomNav({ active, onNavigate, onAddClick }: BottomNavP
 
   return (
     <nav
-      className="lg:hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] md:max-w-full bg-white border-t border-gray-100 flex items-center justify-around px-2 z-50"
+      className="lg:hidden fixed bottom-0 left-0 right-0 w-full bg-white border-t border-gray-100 flex items-center justify-around px-2 z-50"
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}
     >
       {tab('home',     HomeIcon,       '首頁')}
