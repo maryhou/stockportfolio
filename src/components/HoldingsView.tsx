@@ -67,10 +67,10 @@ function HoldingCard({ stock, onClick }: { stock: Stock; onClick: () => void }) 
           </div>
         </div>
         <div className="text-right">
-          <p className={`text-sm font-bold ${isProfit ? 'text-emerald-600' : 'text-red-500'}`}>
+          <p className={`text-sm font-bold ${isProfit ? 'text-red-500' : 'text-emerald-600'}`}>
             {isProfit ? '+' : ''}{formatNTD(totalPL)}
           </p>
-          <div className={`flex items-center justify-end gap-0.5 text-xs ${isProfit ? 'text-emerald-500' : 'text-red-400'}`}>
+          <div className={`flex items-center justify-end gap-0.5 text-xs ${isProfit ? 'text-red-400' : 'text-emerald-500'}`}>
             {isProfit ? <TrendUpIcon size={11} /> : <TrendDownIcon size={11} />}
             <span>{isProfit ? '+' : ''}{plPct.toFixed(2)}%</span>
           </div>

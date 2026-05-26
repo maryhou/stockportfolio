@@ -100,7 +100,7 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
           <div className="flex items-center justify-between mb-1">
             <p className="text-xs text-gray-400">總投入成本</p>
             <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
-              totalPL >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
+              totalPL >= 0 ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-600'
             }`}>
               {totalPL >= 0 ? <TrendUpIcon size={11} /> : <TrendDownIcon size={11} />}
               總損益 {totalPL >= 0 ? '+' : ''}{formatNTD(totalPL)}
@@ -135,8 +135,8 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
         <div className="flex flex-col gap-5">
           {/* Portfolio stats */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <StatCard label="已實現損益" value={`${totalRealized >= 0 ? '+' : ''}${formatNTD(totalRealized)}`} sub="含手續費及稅" accent={totalRealized >= 0 ? 'green' : 'red'} />
-            <StatCard label="未實現損益" value={`${totalUnrealized >= 0 ? '+' : ''}${formatNTD(totalUnrealized)}`} sub="按目前股價" accent={totalUnrealized >= 0 ? 'green' : 'red'} />
+            <StatCard label="已實現損益" value={`${totalRealized >= 0 ? '+' : ''}${formatNTD(totalRealized)}`} sub="含手續費及稅" accent={totalRealized >= 0 ? 'red' : 'green'} />
+            <StatCard label="未實現損益" value={`${totalUnrealized >= 0 ? '+' : ''}${formatNTD(totalUnrealized)}`} sub="按目前股價" accent={totalUnrealized >= 0 ? 'red' : 'green'} />
             <StatCard label="可取得金額" value={formatNTD(totalNetProceeds)} sub="賣出淨額合計" accent="violet" />
             <StatCard label="持倉市值" value={formatNTD(totalHoldingValue)} sub="按目前股價" accent="gray" />
             <StatCard label="總投入" value={formatNTD(totalInvested)} sub="含所有手續費" accent="gray" />
@@ -195,10 +195,10 @@ function StockSummaryRow({ stock, color, onClick }: { stock: Stock; color: strin
             <span className="text-xs text-gray-400 ml-2">{stock.symbol}</span>
           </div>
           <div className="text-right">
-            <p className={`text-sm font-bold ${totalPL >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+            <p className={`text-sm font-bold ${totalPL >= 0 ? 'text-red-500' : 'text-emerald-600'}`}>
               {totalPL >= 0 ? '+' : ''}{formatNTD(totalPL)}
             </p>
-            <p className={`text-xs ${totalPL >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>
+            <p className={`text-xs ${totalPL >= 0 ? 'text-red-400' : 'text-emerald-500'}`}>
               {totalPL >= 0 ? '+' : ''}{plPct.toFixed(2)}%
             </p>
           </div>
@@ -246,7 +246,7 @@ function TradeTileRow({ stockName, stockSymbol, type, date, shares, price, amoun
           {type === 'sell' ? '+' : '-'}{formatNTD(amount)}
         </p>
         {profit !== null && (
-          <p className={`text-xs font-medium ${profit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+          <p className={`text-xs font-medium ${profit >= 0 ? 'text-red-500' : 'text-emerald-500'}`}>
             損益 {profit >= 0 ? '+' : ''}{formatNTD(profit)}
           </p>
         )}
@@ -282,8 +282,8 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
 
   const donutSegments = [
     { label: '買入成本', value: totalInvested - realizedProfit, color: '#6C63FF' },
-    { label: '已實現損益', value: Math.abs(realizedProfit), color: realizedProfit >= 0 ? '#10b981' : '#ef4444' },
-    ...(remaining > 0 ? [{ label: '未實現損益', value: Math.abs(unrealizedPL), color: unrealizedPL >= 0 ? '#34d399' : '#f87171' }] : []),
+    { label: '已實現損益', value: Math.abs(realizedProfit), color: realizedProfit >= 0 ? '#ef4444' : '#10b981' },
+    ...(remaining > 0 ? [{ label: '未實現損益', value: Math.abs(unrealizedPL), color: unrealizedPL >= 0 ? '#f87171' : '#34d399' }] : []),
   ].filter((s) => s.value > 0);
 
   return (
@@ -305,7 +305,7 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
         <div className="flex items-center justify-between mb-1">
           <p className="text-xs text-gray-400">投入成本</p>
           <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
-            totalPL >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
+            totalPL >= 0 ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-600'
           }`}>
             {totalPL >= 0 ? <TrendUpIcon size={11} /> : <TrendDownIcon size={11} />}
             {totalPL >= 0 ? '+' : ''}{formatNTD(totalPL)}
@@ -337,10 +337,10 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <StatCard label="平均成本" value={formatNumber(avgCost)} sub="NT$/股" accent="violet" />
         <StatCard label="剩餘股數" value={`${remaining} 股`} sub={remaining > 0 ? '持有中' : '已清倉'} accent={remaining > 0 ? 'violet' : 'gray'} />
-        <StatCard label="已實現損益" value={`${realizedProfit >= 0 ? '+' : ''}${formatNTD(realizedProfit)}`} sub="含手續費及稅" accent={realizedProfit >= 0 ? 'green' : 'red'} />
+        <StatCard label="已實現損益" value={`${realizedProfit >= 0 ? '+' : ''}${formatNTD(realizedProfit)}`} sub="含手續費及稅" accent={realizedProfit >= 0 ? 'red' : 'green'} />
         <StatCard label="可取得金額" value={formatNTD(netProceeds)} sub="賣出淨額" accent="green" />
         {remaining > 0 && (
-          <StatCard label="未實現損益" value={`${unrealizedPL >= 0 ? '+' : ''}${formatNTD(unrealizedPL)}`} sub={`持有 ${remaining} 股`} accent={unrealizedPL >= 0 ? 'green' : 'red'} />
+          <StatCard label="未實現損益" value={`${unrealizedPL >= 0 ? '+' : ''}${formatNTD(unrealizedPL)}`} sub={`持有 ${remaining} 股`} accent={unrealizedPL >= 0 ? 'red' : 'green'} />
         )}
         <StatCard label="總投入" value={formatNTD(totalInvested)} sub="含手續費" accent="gray" />
       </div>
@@ -420,7 +420,7 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`text-sm font-bold ${tx.profit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                  <p className={`text-sm font-bold ${tx.profit >= 0 ? 'text-red-500' : 'text-emerald-600'}`}>
                     {tx.profit >= 0 ? '+' : ''}{formatNTD(tx.profit)}
                   </p>
                   <p className="text-xs text-gray-400">淨額 {formatNTD(tx.netProceeds)}</p>

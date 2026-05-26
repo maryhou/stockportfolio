@@ -19,10 +19,9 @@ export default function ProfileView({ stocks, settings, onSettingsClick }: Profi
   const avatarLetter = settings.userName.charAt(0).toUpperCase();
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full max-w-2xl">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-800">我的</h2>
+    <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full">
+      {/* Header — title removed; settings icon stays top-right */}
+      <div className="flex items-center justify-end">
         <button
           onClick={onSettingsClick}
           className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 active:bg-gray-200 transition-colors"
@@ -53,7 +52,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick }: Profi
           <p className="text-xs text-gray-400 mt-0.5">交易次數</p>
         </div>
         <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
-          <p className={`text-lg font-bold ${totalProfit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+          <p className={`text-lg font-bold ${totalProfit >= 0 ? 'text-red-500' : 'text-emerald-600'}`}>
             {totalProfit >= 0 ? '+' : ''}{formatNTD(totalProfit)}
           </p>
           <p className="text-xs text-gray-400 mt-0.5">總損益</p>
@@ -81,7 +80,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick }: Profi
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={`text-sm font-bold ${profit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                    <p className={`text-sm font-bold ${profit >= 0 ? 'text-red-500' : 'text-emerald-600'}`}>
                       {profit >= 0 ? '+' : ''}{formatNTD(profit)}
                     </p>
                     <p className="text-xs text-gray-400">{remaining > 0 ? `持有 ${remaining} 股` : '已清倉'}</p>

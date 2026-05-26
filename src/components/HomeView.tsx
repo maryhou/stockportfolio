@@ -117,7 +117,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
             <p className="text-3xl font-bold tracking-tight">
               NT${formatNumber(Math.round(displayValue))}
             </p>
-            <div className={`flex items-center gap-1 mt-2 text-sm font-medium ${isProfitable ? 'text-emerald-300' : 'text-red-300'}`}>
+            <div className={`flex items-center gap-1 mt-2 text-sm font-medium ${isProfitable ? 'text-red-300' : 'text-emerald-300'}`}>
               {isProfitable ? <TrendUpIcon size={14} /> : <TrendDownIcon size={14} />}
               <span>已實現損益 {isProfitable ? '+' : ''}{formatNTD(totalProfit)}</span>
             </div>
@@ -191,7 +191,7 @@ function StockCard({ stock, onClick, carousel = false }: { stock: Stock; onClick
           <span className="text-xs font-bold text-violet-600">{stock.symbol}</span>
         </div>
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-          isProfitable ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
+          isProfitable ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-600'
         }`}>
           {isProfitable ? '+' : ''}{formatNTD(realizedProfit + unrealizedPL)}
         </span>
@@ -242,7 +242,7 @@ function RecentItem({ symbol, name, type, date, shares, amount, profit }: {
           {type === 'sell' ? '+' : '-'}{formatNTD(amount)}
         </p>
         {profit !== null && (
-          <p className={`text-xs font-medium ${profit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+          <p className={`text-xs font-medium ${profit >= 0 ? 'text-red-500' : 'text-emerald-500'}`}>
             損益 {profit >= 0 ? '+' : ''}{formatNTD(profit)}
           </p>
         )}
