@@ -5,6 +5,7 @@ import {
   calcRemainingShares,
   calcTotalRealizedProfit,
   calcTotalNetProceeds,
+  calcTotalInvested,
   formatNTD,
   formatNumber,
 } from '../utils/calculations';
@@ -172,11 +173,21 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
 }
 
 function StockCard({ stock, onClick, carousel = false }: { stock: Stock; onClick: () => void; carousel?: boolean }) {
-  const avgCost = calcAvgCost(stock.buys);
-  const remaining = calcRemainingShares(stock.buys, stock.sells);
-  const realizedProfit = calcTotalRealizedProfit(stock.sells);
-  const unrealizedPL = remaining > 0 ? (stock.currentPrice - avgCost) * remaining : 0;
-  const isProfitable = realizedProfit + unrealizedPL >= 0;
+  const avgCost    = calcAvgCost(stock.buys);
+  const remaining  = calcRemainingShares(stock.buys, stock.sells);
+  const realized   = calcTotalRealizedProfit(stock.sells);
+  const unrealized = remaining > 0 ? (stock.currentPrice - avgCost) * remaining : 0;
+  const totalPL    = realized + unrealized;
+  const isUp       = totalPL >= 0;
+  const invested   = calcTotalInvested(stock.buys);
+  const plPct      = invested > 0 ? (totalPL / invested) * 100 : 0;
+  const holdingVal = remaining * stock.currentPrice;
+
+  // Sparkline: transaction prices sorted by date
+  const chartPrices = [
+    ...stock.buys.map( b => ({ d: b.date, p: b.price })),
+    ...stock.sells.map(s => ({ d: s.date, p: s.price })),
+  ].sort((a, b) => a.d.localeCompare(b.d)).map(t => t.p);
 
   return (
     <button
@@ -186,37 +197,77 @@ function StockCard({ stock, onClick, carousel = false }: { stock: Stock; onClick
         carousel ? 'min-w-[44%] flex-shrink-0 lg:min-w-0 lg:w-full' : 'w-full'
       }`}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
-          <span className="text-xs font-bold text-violet-600">{stock.symbol}</span>
+      {/* Code badge */}
+      <span className="inline-flex items-center bg-violet-100 text-violet-600 text-[11px] font-bold rounded-full px-2.5 py-0.5 mb-2">
+        {stock.symbol}
+      </span>
+
+      {/* Name + sparkline */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-gray-800 text-sm leading-snug">{stock.name}</p>
+          <p className={`text-xl font-bold leading-tight mt-1 ${isUp ? 'text-red-500' : 'text-emerald-600'}`}>
+            {isUp ? '+' : ''}{formatNTD(totalPL)}
+          </p>
+          <p className={`text-[11px] font-medium mt-0.5 ${isUp ? 'text-red-400' : 'text-emerald-500'}`}>
+            {isUp ? '+' : ''}{plPct.toFixed(2)}%
+          </p>
         </div>
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-          isProfitable ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-600'
-        }`}>
-          {isProfitable ? '+' : ''}{formatNTD(realizedProfit + unrealizedPL)}
-        </span>
+        <MiniChart prices={chartPrices} isUp={isUp} />
       </div>
-      <p className="font-semibold text-gray-800 text-sm">{stock.name}</p>
-      <p className="text-xs text-gray-400 mt-0.5">{stock.symbol}</p>
-      <div className="mt-3 pt-3 border-t border-gray-50 grid grid-cols-2 gap-2">
+
+      {/* Info grid */}
+      <div className="mt-3 pt-3 border-t border-gray-50 grid grid-cols-2 gap-y-2">
         <div>
-          <p className="text-[10px] text-gray-400">平均成本</p>
+          <p className="text-[10px] text-gray-400">成本</p>
           <p className="text-xs font-semibold text-gray-700">{formatNumber(avgCost)}</p>
         </div>
         <div>
-          <p className="text-[10px] text-gray-400">剩餘股數</p>
-          <p className="text-xs font-semibold text-gray-700">{remaining} 股</p>
-        </div>
-        <div>
-          <p className="text-[10px] text-gray-400">目前股價</p>
+          <p className="text-[10px] text-gray-400">現價</p>
           <p className="text-xs font-semibold text-gray-700">{formatNumber(stock.currentPrice)}</p>
         </div>
         <div>
-          <p className="text-[10px] text-gray-400">目標股價</p>
-          <p className="text-xs font-semibold text-violet-600">{formatNumber(stock.targetPrice)}</p>
+          <p className="text-[10px] text-gray-400">股數</p>
+          <p className="text-xs font-semibold text-gray-700">{remaining} 股</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-gray-400">持有市值</p>
+          <p className="text-xs font-semibold text-gray-700">{formatNTD(holdingVal)}</p>
         </div>
       </div>
     </button>
+  );
+}
+
+function MiniChart({ prices, isUp }: { prices: number[]; isUp: boolean }) {
+  const color = isUp ? '#ef4444' : '#10b981';
+  const W = 60, H = 34, PAD = 2;
+
+  if (prices.length < 2) {
+    return (
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="flex-shrink-0 opacity-70">
+        <line x1={PAD} y1={H / 2} x2={W - PAD} y2={H / 2}
+          stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  const min   = Math.min(...prices);
+  const max   = Math.max(...prices);
+  const range = max - min || min * 0.01 || 1;
+
+  const pts = prices.map((p, i) => {
+    const x = PAD + (i / (prices.length - 1)) * (W - PAD * 2);
+    const y = H - PAD - ((p - min) / range) * (H - PAD * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+
+  return (
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="flex-shrink-0 opacity-80">
+      <polyline points={pts} fill="none"
+        stroke={color} strokeWidth="1.5"
+        strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
