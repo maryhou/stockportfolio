@@ -27,4 +27,17 @@ export interface Stock {
   sells: SellTransaction[];
 }
 
-export type ViewName = 'home' | 'activity' | 'holdings' | 'profile';
+export type ViewName = 'home' | 'activity' | 'holdings' | 'profile' | 'notifications';
+
+export type NotificationType = 'target' | 'trade' | 'pnl' | 'system';
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  description: string;
+  time: string;
+  read: boolean;
+  actionType?: 'stock' | 'activity';
+  actionStockId?: string;
+}

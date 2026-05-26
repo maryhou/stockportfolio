@@ -89,77 +89,82 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
     .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 max-w-4xl">
+    <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full">
       <h2 className="text-xl font-bold text-gray-800">投資組合分析</h2>
 
-      {/* Summary card */}
-      <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-xs text-gray-400">總投入成本</p>
-          <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
-            totalPL >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
-          }`}>
-            {totalPL >= 0 ? <TrendUpIcon size={11} /> : <TrendDownIcon size={11} />}
-            總損益 {totalPL >= 0 ? '+' : ''}{formatNTD(totalPL)}
-          </div>
-        </div>
-        <p className="text-2xl font-bold text-gray-800">{formatNTD(totalInvested)}</p>
-
-        {donutSegments.length > 0 && (
-          <>
-            <div className="flex items-center justify-center mt-4">
-              <DonutChart
-                segments={donutSegments}
-                centerLabel={formatNTD(centerValue)}
-                centerSub="持倉 + 回收"
-                size={180}
-                strokeWidth={26}
-              />
+      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[360px_1fr] lg:gap-6 lg:items-start">
+        {/* Left: Summary card with donut */}
+        <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs text-gray-400">總投入成本</p>
+            <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
+              totalPL >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
+            }`}>
+              {totalPL >= 0 ? <TrendUpIcon size={11} /> : <TrendDownIcon size={11} />}
+              總損益 {totalPL >= 0 ? '+' : ''}{formatNTD(totalPL)}
             </div>
-            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 mt-4">
-              {donutSegments.map((seg) => (
-                <div key={seg.label} className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: seg.color }} />
-                  <span className="text-xs text-gray-500">{seg.label}</span>
-                </div>
+          </div>
+          <p className="text-2xl font-bold text-gray-800">{formatNTD(totalInvested)}</p>
+
+          {donutSegments.length > 0 && (
+            <>
+              <div className="flex items-center justify-center mt-4">
+                <DonutChart
+                  segments={donutSegments}
+                  centerLabel={formatNTD(centerValue)}
+                  centerSub="持倉 + 回收"
+                  size={180}
+                  strokeWidth={26}
+                />
+              </div>
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 mt-4">
+                {donutSegments.map((seg) => (
+                  <div key={seg.label} className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: seg.color }} />
+                    <span className="text-xs text-gray-500">{seg.label}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Right: stats + breakdown + history */}
+        <div className="flex flex-col gap-5">
+          {/* Portfolio stats */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <StatCard label="已實現損益" value={`${totalRealized >= 0 ? '+' : ''}${formatNTD(totalRealized)}`} sub="含手續費及稅" accent={totalRealized >= 0 ? 'green' : 'red'} />
+            <StatCard label="未實現損益" value={`${totalUnrealized >= 0 ? '+' : ''}${formatNTD(totalUnrealized)}`} sub="按目前股價" accent={totalUnrealized >= 0 ? 'green' : 'red'} />
+            <StatCard label="可取得金額" value={formatNTD(totalNetProceeds)} sub="賣出淨額合計" accent="violet" />
+            <StatCard label="持倉市值" value={formatNTD(totalHoldingValue)} sub="按目前股價" accent="gray" />
+            <StatCard label="總投入" value={formatNTD(totalInvested)} sub="含所有手續費" accent="gray" />
+            <StatCard label="持股檔數" value={`${stocks.length} 檔`} sub={`${stocks.filter(s => calcRemainingShares(s.buys, s.sells) > 0).length} 檔持倉中`} accent="violet" />
+          </div>
+
+          {/* Per-stock breakdown */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">個股明細</h3>
+            <div className="flex flex-col gap-2">
+              {stocks.map((st, i) => (
+                <StockSummaryRow key={st.id} stock={st} color={PALETTE[i % PALETTE.length]} onClick={() => onSelectStock(st.id)} />
               ))}
             </div>
-          </>
-        )}
-      </div>
-
-      {/* Portfolio stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <StatCard label="已實現損益" value={`${totalRealized >= 0 ? '+' : ''}${formatNTD(totalRealized)}`} sub="含手續費及稅" accent={totalRealized >= 0 ? 'green' : 'red'} />
-        <StatCard label="未實現損益" value={`${totalUnrealized >= 0 ? '+' : ''}${formatNTD(totalUnrealized)}`} sub="按目前股價" accent={totalUnrealized >= 0 ? 'green' : 'red'} />
-        <StatCard label="可取得金額" value={formatNTD(totalNetProceeds)} sub="賣出淨額合計" accent="violet" />
-        <StatCard label="持倉市值" value={formatNTD(totalHoldingValue)} sub="按目前股價" accent="gray" />
-        <StatCard label="總投入" value={formatNTD(totalInvested)} sub="含所有手續費" accent="gray" />
-        <StatCard label="持股檔數" value={`${stocks.length} 檔`} sub={`${stocks.filter(s => calcRemainingShares(s.buys, s.sells) > 0).length} 檔持倉中`} accent="violet" />
-      </div>
-
-      {/* Per-stock breakdown */}
-      <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">個股明細</h3>
-        <div className="flex flex-col gap-2">
-          {stocks.map((st, i) => (
-            <StockSummaryRow key={st.id} stock={st} color={PALETTE[i % PALETTE.length]} onClick={() => onSelectStock(st.id)} />
-          ))}
-        </div>
-      </div>
-
-      {/* Full transaction history */}
-      <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">所有交易記錄</h3>
-        {allTrades.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-6">尚無交易記錄</p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {allTrades.map((tx) => (
-              <TradeTileRow key={`${tx.type}-${tx.id}`} {...tx} />
-            ))}
           </div>
-        )}
+
+          {/* Full transaction history */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">所有交易記錄</h3>
+            {allTrades.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-6">尚無交易記錄</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {allTrades.map((tx) => (
+                  <TradeTileRow key={`${tx.type}-${tx.id}`} {...tx} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -279,7 +284,7 @@ function StockDetail({ stock, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteT
   ].filter((s) => s.value > 0);
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 max-w-4xl">
+    <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full">
       {/* Stock header */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
@@ -291,7 +296,8 @@ function StockDetail({ stock, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteT
         </div>
       </div>
 
-      {/* Balance card */}
+      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[360px_1fr] lg:gap-6 lg:items-start">
+      {/* Left: Balance card */}
       <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
         <div className="flex items-center justify-between mb-1">
           <p className="text-xs text-gray-400">投入成本</p>
@@ -322,6 +328,8 @@ function StockDetail({ stock, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteT
         </div>
       </div>
 
+      {/* Right: stats + price + transactions */}
+      <div className="flex flex-col gap-5">
       {/* Quick stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <StatCard label="平均成本" value={formatNumber(avgCost)} sub="NT$/股" accent="violet" />
@@ -451,6 +459,9 @@ function StockDetail({ stock, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteT
           ))}
         </div>
       </div>
+
+      </div>{/* end right column */}
+      </div>{/* end lg grid */}
 
       {/* Edit transaction modal */}
       {editTx && (

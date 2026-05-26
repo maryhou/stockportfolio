@@ -1,10 +1,11 @@
-import { HomeIcon, ChartIcon, UserIcon, PlusIcon } from './icons/Icons';
+import { HomeIcon, ChartIcon, UserIcon, PlusIcon, BellIcon } from './icons/Icons';
 import type { ViewName } from '../types';
 
 interface SideNavProps {
   active: ViewName;
   onNavigate: (v: ViewName) => void;
   onAddClick: () => void;
+  hasUnread?: boolean;
 }
 
 function BriefcaseIcon({ size = 22, className = '' }: { size?: number; className?: string }) {
@@ -18,7 +19,7 @@ function BriefcaseIcon({ size = 22, className = '' }: { size?: number; className
   );
 }
 
-export default function SideNav({ active, onNavigate, onAddClick }: SideNavProps) {
+export default function SideNav({ active, onNavigate, onAddClick, hasUnread }: SideNavProps) {
   const items: { view: ViewName; Icon: React.ComponentType<{ size?: number; className?: string }>; label: string }[] = [
     { view: 'home',     Icon: HomeIcon,       label: '首頁' },
     { view: 'activity', Icon: ChartIcon,      label: '活動分析' },
@@ -61,6 +62,27 @@ export default function SideNav({ active, onNavigate, onAddClick }: SideNavProps
           </button>
         ))}
       </nav>
+
+      {/* Notifications bell */}
+      <div className="px-3 pb-2 border-t border-gray-100 pt-2">
+        <button
+          onClick={() => onNavigate('notifications')}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all w-full text-left ${
+            active === 'notifications'
+              ? 'bg-violet-50 text-violet-700'
+              : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+          }`}
+        >
+          <div className="relative">
+            <BellIcon size={18} className={active === 'notifications' ? 'text-violet-600' : ''} />
+            {hasUnread && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-violet-500 rounded-full" />}
+          </div>
+          通知中心
+          {active === 'notifications' && (
+            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-violet-500" />
+          )}
+        </button>
+      </div>
 
       {/* Add button */}
       <div className="px-4 pb-6">
