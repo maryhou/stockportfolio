@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
-import type { Stock, ViewName, BuyTransaction, SellTransaction, AppNotification } from './types';
+import type { Stock, ViewName, BuyTransaction, SellTransaction, AppNotification, AppSettings } from './types';
+import { DEFAULT_SETTINGS } from './types';
 import { INITIAL_STOCKS } from './data/initialData';
 import { INITIAL_NOTIFICATIONS } from './data/initialNotifications';
 import BottomNav from './components/BottomNav';
@@ -10,10 +11,12 @@ import HoldingsView from './components/HoldingsView';
 import ProfileView from './components/ProfileView';
 import NotificationsView from './components/NotificationsView';
 import AddTransactionSheet from './components/AddTransactionSheet';
+import SettingsSheet from './components/SettingsSheet';
 import ToastContainer, { type ToastData } from './components/Toast';
 
 const STORAGE_KEY = 'stock-tracker-data';
 const NOTIF_KEY = 'stock-tracker-notifications';
+const SETTINGS_KEY = 'stock-tracker-settings';
 
 function loadStocks(): Stock[] {
   try {
@@ -35,11 +38,21 @@ function saveStocks(stocks: Stock[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(stocks));
 }
 
+function loadSettings(): AppSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+  } catch {}
+  return DEFAULT_SETTINGS;
+}
+
 export default function App() {
   const [stocks, setStocks] = useState<Stock[]>(loadStocks);
   const [notifications, setNotifications] = useState<AppNotification[]>(loadNotifications);
+  const [settings, setSettings] = useState<AppSettings>(loadSettings);
   const [view, setView] = useState<ViewName>('home');
   const [showAdd, setShowAdd] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [selectedStockId, setSelectedStockId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const toastId = useRef(0);
@@ -81,6 +94,12 @@ export default function App() {
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
   }, []);
+
+  function handleSaveSettings(s: AppSettings) {
+    setSettings(s);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+    showToast('設定已儲存');
+  }
 
   function update(next: Stock[]) {
     setStocks(next);
@@ -214,6 +233,7 @@ export default function App() {
               <ActivityView
                 stocks={stocks}
                 selectedStockId={selectedStockId}
+                settings={settings}
                 onSelectStock={(id) => setSelectedStockId(id)}
                 onUpdatePrice={handleUpdatePrice}
                 onUpdateTarget={handleUpdateTarget}
@@ -224,7 +244,13 @@ export default function App() {
             {view === 'holdings' && (
               <HoldingsView stocks={stocks} onStockClick={handleStockClick} />
             )}
-            {view === 'profile' && <ProfileView stocks={stocks} />}
+            {view === 'profile' && (
+              <ProfileView
+                stocks={stocks}
+                settings={settings}
+                onSettingsClick={() => setShowSettings(true)}
+              />
+            )}
           </div>
 
           <BottomNav active={view} onNavigate={handleNavigate} onAddClick={() => setShowAdd(true)} />
@@ -232,10 +258,19 @@ export default function App() {
           {showAdd && (
             <AddTransactionSheet
               stocks={stocks}
+              settings={settings}
               onClose={() => setShowAdd(false)}
               onAddBuy={handleAddBuy}
               onAddSell={handleAddSell}
               onAddStock={handleAddStock}
+            />
+          )}
+
+          {showSettings && (
+            <SettingsSheet
+              settings={settings}
+              onSave={handleSaveSettings}
+              onClose={() => setShowSettings(false)}
             />
           )}
         </div>

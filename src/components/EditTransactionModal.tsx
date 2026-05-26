@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Stock, BuyTransaction, SellTransaction } from '../types';
+import type { Stock, BuyTransaction, SellTransaction, AppSettings } from '../types';
 import { calcFee, calcTax, formatNTD } from '../utils/calculations';
 import { CloseIcon } from './icons/Icons';
 
@@ -8,13 +8,14 @@ interface EditTransactionModalProps {
   txType: 'buy' | 'sell';
   transaction: BuyTransaction | SellTransaction;
   avgCost: number;
+  settings: AppSettings;
   onSave: (tx: BuyTransaction | SellTransaction) => void;
   onDelete: () => void;
   onClose: () => void;
 }
 
 export default function EditTransactionModal({
-  stock, txType, transaction, avgCost, onSave, onDelete, onClose,
+  stock, txType, transaction, avgCost, settings, onSave, onDelete, onClose,
 }: EditTransactionModalProps) {
   const [date, setDate] = useState(transaction.date.replace(/\//g, '-'));
   const [price, setPrice] = useState(String(transaction.price));
@@ -27,8 +28,8 @@ export default function EditTransactionModal({
 
   const priceN = parseFloat(price) || 0;
   const sharesN = parseInt(shares) || 0;
-  const autoFee = priceN > 0 && sharesN > 0 ? calcFee(priceN, sharesN) : 0;
-  const autoTax = priceN > 0 && sharesN > 0 ? calcTax(priceN, sharesN) : 0;
+  const autoFee = priceN > 0 && sharesN > 0 ? calcFee(priceN, sharesN, settings.feeRate, settings.feeDiscount) : 0;
+  const autoTax = priceN > 0 && sharesN > 0 ? calcTax(priceN, sharesN, settings.taxRate) : 0;
   const fee = feeOverride !== '' ? (parseInt(feeOverride) || 0) : autoFee;
   const tax = txType === 'sell'
     ? (taxOverride !== '' ? (parseInt(taxOverride) || 0) : autoTax)

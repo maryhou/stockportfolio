@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import type { Stock, BuyTransaction, SellTransaction } from '../types';
-import { calcAvgCost, calcFee, calcTax, buildSellTransaction, formatNTD, formatNumber } from '../utils/calculations';
+import type { Stock, BuyTransaction, SellTransaction, AppSettings } from '../types';
+import { calcAvgCost, calcFee, calcTax, formatNTD, formatNumber } from '../utils/calculations';
 import { CloseIcon } from './icons/Icons';
 import twStocksRaw from '../data/twStocks.json';
 
@@ -17,6 +17,7 @@ function searchTwStocks(query: string): TwStock[] {
 
 interface AddTransactionSheetProps {
   stocks: Stock[];
+  settings: AppSettings;
   onClose: () => void;
   onAddBuy: (stockId: string, tx: BuyTransaction) => void;
   onAddSell: (stockId: string, tx: SellTransaction) => void;
@@ -27,6 +28,7 @@ type TxType = 'buy' | 'sell';
 
 export default function AddTransactionSheet({
   stocks,
+  settings,
   onClose,
   onAddBuy,
   onAddSell,
@@ -52,9 +54,9 @@ export default function AddTransactionSheet({
 
   const priceN = parseFloat(price) || 0;
   const sharesN = parseInt(shares) || 0;
-  const autoFee = priceN > 0 && sharesN > 0 ? calcFee(priceN, sharesN) : 0;
+  const autoFee = priceN > 0 && sharesN > 0 ? calcFee(priceN, sharesN, settings.feeRate, settings.feeDiscount) : 0;
   const fee = feeOverride !== '' ? parseInt(feeOverride) : autoFee;
-  const tax = txType === 'sell' && priceN > 0 && sharesN > 0 ? calcTax(priceN, sharesN) : 0;
+  const tax = txType === 'sell' && priceN > 0 && sharesN > 0 ? calcTax(priceN, sharesN, settings.taxRate) : 0;
 
   const stock = stocks.find((s) => s.id === stockId);
   const avgCost = stock ? calcAvgCost(stock.buys) : 0;
@@ -96,14 +98,13 @@ export default function AddTransactionSheet({
 
     if (isNewStock) {
       if (!newName || !newSymbol) return;
-      // Embed the first transaction directly in the new stock to avoid stale-state bug
-      // (calling onAddBuy after onAddStock would reference old stocks state)
       if (txType === 'buy') {
         const tx: BuyTransaction = { id: `b${Date.now()}`, date, price: priceN, shares: sharesN, fee };
         onAddStock({ id: newSymbol, name: newName, symbol: newSymbol, targetPrice: 0, currentPrice: priceN, buys: [tx], sells: [] });
       } else {
-        const tx = buildSellTransaction(`s${Date.now()}`, date, priceN, sharesN, 0);
-        onAddStock({ id: newSymbol, name: newName, symbol: newSymbol, targetPrice: 0, currentPrice: priceN, buys: [], sells: [{ ...tx, fee, tax }] });
+        const np = priceN * sharesN - fee - tax;
+        const tx: SellTransaction = { id: `s${Date.now()}`, date, price: priceN, shares: sharesN, fee, tax, netProceeds: np, profit: np };
+        onAddStock({ id: newSymbol, name: newName, symbol: newSymbol, targetPrice: 0, currentPrice: priceN, buys: [], sells: [tx] });
       }
       onClose();
       return;
@@ -113,8 +114,9 @@ export default function AddTransactionSheet({
       const tx: BuyTransaction = { id: `b${Date.now()}`, date, price: priceN, shares: sharesN, fee };
       onAddBuy(stockId, tx);
     } else {
-      const tx = buildSellTransaction(`s${Date.now()}`, date, priceN, sharesN, avgCost);
-      onAddSell(stockId, { ...tx, fee, tax });
+      const np = priceN * sharesN - fee - tax;
+      const tx: SellTransaction = { id: `s${Date.now()}`, date, price: priceN, shares: sharesN, fee, tax, netProceeds: np, profit: np - avgCost * sharesN };
+      onAddSell(stockId, tx);
     }
     onClose();
   }

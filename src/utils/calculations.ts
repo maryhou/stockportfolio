@@ -1,16 +1,11 @@
-import type { BuyTransaction, SellTransaction } from '../types';
+import type { BuyTransaction, SellTransaction, AppSettings } from '../types';
 
-// Taiwan brokerage: 0.1425% with 60% discount applied
-const FEE_RATE = 0.001425 * 0.6;
-// Taiwan securities transaction tax: 0.3% on sell amount
-const TAX_RATE = 0.003;
-
-export function calcFee(price: number, shares: number): number {
-  return Math.floor(price * shares * FEE_RATE);
+export function calcFee(price: number, shares: number, feeRate = 0.001425, feeDiscount = 0.6): number {
+  return Math.floor(price * shares * feeRate * feeDiscount);
 }
 
-export function calcTax(price: number, shares: number): number {
-  return Math.ceil(price * shares * TAX_RATE);
+export function calcTax(price: number, shares: number, taxRate = 0.003): number {
+  return Math.ceil(price * shares * taxRate);
 }
 
 export function calcAvgCost(buys: BuyTransaction[]): number {
@@ -43,10 +38,11 @@ export function buildSellTransaction(
   date: string,
   price: number,
   shares: number,
-  avgCost: number
+  avgCost: number,
+  settings?: Pick<AppSettings, 'feeRate' | 'feeDiscount' | 'taxRate'>
 ): SellTransaction {
-  const fee = calcFee(price, shares);
-  const tax = calcTax(price, shares);
+  const fee = calcFee(price, shares, settings?.feeRate, settings?.feeDiscount);
+  const tax = calcTax(price, shares, settings?.taxRate);
   const netProceeds = price * shares - fee - tax;
   const profit = netProceeds - avgCost * shares;
   return { id, date, price, shares, fee, tax, profit, netProceeds };

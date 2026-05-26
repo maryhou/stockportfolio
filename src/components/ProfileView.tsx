@@ -1,24 +1,43 @@
-import type { Stock } from '../types';
+import type { Stock, AppSettings } from '../types';
 import { calcAvgCost, calcRemainingShares, calcTotalRealizedProfit, formatNTD, formatNumber } from '../utils/calculations';
+import { SettingsIcon } from './icons/Icons';
 
 interface ProfileViewProps {
   stocks: Stock[];
+  settings: AppSettings;
+  onSettingsClick: () => void;
 }
 
-export default function ProfileView({ stocks }: ProfileViewProps) {
+export default function ProfileView({ stocks, settings, onSettingsClick }: ProfileViewProps) {
   const totalProfit = stocks.reduce((s, st) => s + calcTotalRealizedProfit(st.sells), 0);
   const totalTrades = stocks.reduce((s, st) => s + st.buys.length + st.sells.length, 0);
 
+  const effectiveFee = ((settings.feeRate * settings.feeDiscount) * 100).toFixed(4);
+  const discountPct = (settings.feeDiscount * 100).toFixed(0);
+  const taxPct = (settings.taxRate * 100).toFixed(2).replace(/\.?0+$/, '');
+  const feeRatePct = (settings.feeRate * 100).toFixed(4).replace(/\.?0+$/, '');
+
   return (
-    <div className="flex flex-col gap-5 px-5 pt-6 pb-32">
+    <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full max-w-2xl">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-gray-800">我的</h2>
+        <button
+          onClick={onSettingsClick}
+          className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 active:bg-gray-200 transition-colors"
+        >
+          <SettingsIcon size={18} />
+        </button>
+      </div>
+
       {/* Avatar */}
-      <div className="flex flex-col items-center gap-3 py-6">
+      <div className="flex flex-col items-center gap-3 py-4">
         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-400 to-purple-600 flex items-center justify-center text-3xl font-bold text-white shadow-lg">
           M
         </div>
         <div className="text-center">
           <h2 className="text-xl font-bold text-gray-800">Mary</h2>
-          <p className="text-sm text-gray-400">股票投資追蹤</p>
+          <p className="text-sm text-gray-400">{settings.portfolioName}</p>
         </div>
       </div>
 
@@ -73,12 +92,15 @@ export default function ProfileView({ stocks }: ProfileViewProps) {
         </div>
       </div>
 
-      {/* Fee info */}
+      {/* Fee info — dynamic based on settings */}
       <div className="bg-violet-50 rounded-2xl p-4">
-        <p className="text-xs font-semibold text-violet-700 mb-2">費用計算說明</p>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold text-violet-700">費用計算說明</p>
+          <span className="text-[11px] text-violet-500 bg-violet-100 px-2 py-0.5 rounded-full">{settings.brokerName}</span>
+        </div>
         <div className="flex flex-col gap-1 text-xs text-violet-600">
-          <p>· 手續費：成交金額 × 0.1425% × 60折</p>
-          <p>· 交易稅：賣出金額 × 0.3%</p>
+          <p>· 手續費：成交金額 × {feeRatePct}% × {discountPct}折 = {effectiveFee}%</p>
+          <p>· 交易稅：賣出金額 × {taxPct}%</p>
           <p>· 損益 = 可取得金額 − 平均成本 × 股數</p>
         </div>
       </div>

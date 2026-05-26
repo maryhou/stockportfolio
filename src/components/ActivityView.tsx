@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Stock, BuyTransaction, SellTransaction } from '../types';
+import type { Stock, BuyTransaction, SellTransaction, AppSettings } from '../types';
 import {
   calcAvgCost,
   calcRemainingShares,
@@ -16,6 +16,7 @@ import EditTransactionModal from './EditTransactionModal';
 interface ActivityViewProps {
   stocks: Stock[];
   selectedStockId: string | null;
+  settings: AppSettings;
   onSelectStock: (id: string) => void;
   onUpdatePrice: (stockId: string, price: number) => void;
   onUpdateTarget: (stockId: string, price: number) => void;
@@ -23,13 +24,14 @@ interface ActivityViewProps {
   onDeleteTx: (stockId: string, type: 'buy' | 'sell', txId: string) => void;
 }
 
-export default function ActivityView({ stocks, selectedStockId, onSelectStock, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx }: ActivityViewProps) {
+export default function ActivityView({ stocks, selectedStockId, settings, onSelectStock, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx }: ActivityViewProps) {
   const stock = selectedStockId ? stocks.find((s) => s.id === selectedStockId) : null;
 
   if (stock) {
     return (
       <StockDetail
         stock={stock}
+        settings={settings}
         onUpdatePrice={onUpdatePrice}
         onUpdateTarget={onUpdateTarget}
         onSaveTx={(type, tx) => onSaveTx(stock.id, type, tx)}
@@ -255,8 +257,9 @@ function TradeTileRow({ stockName, stockSymbol, type, date, shares, price, amoun
 
 // ─── Single Stock Detail ──────────────────────────────────────────────────────
 
-function StockDetail({ stock, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx }: {
+function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx }: {
   stock: Stock;
+  settings: AppSettings;
   onUpdatePrice: (id: string, price: number) => void;
   onUpdateTarget: (id: string, price: number) => void;
   onSaveTx: (type: 'buy' | 'sell', tx: BuyTransaction | SellTransaction) => void;
@@ -470,6 +473,7 @@ function StockDetail({ stock, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteT
           txType={editTx.type}
           transaction={editTx.tx}
           avgCost={avgCost}
+          settings={settings}
           onSave={(tx) => { onSaveTx(editTx.type, tx); setEditTx(null); }}
           onDelete={() => { onDeleteTx(editTx.type, editTx.tx.id); setEditTx(null); }}
           onClose={() => setEditTx(null)}
