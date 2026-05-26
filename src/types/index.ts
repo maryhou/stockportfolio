@@ -27,4 +27,4 @@ export interface Stock {
   sells: SellTransaction[];
 }
 
-export type ViewName = 'home' | 'activity' | 'detail' | 'profile';
+export type ViewName = 'home' | 'activity' | 'holdings' | 'profile';
