@@ -49,7 +49,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-gray-400">Hello,</p>
-          <h1 className="text-2xl font-bold text-gray-800">{settings.userName} 👋</h1>
+          <h1 className="text-2xl font-bold text-gray-800">{settings.userName}</h1>
         </div>
         <div className="flex gap-2">
           <button className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
