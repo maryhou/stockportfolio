@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type { Stock, AppSettings } from '../types';
 import {
   calcAvgCost,
@@ -16,10 +17,11 @@ interface HomeViewProps {
   onAddClick: () => void;
   onViewAllHoldings: () => void;
   onBellClick: () => void;
+  onVisibleStocksChange: (ids: Set<string>) => void;
   hasUnread: boolean;
 }
 
-export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onBellClick, hasUnread }: HomeViewProps) {
+export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onBellClick, onVisibleStocksChange, hasUnread }: HomeViewProps) {
   const totalProfit = stocks.reduce((s, st) => s + calcTotalRealizedProfit(st.sells), 0);
   const totalProceeds = stocks.reduce((s, st) => s + calcTotalNetProceeds(st.sells), 0);
   const totalCurrentValue = stocks.reduce((acc, stock) => {
@@ -29,6 +31,46 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
 
   const displayValue = totalCurrentValue + totalProceeds;
   const isProfitable = totalProfit >= 0;
+
+  // ── Visibility tracking ─────────────────────────────────────────────────────
+  // Observe each stock card with IntersectionObserver so the poller only
+  // fetches prices for cards that are actually in the viewport.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const visibleRef   = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        let changed = false;
+        for (const entry of entries) {
+          const id = (entry.target as HTMLElement).dataset.stockId;
+          if (!id) continue;
+          if (entry.isIntersecting) {
+            if (!visibleRef.current.has(id)) { visibleRef.current.add(id); changed = true; }
+          } else {
+            if (visibleRef.current.has(id))  { visibleRef.current.delete(id); changed = true; }
+          }
+        }
+        if (changed) onVisibleStocksChange(new Set(visibleRef.current));
+      },
+      { threshold: 0.4 }, // card must be ≥ 40 % visible in the viewport
+    );
+
+    // Observe every card button that carries data-stock-id
+    container.querySelectorAll<HTMLElement>('[data-stock-id]').forEach((el) => {
+      observer.observe(el);
+      visibleRef.current.add(el.dataset.stockId!); // seed: treat all as visible initially
+    });
+    onVisibleStocksChange(new Set(visibleRef.current));
+
+    return () => {
+      observer.disconnect();
+      visibleRef.current.clear();
+    };
+  }, [stocks, onVisibleStocksChange]);
 
   const allTrades = stocks.flatMap((stock) => [
     ...stock.sells.map((tx) => ({
@@ -100,10 +142,13 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
               查看全部
             </button>
           </div>
-          <div className={stocks.length > 2
-            ? 'flex gap-3 overflow-x-auto scrollbar-hide pb-1 lg:grid lg:grid-cols-2 lg:overflow-visible'
-            : 'grid grid-cols-2 gap-3'
-          }>
+          <div
+            ref={containerRef}
+            className={stocks.length > 2
+              ? 'flex gap-3 overflow-x-auto scrollbar-hide pb-1 lg:grid lg:grid-cols-2 lg:overflow-visible'
+              : 'grid grid-cols-2 gap-3'
+            }
+          >
             {stocks.map((stock) => (
               <StockCard key={stock.id} stock={stock} onClick={() => onStockClick(stock.id)} carousel={stocks.length > 2} />
             ))}
@@ -135,6 +180,7 @@ function StockCard({ stock, onClick, carousel = false }: { stock: Stock; onClick
 
   return (
     <button
+      data-stock-id={stock.id}
       onClick={onClick}
       className={`bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-left active:scale-[0.98] transition-transform ${
         carousel ? 'min-w-[44%] flex-shrink-0 lg:min-w-0 lg:w-full' : 'w-full'

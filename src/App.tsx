@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { useStockPoller } from './hooks/useStockPoller';
 import type { Stock, ViewName, BuyTransaction, SellTransaction, AppNotification, AppSettings } from './types';
 import { DEFAULT_SETTINGS } from './types';
 import { INITIAL_STOCKS } from './data/initialData';
@@ -56,6 +57,12 @@ export default function App() {
   const [selectedStockId, setSelectedStockId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const toastId = useRef(0);
+
+  // Tracks which stock cards are currently in the viewport (reported by HomeView)
+  const [visibleStockIds, setVisibleStockIds] = useState<Set<string>>(new Set());
+  const handleVisibleStocksChange = useCallback((ids: Set<string>) => {
+    setVisibleStockIds(ids);
+  }, []);
 
   const hasUnread = notifications.some((n) => !n.read);
 
@@ -173,6 +180,9 @@ export default function App() {
     }
   }
 
+  // Auto-polling: refresh prices for visible cards every 15 s
+  useStockPoller(stocks, visibleStockIds, handleUpdatePrice);
+
   function handleUpdateTarget(stockId: string, price: number) {
     update(stocks.map((s) => s.id === stockId ? { ...s, targetPrice: price } : s));
   }
@@ -220,6 +230,7 @@ export default function App() {
                 onAddClick={() => setShowAdd(true)}
                 onViewAllHoldings={() => handleNavigate('holdings')}
                 onBellClick={() => handleNavigate('notifications')}
+                onVisibleStocksChange={handleVisibleStocksChange}
                 hasUnread={hasUnread}
               />
             )}
