@@ -1,4 +1,4 @@
-import type { Stock } from '../types';
+import type { Stock, AppSettings } from '../types';
 import {
   calcAvgCost,
   calcRemainingShares,
@@ -11,6 +11,7 @@ import { BellIcon, SearchIcon, TrendUpIcon, TrendDownIcon } from './icons/Icons'
 
 interface HomeViewProps {
   stocks: Stock[];
+  settings: AppSettings;
   onStockClick: (id: string) => void;
   onAddClick: () => void;
   onViewAllHoldings: () => void;
@@ -18,7 +19,7 @@ interface HomeViewProps {
   hasUnread: boolean;
 }
 
-export default function HomeView({ stocks, onStockClick, onViewAllHoldings, onBellClick, hasUnread }: HomeViewProps) {
+export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onBellClick, hasUnread }: HomeViewProps) {
   const totalProfit = stocks.reduce((s, st) => s + calcTotalRealizedProfit(st.sells), 0);
   const totalProceeds = stocks.reduce((s, st) => s + calcTotalNetProceeds(st.sells), 0);
   const totalCurrentValue = stocks.reduce((acc, stock) => {
@@ -48,7 +49,7 @@ export default function HomeView({ stocks, onStockClick, onViewAllHoldings, onBe
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-gray-400">Hello,</p>
-          <h1 className="text-2xl font-bold text-gray-800">Mary 👋</h1>
+          <h1 className="text-2xl font-bold text-gray-800">{settings.userName} 👋</h1>
         </div>
         <div className="flex gap-2">
           <button className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">

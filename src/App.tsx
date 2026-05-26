@@ -215,6 +215,7 @@ export default function App() {
             {view === 'home' && (
               <HomeView
                 stocks={stocks}
+                settings={settings}
                 onStockClick={handleStockClick}
                 onAddClick={() => setShowAdd(true)}
                 onViewAllHoldings={() => handleNavigate('holdings')}

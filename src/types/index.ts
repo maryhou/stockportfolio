@@ -30,7 +30,7 @@ export interface Stock {
 export type ViewName = 'home' | 'activity' | 'holdings' | 'profile' | 'notifications';
 
 export interface AppSettings {
-  portfolioName: string;
+  userName: string;
   brokerName: string;
   feeRate: number;      // decimal, e.g. 0.001425 (= 0.1425%)
   feeDiscount: number;  // decimal, e.g. 0.6 (= 60折)
@@ -38,7 +38,7 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  portfolioName: '我的投資組合',
+  userName: 'Mary',
   brokerName: '元大券商',
   feeRate: 0.001425,
   feeDiscount: 0.6,

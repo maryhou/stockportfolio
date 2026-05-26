@@ -9,7 +9,7 @@ interface SettingsSheetProps {
 }
 
 export default function SettingsSheet({ settings, onSave, onClose }: SettingsSheetProps) {
-  const [portfolioName, setPortfolioName] = useState(settings.portfolioName);
+  const [userName, setUserName] = useState(settings.userName);
   const [brokerName, setBrokerName] = useState(settings.brokerName);
   // Display as percentages (e.g. 0.001425 → "0.1425")
   const [feeRateInput, setFeeRateInput] = useState(String(+(settings.feeRate * 100).toPrecision(6)));
@@ -24,7 +24,7 @@ export default function SettingsSheet({ settings, onSave, onClose }: SettingsShe
 
   function handleSave() {
     onSave({
-      portfolioName: portfolioName.trim() || settings.portfolioName,
+      userName: userName.trim() || settings.userName,
       brokerName: brokerName.trim() || settings.brokerName,
       feeRate: feeRateVal / 100,
       feeDiscount: feeDiscountVal / 100,
@@ -55,15 +55,15 @@ export default function SettingsSheet({ settings, onSave, onClose }: SettingsShe
             </button>
           </div>
 
-          {/* Section: Portfolio */}
-          <SectionLabel>投資組合</SectionLabel>
+          {/* Section: User */}
+          <SectionLabel>個人</SectionLabel>
           <div className="mb-5">
-            <label className="label">名稱</label>
+            <label className="label">使用者名稱</label>
             <input
               className="input"
-              value={portfolioName}
-              onChange={(e) => setPortfolioName(e.target.value)}
-              placeholder="我的投資組合"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              placeholder="Mary"
             />
           </div>
 
