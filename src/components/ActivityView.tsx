@@ -45,7 +45,7 @@ export default function ActivityView({ stocks, onUpdatePrice, onUpdateTarget }: 
   const totalPL = realizedProfit + unrealizedPL;
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-6 pb-32">
+    <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 max-w-4xl">
       <h2 className="text-xl font-bold text-gray-800">活動分析</h2>
 
       {/* Stock selector tabs */}
@@ -103,7 +103,7 @@ export default function ActivityView({ stocks, onUpdatePrice, onUpdateTarget }: 
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <StatCard label="平均成本" value={formatNumber(avgCost)} sub="NT$/股" accent="violet" />
         <StatCard label="剩餘股數" value={`${remaining} 股`} sub={remaining > 0 ? '持有中' : '已清倉'} accent={remaining > 0 ? 'violet' : 'gray'} />
         <StatCard label="已實現損益" value={`${realizedProfit >= 0 ? '+' : ''}${formatNTD(realizedProfit)}`} sub="含手續費及稅" accent={realizedProfit >= 0 ? 'green' : 'red'} />
@@ -119,7 +119,7 @@ export default function ActivityView({ stocks, onUpdatePrice, onUpdateTarget }: 
         <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
           <TargetIcon size={15} className="text-violet-500" /> 價格設定
         </h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {/* Current price */}
           <div>
             <p className="text-xs text-gray-400 mb-1">目前股價</p>

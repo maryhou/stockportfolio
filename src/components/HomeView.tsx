@@ -13,21 +13,35 @@ interface HomeViewProps {
   stocks: Stock[];
   onStockClick: (id: string) => void;
   onAddClick: () => void;
+  onViewAllHoldings: () => void;
 }
 
-export default function HomeView({ stocks, onStockClick }: HomeViewProps) {
+export default function HomeView({ stocks, onStockClick, onViewAllHoldings }: HomeViewProps) {
   const totalProfit = stocks.reduce((s, st) => s + calcTotalRealizedProfit(st.sells), 0);
   const totalProceeds = stocks.reduce((s, st) => s + calcTotalNetProceeds(st.sells), 0);
-  const totalCurrentValue = stocks.reduce((st, stock) => {
+  const totalCurrentValue = stocks.reduce((acc, stock) => {
     const remaining = calcRemainingShares(stock.buys, stock.sells);
-    return st + remaining * stock.currentPrice;
+    return acc + remaining * stock.currentPrice;
   }, 0);
 
   const displayValue = totalCurrentValue + totalProceeds;
   const isProfitable = totalProfit >= 0;
 
+  const allTrades = stocks.flatMap((stock) => [
+    ...stock.sells.map((tx) => ({
+      key: `sell-${tx.id}`,
+      symbol: stock.symbol, name: stock.name, type: 'sell' as const,
+      date: tx.date, shares: tx.shares, amount: tx.netProceeds, profit: tx.profit,
+    })),
+    ...stock.buys.map((tx) => ({
+      key: `buy-${tx.id}`,
+      symbol: stock.symbol, name: stock.name, type: 'buy' as const,
+      date: tx.date, shares: tx.shares, amount: tx.price * tx.shares + tx.fee, profit: null,
+    })),
+  ]).sort((a, b) => b.key.localeCompare(a.key)).slice(0, 5);
+
   return (
-    <div className="flex flex-col gap-5 px-5 pt-6 pb-32">
+    <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 max-w-4xl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -74,9 +88,15 @@ export default function HomeView({ stocks, onStockClick }: HomeViewProps) {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-semibold text-gray-800">我的持股</h2>
-          <button className="text-xs text-violet-600 font-medium">查看全部</button>
+          <button
+            onClick={onViewAllHoldings}
+            className="text-xs text-violet-600 font-medium hover:text-violet-800 transition-colors"
+          >
+            查看全部
+          </button>
         </div>
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+        {/* Mobile: horizontal scroll / Desktop: grid */}
+        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide md:grid md:grid-cols-2 md:overflow-visible lg:grid-cols-3">
           {stocks.map((stock) => (
             <StockCard key={stock.id} stock={stock} onClick={() => onStockClick(stock.id)} />
           ))}
@@ -87,49 +107,18 @@ export default function HomeView({ stocks, onStockClick }: HomeViewProps) {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-semibold text-gray-800">最近交易</h2>
-          <button className="text-xs text-violet-600 font-medium">查看全部</button>
         </div>
-        <div className="flex flex-col gap-2">
-          {stocks.flatMap((stock) => [
-            ...stock.sells.map((tx) => (
-              <RecentItem
-                key={`sell-${tx.id}`}
-                symbol={stock.symbol}
-                name={stock.name}
-                type="sell"
-                date={tx.date}
-                shares={tx.shares}
-                amount={tx.netProceeds}
-                profit={tx.profit}
-              />
-            )),
-            ...stock.buys.map((tx) => (
-              <RecentItem
-                key={`buy-${tx.id}`}
-                symbol={stock.symbol}
-                name={stock.name}
-                type="buy"
-                date={tx.date}
-                shares={tx.shares}
-                amount={tx.price * tx.shares + tx.fee}
-                profit={null}
-              />
-            )),
-          ])
-            .sort((a, b) => (b.key as string).localeCompare(a.key as string))
-            .slice(0, 5)}
+        <div className="flex flex-col gap-2 md:grid md:grid-cols-2 lg:grid-cols-2">
+          {allTrades.map(({ key, ...tx }) => (
+            <RecentItem key={key} {...tx} />
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
-interface StockCardProps {
-  stock: Stock;
-  onClick: () => void;
-}
-
-function StockCard({ stock, onClick }: StockCardProps) {
+function StockCard({ stock, onClick }: { stock: Stock; onClick: () => void }) {
   const avgCost = calcAvgCost(stock.buys);
   const remaining = calcRemainingShares(stock.buys, stock.sells);
   const realizedProfit = calcTotalRealizedProfit(stock.sells);
@@ -139,7 +128,7 @@ function StockCard({ stock, onClick }: StockCardProps) {
   return (
     <button
       onClick={onClick}
-      className="flex-shrink-0 w-52 bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-left active:scale-[0.98] transition-transform"
+      className="flex-shrink-0 w-52 md:w-auto bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-left active:scale-[0.98] transition-transform"
     >
       <div className="flex items-center justify-between mb-3">
         <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
@@ -175,17 +164,10 @@ function StockCard({ stock, onClick }: StockCardProps) {
   );
 }
 
-interface RecentItemProps {
-  symbol: string;
-  name: string;
-  type: 'buy' | 'sell';
-  date: string;
-  shares: number;
-  amount: number;
-  profit: number | null;
-}
-
-function RecentItem({ symbol, name, type, date, shares, amount, profit }: RecentItemProps) {
+function RecentItem({ symbol, name, type, date, shares, amount, profit }: {
+  symbol: string; name: string; type: 'buy' | 'sell';
+  date: string; shares: number; amount: number; profit: number | null;
+}) {
   return (
     <div className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50">
       <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
