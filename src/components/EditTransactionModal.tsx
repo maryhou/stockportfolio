@@ -23,7 +23,7 @@ export default function EditTransactionModal({
   const [taxOverride, setTaxOverride] = useState(
     txType === 'sell' ? String((transaction as SellTransaction).tax) : ''
   );
-  const [confirming, setConfirming] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const priceN = parseFloat(price) || 0;
   const sharesN = parseInt(shares) || 0;
@@ -37,7 +37,6 @@ export default function EditTransactionModal({
   const netProceeds = txType === 'sell' ? priceN * sharesN - fee - tax : 0;
   const profit = txType === 'sell' ? netProceeds - avgCost * sharesN : 0;
 
-  // Reset fee/tax auto when price or shares change
   useEffect(() => {
     setFeeOverride(String(autoFee));
     if (txType === 'sell') setTaxOverride(String(autoTax));
@@ -46,14 +45,9 @@ export default function EditTransactionModal({
   function handleSave() {
     if (!priceN || !sharesN || !date) return;
     if (txType === 'buy') {
-      const tx: BuyTransaction = { id: transaction.id, date, price: priceN, shares: sharesN, fee };
-      onSave(tx);
+      onSave({ id: transaction.id, date, price: priceN, shares: sharesN, fee } as BuyTransaction);
     } else {
-      const tx: SellTransaction = {
-        id: transaction.id, date, price: priceN, shares: sharesN, fee, tax,
-        netProceeds, profit,
-      };
-      onSave(tx);
+      onSave({ id: transaction.id, date, price: priceN, shares: sharesN, fee, tax, netProceeds, profit } as SellTransaction);
     }
   }
 
@@ -61,8 +55,10 @@ export default function EditTransactionModal({
 
   return (
     <>
+      {/* Sheet backdrop */}
       <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={onClose} />
 
+      {/* Bottom sheet */}
       <div
         className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] lg:max-w-lg bg-white rounded-t-3xl z-50 shadow-2xl"
         style={{ maxHeight: '92vh', overflowY: 'auto' }}
@@ -80,7 +76,7 @@ export default function EditTransactionModal({
             </button>
           </div>
 
-          {/* Read-only stock + type info */}
+          {/* Read-only stock info */}
           <div className="flex items-center gap-3 mb-5 p-3 bg-gray-50 rounded-2xl">
             <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
               <span className="text-[11px] font-bold text-violet-600">{stock.symbol}</span>
@@ -117,28 +113,18 @@ export default function EditTransactionModal({
           {/* Fee */}
           <div className="mb-4">
             <label className="label">手續費</label>
-            <input
-              type="number"
-              className="input"
-              value={feeOverride}
-              onChange={(e) => setFeeOverride(e.target.value)}
-            />
+            <input type="number" className="input" value={feeOverride} onChange={(e) => setFeeOverride(e.target.value)} />
           </div>
 
           {/* Tax (sell only) */}
           {!isBuy && (
             <div className="mb-4">
               <label className="label">交易稅</label>
-              <input
-                type="number"
-                className="input"
-                value={taxOverride}
-                onChange={(e) => setTaxOverride(e.target.value)}
-              />
+              <input type="number" className="input" value={taxOverride} onChange={(e) => setTaxOverride(e.target.value)} />
             </div>
           )}
 
-          {/* Calculation preview */}
+          {/* Preview */}
           {priceN > 0 && sharesN > 0 && (
             <div className={`rounded-2xl p-4 mb-5 ${isBuy ? 'bg-violet-50' : 'bg-emerald-50'}`}>
               <p className="text-xs font-semibold text-gray-500 mb-2">計算預覽</p>
@@ -162,7 +148,7 @@ export default function EditTransactionModal({
             </div>
           )}
 
-          {/* Save button */}
+          {/* Save */}
           <button
             onClick={handleSave}
             disabled={!priceN || !sharesN || !date}
@@ -175,35 +161,47 @@ export default function EditTransactionModal({
             確認修改
           </button>
 
-          {/* Delete */}
-          {!confirming ? (
-            <button
-              onClick={() => setConfirming(true)}
-              className="w-full py-3 rounded-2xl font-semibold text-red-500 border border-red-200 bg-red-50 active:bg-red-100 transition-all"
-            >
-              刪除這筆交易
-            </button>
-          ) : (
-            <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
-              <p className="text-sm font-semibold text-red-600 text-center mb-3">確定要刪除這筆交易？此操作無法復原。</p>
-              <div className="flex gap-2">
+          {/* Delete trigger */}
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="w-full py-3 rounded-2xl font-semibold text-red-500 border border-red-200 bg-red-50 active:bg-red-100 transition-all"
+          >
+            刪除這筆交易
+          </button>
+        </div>
+      </div>
+
+      {/* Delete confirm — separate overlay above everything */}
+      {confirmDelete && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-[90]" onClick={() => setConfirmDelete(false)} />
+          <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[100] bg-white rounded-3xl p-6 shadow-2xl max-w-sm mx-auto">
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center">
+                <span className="text-2xl">🗑️</span>
+              </div>
+              <div>
+                <p className="text-base font-bold text-gray-800 mb-1">確定要刪除這筆交易？</p>
+                <p className="text-sm text-gray-400">此操作無法復原，交易記錄將永久移除。</p>
+              </div>
+              <div className="flex gap-3 w-full">
                 <button
-                  onClick={() => setConfirming(false)}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 bg-white border border-gray-200 active:bg-gray-50"
+                  onClick={() => setConfirmDelete(false)}
+                  className="flex-1 py-3 rounded-2xl text-sm font-semibold text-gray-600 bg-gray-100 active:bg-gray-200"
                 >
                   取消
                 </button>
                 <button
                   onClick={onDelete}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 active:bg-red-600"
+                  className="flex-1 py-3 rounded-2xl text-sm font-semibold text-white bg-red-500 active:bg-red-600"
                 >
                   確定刪除
                 </button>
               </div>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
     </>
   );
 }
