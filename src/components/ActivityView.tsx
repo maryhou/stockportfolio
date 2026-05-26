@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Stock } from '../types';
+import type { Stock, BuyTransaction, SellTransaction } from '../types';
 import {
   calcAvgCost,
   calcRemainingShares,
@@ -11,6 +11,7 @@ import {
 } from '../utils/calculations';
 import DonutChart from './DonutChart';
 import { TargetIcon, TrendUpIcon, TrendDownIcon } from './icons/Icons';
+import EditTransactionModal from './EditTransactionModal';
 
 interface ActivityViewProps {
   stocks: Stock[];
@@ -18,9 +19,11 @@ interface ActivityViewProps {
   onSelectStock: (id: string) => void;
   onUpdatePrice: (stockId: string, price: number) => void;
   onUpdateTarget: (stockId: string, price: number) => void;
+  onSaveTx: (stockId: string, type: 'buy' | 'sell', tx: BuyTransaction | SellTransaction) => void;
+  onDeleteTx: (stockId: string, type: 'buy' | 'sell', txId: string) => void;
 }
 
-export default function ActivityView({ stocks, selectedStockId, onSelectStock, onUpdatePrice, onUpdateTarget }: ActivityViewProps) {
+export default function ActivityView({ stocks, selectedStockId, onSelectStock, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx }: ActivityViewProps) {
   const stock = selectedStockId ? stocks.find((s) => s.id === selectedStockId) : null;
 
   if (stock) {
@@ -29,6 +32,8 @@ export default function ActivityView({ stocks, selectedStockId, onSelectStock, o
         stock={stock}
         onUpdatePrice={onUpdatePrice}
         onUpdateTarget={onUpdateTarget}
+        onSaveTx={(type, tx) => onSaveTx(stock.id, type, tx)}
+        onDeleteTx={(type, txId) => onDeleteTx(stock.id, type, txId)}
       />
     );
   }
@@ -245,15 +250,18 @@ function TradeTileRow({ stockName, stockSymbol, type, date, shares, price, amoun
 
 // ─── Single Stock Detail ──────────────────────────────────────────────────────
 
-function StockDetail({ stock, onUpdatePrice, onUpdateTarget }: {
+function StockDetail({ stock, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx }: {
   stock: Stock;
   onUpdatePrice: (id: string, price: number) => void;
   onUpdateTarget: (id: string, price: number) => void;
+  onSaveTx: (type: 'buy' | 'sell', tx: BuyTransaction | SellTransaction) => void;
+  onDeleteTx: (type: 'buy' | 'sell', txId: string) => void;
 }) {
   const [editingPrice, setEditingPrice] = useState(false);
   const [editingTarget, setEditingTarget] = useState(false);
   const [priceInput, setPriceInput] = useState('');
   const [targetInput, setTargetInput] = useState('');
+  const [editTx, setEditTx] = useState<{ type: 'buy' | 'sell'; tx: BuyTransaction | SellTransaction } | null>(null);
 
   const avgCost = calcAvgCost(stock.buys);
   const remaining = calcRemainingShares(stock.buys, stock.sells);
@@ -382,10 +390,14 @@ function StockDetail({ stock, onUpdatePrice, onUpdateTarget }: {
 
       {/* Transaction history */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">交易記錄</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">交易記錄 <span className="text-gray-400 font-normal text-xs">點擊可編輯</span></h3>
         <div className="flex flex-col gap-2">
           {stock.sells.map((tx) => (
-            <div key={tx.id} className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50">
+            <button
+              key={tx.id}
+              onClick={() => setEditTx({ type: 'sell', tx })}
+              className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left w-full active:scale-[0.99] transition-transform"
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center">
@@ -408,10 +420,14 @@ function StockDetail({ stock, onUpdatePrice, onUpdateTarget }: {
                 <MiniStat label="交易稅" value={`-${formatNTD(tx.tax)}`} />
                 <MiniStat label="可取得" value={formatNTD(tx.netProceeds)} highlight />
               </div>
-            </div>
+            </button>
           ))}
           {stock.buys.map((tx) => (
-            <div key={tx.id} className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50">
+            <button
+              key={tx.id}
+              onClick={() => setEditTx({ type: 'buy', tx })}
+              className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left w-full active:scale-[0.99] transition-transform"
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center">
@@ -431,10 +447,23 @@ function StockDetail({ stock, onUpdatePrice, onUpdateTarget }: {
                 <MiniStat label="手續費" value={`-${formatNTD(tx.fee)}`} />
                 <MiniStat label="買入金額" value={formatNTD(tx.price * tx.shares)} />
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </div>
+
+      {/* Edit transaction modal */}
+      {editTx && (
+        <EditTransactionModal
+          stock={stock}
+          txType={editTx.type}
+          transaction={editTx.tx}
+          avgCost={avgCost}
+          onSave={(tx) => { onSaveTx(editTx.type, tx); setEditTx(null); }}
+          onDelete={() => { onDeleteTx(editTx.type, editTx.tx.id); setEditTx(null); }}
+          onClose={() => setEditTx(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Stock, ViewName, BuyTransaction, SellTransaction } from './types';
+
 import { INITIAL_STOCKS } from './data/initialData';
 import BottomNav from './components/BottomNav';
 import SideNav from './components/SideNav';
@@ -54,6 +55,22 @@ export default function App() {
     update(stocks.map((s) => s.id === stockId ? { ...s, targetPrice: price } : s));
   }
 
+  function handleSaveTx(stockId: string, type: 'buy' | 'sell', tx: BuyTransaction | SellTransaction) {
+    update(stocks.map((s) => {
+      if (s.id !== stockId) return s;
+      if (type === 'buy') return { ...s, buys: s.buys.map((b) => b.id === tx.id ? tx as BuyTransaction : b) };
+      return { ...s, sells: s.sells.map((sv) => sv.id === tx.id ? tx as SellTransaction : sv) };
+    }));
+  }
+
+  function handleDeleteTx(stockId: string, type: 'buy' | 'sell', txId: string) {
+    update(stocks.map((s) => {
+      if (s.id !== stockId) return s;
+      if (type === 'buy') return { ...s, buys: s.buys.filter((b) => b.id !== txId) };
+      return { ...s, sells: s.sells.filter((sv) => sv.id !== txId) };
+    }));
+  }
+
   function handleStockClick(id: string) {
     setSelectedStockId(id);
     setView('activity');
@@ -89,6 +106,8 @@ export default function App() {
                 onSelectStock={(id) => setSelectedStockId(id)}
                 onUpdatePrice={handleUpdatePrice}
                 onUpdateTarget={handleUpdateTarget}
+                onSaveTx={handleSaveTx}
+                onDeleteTx={handleDeleteTx}
               />
             )}
             {view === 'holdings' && (
