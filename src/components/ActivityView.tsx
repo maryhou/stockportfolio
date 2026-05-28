@@ -48,6 +48,8 @@ export default function ActivityView({ stocks, selectedStockId, settings, onSele
 const PALETTE = ['#6C63FF', '#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#14b8a6', '#f97316'];
 
 function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelectStock: (id: string) => void }) {
+  const [txFilter, setTxFilter] = useState<'all' | 'buy' | 'sell'>('all');
+
   if (stocks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-gray-400 px-5">
@@ -155,14 +157,31 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
 
           {/* Full transaction history */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">所有交易記錄</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-700">所有交易記錄</h3>
+              <div className="flex gap-0.5 bg-gray-100 rounded-xl p-1">
+                {(['all', 'buy', 'sell'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setTxFilter(tab)}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                      txFilter === tab ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'
+                    }`}
+                  >
+                    {tab === 'all' ? '全部' : tab === 'buy' ? '買入' : '賣出'}
+                  </button>
+                ))}
+              </div>
+            </div>
             {allTrades.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-6">尚無交易記錄</p>
             ) : (
               <div className="flex flex-col gap-2">
-                {allTrades.map((tx) => (
-                  <TradeTileRow key={`${tx.type}-${tx.id}`} {...tx} />
-                ))}
+                {allTrades
+                  .filter((tx) => txFilter === 'all' || tx.type === txFilter)
+                  .map((tx) => (
+                    <TradeTileRow key={`${tx.type}-${tx.id}`} {...tx} />
+                  ))}
               </div>
             )}
           </div>
@@ -270,6 +289,7 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
   const [priceInput, setPriceInput] = useState('');
   const [targetInput, setTargetInput] = useState('');
   const [editTx, setEditTx] = useState<{ type: 'buy' | 'sell'; tx: BuyTransaction | SellTransaction } | null>(null);
+  const [txFilter, setTxFilter] = useState<'all' | 'buy' | 'sell'>('all');
 
   const avgCost = calcAvgCost(stock.buys);
   const remaining = calcRemainingShares(stock.buys, stock.sells);
@@ -401,65 +421,89 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
 
       {/* Transaction history */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">交易記錄 <span className="text-gray-400 font-normal text-xs">點擊可編輯</span></h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-gray-700">
+            交易記錄 <span className="text-gray-400 font-normal text-xs">點擊可編輯</span>
+          </h3>
+          <div className="flex gap-0.5 bg-gray-100 rounded-xl p-1">
+            {(['all', 'buy', 'sell'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setTxFilter(tab)}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  txFilter === tab ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'
+                }`}
+              >
+                {tab === 'all' ? '全部' : tab === 'buy' ? '買入' : '賣出'}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="flex flex-col gap-2">
-          {stock.sells.map((tx) => (
-            <button
-              key={tx.id}
-              onClick={() => setEditTx({ type: 'sell', tx })}
-              className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left w-full active:scale-[0.99] transition-transform"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center">
-                    <span className="text-xs font-bold text-emerald-600">賣</span>
+          {[
+            ...stock.sells.map((tx) => ({ type: 'sell' as const, date: tx.date, id: tx.id, tx })),
+            ...stock.buys.map((tx)  => ({ type: 'buy'  as const, date: tx.date, id: tx.id, tx })),
+          ]
+            .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id))
+            .filter((item) => txFilter === 'all' || item.type === txFilter)
+            .map(({ type, tx }) =>
+              type === 'sell' ? (
+                <button
+                  key={tx.id}
+                  onClick={() => setEditTx({ type: 'sell', tx })}
+                  className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left w-full active:scale-[0.99] transition-transform"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center">
+                        <span className="text-xs font-bold text-emerald-600">賣</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">{(tx as SellTransaction).date}</p>
+                        <p className="text-xs text-gray-400">{formatNumber((tx as SellTransaction).price)} × {(tx as SellTransaction).shares} 股</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-sm font-bold ${(tx as SellTransaction).profit >= 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+                        {(tx as SellTransaction).profit >= 0 ? '+' : ''}{formatNTD((tx as SellTransaction).profit)}
+                      </p>
+                      <p className="text-xs text-gray-400">淨額 {formatNTD((tx as SellTransaction).netProceeds)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">{tx.date}</p>
-                    <p className="text-xs text-gray-400">{formatNumber(tx.price)} × {tx.shares} 股</p>
+                  <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-3 gap-2 text-center">
+                    <MiniStat label="手續費" value={`-${formatNTD((tx as SellTransaction).fee)}`} />
+                    <MiniStat label="交易稅" value={`-${formatNTD((tx as SellTransaction).tax)}`} />
+                    <MiniStat label="可取得" value={formatNTD((tx as SellTransaction).netProceeds)} highlight />
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className={`text-sm font-bold ${tx.profit >= 0 ? 'text-red-500' : 'text-emerald-600'}`}>
-                    {tx.profit >= 0 ? '+' : ''}{formatNTD(tx.profit)}
-                  </p>
-                  <p className="text-xs text-gray-400">淨額 {formatNTD(tx.netProceeds)}</p>
-                </div>
-              </div>
-              <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-3 gap-2 text-center">
-                <MiniStat label="手續費" value={`-${formatNTD(tx.fee)}`} />
-                <MiniStat label="交易稅" value={`-${formatNTD(tx.tax)}`} />
-                <MiniStat label="可取得" value={formatNTD(tx.netProceeds)} highlight />
-              </div>
-            </button>
-          ))}
-          {stock.buys.map((tx) => (
-            <button
-              key={tx.id}
-              onClick={() => setEditTx({ type: 'buy', tx })}
-              className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left w-full active:scale-[0.99] transition-transform"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center">
-                    <span className="text-xs font-bold text-violet-600">買</span>
+                </button>
+              ) : (
+                <button
+                  key={tx.id}
+                  onClick={() => setEditTx({ type: 'buy', tx })}
+                  className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left w-full active:scale-[0.99] transition-transform"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center">
+                        <span className="text-xs font-bold text-violet-600">買</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">{(tx as BuyTransaction).date}</p>
+                        <p className="text-xs text-gray-400">{formatNumber((tx as BuyTransaction).price)} × {(tx as BuyTransaction).shares} 股</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-gray-700">-{formatNTD((tx as BuyTransaction).price * (tx as BuyTransaction).shares + (tx as BuyTransaction).fee)}</p>
+                      <p className="text-xs text-gray-400">含手續費</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">{tx.date}</p>
-                    <p className="text-xs text-gray-400">{formatNumber(tx.price)} × {tx.shares} 股</p>
+                  <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-2 gap-2 text-center">
+                    <MiniStat label="手續費" value={`-${formatNTD((tx as BuyTransaction).fee)}`} />
+                    <MiniStat label="買入金額" value={formatNTD((tx as BuyTransaction).price * (tx as BuyTransaction).shares)} />
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-gray-700">-{formatNTD(tx.price * tx.shares + tx.fee)}</p>
-                  <p className="text-xs text-gray-400">含手續費</p>
-                </div>
-              </div>
-              <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-2 gap-2 text-center">
-                <MiniStat label="手續費" value={`-${formatNTD(tx.fee)}`} />
-                <MiniStat label="買入金額" value={formatNTD(tx.price * tx.shares)} />
-              </div>
-            </button>
-          ))}
+                </button>
+              )
+            )}
         </div>
       </div>
 

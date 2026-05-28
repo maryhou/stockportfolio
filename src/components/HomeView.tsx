@@ -17,12 +17,13 @@ interface HomeViewProps {
   onStockClick: (id: string) => void;
   onAddClick: () => void;
   onViewAllHoldings: () => void;
+  onViewAllActivity: () => void;
   onBellClick: () => void;
   onVisibleStocksChange: (ids: Set<string>) => void;
   hasUnread: boolean;
 }
 
-export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onBellClick, onVisibleStocksChange, hasUnread }: HomeViewProps) {
+export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onVisibleStocksChange, hasUnread, onAddClick }: HomeViewProps) {
   const totalProfit = stocks.reduce((s, st) => s + calcTotalRealizedProfit(st.sells), 0);
   const totalProceeds = stocks.reduce((s, st) => s + calcTotalNetProceeds(st.sells), 0);
   const totalCurrentValue = stocks.reduce((acc, stock) => {
@@ -84,7 +85,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
       symbol: stock.symbol, name: stock.name, type: 'buy' as const,
       date: tx.date, shares: tx.shares, amount: tx.price * tx.shares + tx.fee, profit: null,
     })),
-  ]).sort((a, b) => b.key.localeCompare(a.key)).slice(0, 5);
+  ]).sort((a, b) => b.date.localeCompare(a.date) || b.key.localeCompare(a.key)).slice(0, 10);
 
   return (
     <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full">
@@ -160,12 +161,41 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-gray-800">最近交易</h2>
+            <button
+              onClick={onViewAllActivity}
+              className="text-xs text-violet-600 font-medium hover:text-violet-800 transition-colors"
+            >
+              查看全部
+            </button>
           </div>
-          <div className="flex flex-col gap-2">
-            {allTrades.map(({ key, ...tx }) => (
-              <RecentItem key={key} {...tx} />
-            ))}
-          </div>
+          {allTrades.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-center bg-white rounded-2xl shadow-sm border border-gray-50">
+              <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center mb-3">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+                  <rect x="9" y="3" width="6" height="4" rx="1" />
+                  <line x1="9" y1="12" x2="15" y2="12" />
+                  <line x1="9" y1="16" x2="13" y2="16" />
+                </svg>
+              </div>
+              <p className="text-sm font-semibold text-gray-700 mb-1">尚無交易紀錄</p>
+              <p className="text-xs text-gray-400 mb-4">新增交易後，最近交易會顯示在這裡</p>
+              <button
+                onClick={onAddClick}
+                className="px-5 py-2 bg-violet-600 text-white text-sm font-semibold rounded-xl active:bg-violet-700 transition-colors"
+              >
+                新增交易
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {allTrades.map(({ key, ...tx }, idx) => (
+                <div key={key} className={idx >= 5 ? 'hidden lg:block' : undefined}>
+                  <RecentItem {...tx} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

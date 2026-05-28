@@ -244,6 +244,7 @@ export default function App() {
                 onStockClick={handleStockClick}
                 onAddClick={() => setShowAdd(true)}
                 onViewAllHoldings={() => handleNavigate('holdings')}
+                onViewAllActivity={() => handleNavigate('activity')}
                 onBellClick={() => handleNavigate('notifications')}
                 onVisibleStocksChange={handleVisibleStocksChange}
                 hasUnread={hasUnread}
