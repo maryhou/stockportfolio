@@ -17,7 +17,7 @@ interface EditTransactionModalProps {
 export default function EditTransactionModal({
   stock, txType, transaction, avgCost, settings, onSave, onDelete, onClose,
 }: EditTransactionModalProps) {
-  const [date, setDate] = useState(transaction.date.replace(/\//g, '-'));
+  const [date, setDate] = useState(transaction.date);
   const [price, setPrice] = useState(String(transaction.price));
   const [shares, setShares] = useState(String(transaction.shares));
   const [feeOverride, setFeeOverride] = useState(String(transaction.fee));

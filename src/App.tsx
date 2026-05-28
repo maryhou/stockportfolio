@@ -19,10 +19,25 @@ const STORAGE_KEY = 'stock-tracker-data';
 const NOTIF_KEY = 'stock-tracker-notifications';
 const SETTINGS_KEY = 'stock-tracker-settings';
 
+/** Normalize any legacy slash-format dates (2025/05/26) → dash (2025-05-26). */
+function normalizeDates(stocks: Stock[]): Stock[] {
+  return stocks.map((s) => ({
+    ...s,
+    buys:  s.buys.map( (b) => ({ ...b, date: b.date.replace(/\//g, '-') })),
+    sells: s.sells.map((sv) => ({ ...sv, date: sv.date.replace(/\//g, '-') })),
+  }));
+}
+
 function loadStocks(): Stock[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as Stock[];
+    if (raw) {
+      const stocks = JSON.parse(raw) as Stock[];
+      const normalized = normalizeDates(stocks);
+      // Persist the migration immediately so it only runs once
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+      return normalized;
+    }
   } catch {}
   return INITIAL_STOCKS;
 }
