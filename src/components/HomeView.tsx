@@ -263,7 +263,7 @@ function StockCard({ stock, onClick, carousel = false }: { stock: Stock; onClick
       <div className="mt-3 pt-3 border-t border-gray-50 grid grid-cols-2 gap-y-2">
         <div>
           <p className="text-[10px] text-gray-400">成本</p>
-          <p className="text-xs font-semibold text-gray-700">{formatNumber(avgCost)}</p>
+          <p className="text-xs font-semibold text-gray-700">{formatPrice(avgCost)}</p>
         </div>
         <div>
           <p className="text-[10px] text-gray-400">現價</p>

@@ -1,5 +1,5 @@
 import type { Stock, AppSettings } from '../types';
-import { calcAvgCost, calcRemainingShares, calcTotalRealizedProfit, formatNTD, formatNumber } from '../utils/calculations';
+import { calcAvgCost, calcRemainingShares, calcTotalRealizedProfit, formatNTD, formatPrice } from '../utils/calculations';
 import { SettingsIcon } from './icons/Icons';
 
 interface ProfileViewProps {
@@ -76,7 +76,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick }: Profi
                     </div>
                     <div>
                       <p className="font-semibold text-gray-800 text-sm">{stock.name}</p>
-                      <p className="text-xs text-gray-400">{stock.symbol} · 平均 {formatNumber(avgCost)}</p>
+                      <p className="text-xs text-gray-400">{stock.symbol} · 平均 {formatPrice(avgCost)}</p>
                     </div>
                   </div>
                   <div className="text-right">

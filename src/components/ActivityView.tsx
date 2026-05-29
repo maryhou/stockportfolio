@@ -232,7 +232,7 @@ function StockSummaryRow({ stock, color, onClick }: { stock: Stock; color: strin
         <div className="mt-1.5 grid grid-cols-3 gap-2">
           <div>
             <p className="text-[10px] text-gray-400">平均成本</p>
-            <p className="text-xs font-semibold text-gray-600">{formatNumber(avgCost)}</p>
+            <p className="text-xs font-semibold text-gray-600">{formatPrice(avgCost)}</p>
           </div>
           <div>
             <p className="text-[10px] text-gray-400">剩餘股數</p>
@@ -369,7 +369,7 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
       <div className="flex flex-col gap-5">
       {/* Quick stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <StatCard label="平均成本" value={formatNumber(avgCost)} sub="NT$/股" accent="violet" />
+        <StatCard label="平均成本" value={formatPrice(avgCost)} sub="NT$/股" accent="violet" />
         <StatCard label="剩餘股數" value={`${remaining} 股`} sub={remaining > 0 ? '持有中' : '已清倉'} accent={remaining > 0 ? 'violet' : 'gray'} />
         <StatCard label="已實現損益" value={`${realizedProfit > 0 ? '+' : ''}${formatNTD(realizedProfit)}`} sub="含手續費及稅" accent={realizedProfit === 0 ? 'gray' : realizedProfit > 0 ? 'red' : 'green'} />
         <StatCard label="可取得金額" value={formatNTD(netProceeds)} sub="賣出淨額" accent={netProceeds === 0 ? 'gray' : 'green'} />

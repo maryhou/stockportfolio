@@ -5,6 +5,7 @@ import {
   calcTotalRealizedProfit,
   formatNTD,
   formatNumber,
+  formatPrice,
 } from '../utils/calculations';
 import { TrendUpIcon, TrendDownIcon } from './icons/Icons';
 
@@ -81,7 +82,7 @@ function HoldingCard({ stock, onClick }: { stock: Stock; onClick: () => void }) 
       <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-3 gap-2 text-center">
         <div>
           <p className="text-[10px] text-gray-400">平均成本</p>
-          <p className="text-xs font-semibold text-gray-600">{formatNumber(avgCost)}</p>
+          <p className="text-xs font-semibold text-gray-600">{formatPrice(avgCost)}</p>
         </div>
 
         {/* Remaining shares — most prominent */}
