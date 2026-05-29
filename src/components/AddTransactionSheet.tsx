@@ -34,6 +34,19 @@ export default function AddTransactionSheet({
   onAddSell,
   onAddStock,
 }: AddTransactionSheetProps) {
+  // ── Slide animation ────────────────────────────────────────────────────────
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setShow(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  function handleClose() {
+    setShow(false);
+    setTimeout(onClose, 280);
+  }
+
   const [txType, setTxType] = useState<TxType>('buy');
   const [stockId, setStockId] = useState(stocks[0]?.id ?? '');
   const [isNewStock, setIsNewStock] = useState(false);
@@ -106,7 +119,7 @@ export default function AddTransactionSheet({
         const tx: SellTransaction = { id: `s${Date.now()}`, date, price: priceN, shares: sharesN, fee, tax, netProceeds: np, profit: np };
         onAddStock({ id: newSymbol, name: newName, symbol: newSymbol, targetPrice: 0, currentPrice: priceN, buys: [], sells: [tx] });
       }
-      onClose();
+      handleClose();
       return;
     }
 
@@ -118,15 +131,20 @@ export default function AddTransactionSheet({
       const tx: SellTransaction = { id: `s${Date.now()}`, date, price: priceN, shares: sharesN, fee, tax, netProceeds: np, profit: np - avgCost * sharesN };
       onAddSell(stockId, tx);
     }
-    onClose();
+    handleClose();
   }
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={onClose} />
-
+      {/* Backdrop — fades in/out */}
       <div
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] lg:max-w-lg bg-white rounded-t-3xl z-50 shadow-2xl"
+        onClick={handleClose}
+        className={`fixed inset-0 bg-black/30 z-40 backdrop-blur-sm transition-opacity duration-300 ${show ? 'opacity-100' : 'opacity-0'}`}
+      />
+
+      {/* Sheet — slides up/down */}
+      <div
+        className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] lg:max-w-lg bg-white rounded-t-3xl z-50 shadow-2xl transition-transform duration-300 ease-out ${show ? 'translate-y-0' : 'translate-y-full'}`}
         style={{ maxHeight: '92vh', overflowY: 'auto' }}
       >
         <div className="flex justify-center pt-3 pb-1">
@@ -136,7 +154,7 @@ export default function AddTransactionSheet({
         <div className="px-5 pb-10">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-lg font-bold text-gray-800">新增交易</h2>
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+            <button onClick={handleClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
               <CloseIcon size={16} className="text-gray-500" />
             </button>
           </div>

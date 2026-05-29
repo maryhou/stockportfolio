@@ -545,8 +545,8 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
           transaction={editTx.tx}
           avgCost={avgCost}
           settings={settings}
-          onSave={(tx) => { onSaveTx(editTx.type, tx); setEditTx(null); }}
-          onDelete={() => { onDeleteTx(editTx.type, editTx.tx.id); setEditTx(null); }}
+          onSave={(tx) => { onSaveTx(editTx.type, tx); }}
+          onDelete={() => { onDeleteTx(editTx.type, editTx.tx.id); }}
           onClose={() => setEditTx(null)}
         />
       )}

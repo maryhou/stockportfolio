@@ -17,6 +17,19 @@ interface EditTransactionModalProps {
 export default function EditTransactionModal({
   stock, txType, transaction, avgCost, settings, onSave, onDelete, onClose,
 }: EditTransactionModalProps) {
+  // ── Slide animation ────────────────────────────────────────────────────────
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setShow(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  function handleClose() {
+    setShow(false);
+    setTimeout(onClose, 280);
+  }
+
   const [date, setDate] = useState(transaction.date);
   const [price, setPrice] = useState(String(transaction.price));
   const [shares, setShares] = useState(String(transaction.shares));
@@ -50,18 +63,27 @@ export default function EditTransactionModal({
     } else {
       onSave({ id: transaction.id, date, price: priceN, shares: sharesN, fee, tax, netProceeds, profit } as SellTransaction);
     }
+    handleClose();
+  }
+
+  function handleDelete() {
+    setShow(false);
+    setTimeout(onDelete, 280);
   }
 
   const isBuy = txType === 'buy';
 
   return (
     <>
-      {/* Sheet backdrop */}
-      <div className="fixed inset-0 bg-black/30 z-[55] backdrop-blur-sm" onClick={onClose} />
-
-      {/* Bottom sheet */}
+      {/* Sheet backdrop — fades in/out */}
       <div
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] lg:max-w-lg bg-white rounded-t-3xl z-[60] shadow-2xl"
+        onClick={handleClose}
+        className={`fixed inset-0 bg-black/30 z-[55] backdrop-blur-sm transition-opacity duration-300 ${show ? 'opacity-100' : 'opacity-0'}`}
+      />
+
+      {/* Bottom sheet — slides up/down */}
+      <div
+        className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] lg:max-w-lg bg-white rounded-t-3xl z-[60] shadow-2xl transition-transform duration-300 ease-out ${show ? 'translate-y-0' : 'translate-y-full'}`}
         style={{ maxHeight: '92vh', overflowY: 'auto' }}
       >
         <div className="flex justify-center pt-3 pb-1">
@@ -72,7 +94,7 @@ export default function EditTransactionModal({
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-lg font-bold text-gray-800">編輯交易</h2>
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+            <button onClick={handleClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
               <CloseIcon size={16} className="text-gray-500" />
             </button>
           </div>
@@ -198,7 +220,7 @@ export default function EditTransactionModal({
                   取消
                 </button>
                 <button
-                  onClick={onDelete}
+                  onClick={handleDelete}
                   className="flex-1 py-3 rounded-2xl text-sm font-semibold text-white bg-red-500 active:bg-red-600"
                 >
                   確定刪除
