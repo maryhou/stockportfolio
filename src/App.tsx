@@ -1,9 +1,11 @@
 import { useState, useCallback, useRef } from 'react';
 import { useStockPoller } from './hooks/useStockPoller';
+import { usePullToRefresh } from './hooks/usePullToRefresh';
 import type { Stock, ViewName, BuyTransaction, SellTransaction, AppNotification, AppSettings } from './types';
 import { DEFAULT_SETTINGS } from './types';
 import { INITIAL_STOCKS } from './data/initialData';
 import { INITIAL_NOTIFICATIONS } from './data/initialNotifications';
+import { fetchStockPrices } from './utils/fetchPrices';
 import BottomNav from './components/BottomNav';
 import SideNav from './components/SideNav';
 import HomeView from './components/HomeView';
@@ -14,6 +16,7 @@ import NotificationsView from './components/NotificationsView';
 import AddTransactionSheet from './components/AddTransactionSheet';
 import SettingsSheet from './components/SettingsSheet';
 import ToastContainer, { type ToastData } from './components/Toast';
+import PullToRefreshIndicator from './components/PullToRefreshIndicator';
 
 const STORAGE_KEY = 'stock-tracker-data';
 const NOTIF_KEY = 'stock-tracker-notifications';
@@ -72,6 +75,9 @@ export default function App() {
   const [selectedStockId, setSelectedStockId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const toastId = useRef(0);
+
+  // Ref for the main scrollable container (used by pull-to-refresh)
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Tracks which stock cards are currently in the viewport (reported by HomeView)
   const [visibleStockIds, setVisibleStockIds] = useState<Set<string>>(new Set());
@@ -198,6 +204,24 @@ export default function App() {
   // Auto-polling: refresh prices for visible cards every 15 s
   useStockPoller(stocks, visibleStockIds, handleUpdatePrice);
 
+  // Pull-to-refresh: fetch all stock prices at once and batch-update
+  async function handleRefreshAll() {
+    if (stocks.length === 0) return;
+    const symbols = stocks.map((s) => s.id);
+    const prices = await fetchStockPrices(symbols); // throws on network/API error
+    setStocks((prev) => {
+      const next = prev.map((s) => {
+        const p = prices[s.id];
+        return p !== undefined && p !== s.currentPrice ? { ...s, currentPrice: p } : s;
+      });
+      saveStocks(next);
+      return next;
+    });
+  }
+
+  const ptrEnabled = view === 'home' || view === 'holdings' || view === 'profile';
+  const ptrState = usePullToRefresh(scrollRef, handleRefreshAll, ptrEnabled);
+
   function handleUpdateTarget(stockId: string, price: number) {
     update(stocks.map((s) => s.id === stockId ? { ...s, targetPrice: price } : s));
   }
@@ -236,7 +260,8 @@ export default function App() {
 
       <div className="flex-1 lg:ml-64 flex flex-col min-h-screen min-w-0 overflow-x-hidden">
         <div className="mx-auto w-full max-w-[430px] md:max-w-full min-h-screen relative">
-          <div className="overflow-y-auto h-screen">
+          <div ref={scrollRef} className="overflow-y-auto h-screen">
+            <PullToRefreshIndicator state={ptrState} />
             {view === 'home' && (
               <HomeView
                 stocks={stocks}
