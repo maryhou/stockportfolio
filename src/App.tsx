@@ -76,6 +76,11 @@ export default function App() {
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const toastId = useRef(0);
 
+  // Shared refresh state — used by both button taps and pull-to-refresh
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const isRefreshingRef = useRef(false);
+
   // Ref for the main scrollable container (used by pull-to-refresh)
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -204,19 +209,27 @@ export default function App() {
   // Auto-polling: refresh prices for visible cards every 15 s
   useStockPoller(stocks, visibleStockIds, handleUpdatePrice);
 
-  // Pull-to-refresh: fetch all stock prices at once and batch-update
+  // Shared refresh — called by pull-to-refresh gesture AND tap buttons
   async function handleRefreshAll() {
-    if (stocks.length === 0) return;
-    const symbols = stocks.map((s) => s.id);
-    const prices = await fetchStockPrices(symbols); // throws on network/API error
-    setStocks((prev) => {
-      const next = prev.map((s) => {
-        const p = prices[s.id];
-        return p !== undefined && p !== s.currentPrice ? { ...s, currentPrice: p } : s;
+    if (isRefreshingRef.current || stocks.length === 0) return;
+    isRefreshingRef.current = true;
+    setIsRefreshing(true);
+    try {
+      const symbols = stocks.map((s) => s.id);
+      const prices = await fetchStockPrices(symbols); // throws on network/API error
+      setStocks((prev) => {
+        const next = prev.map((s) => {
+          const p = prices[s.id];
+          return p !== undefined && p !== s.currentPrice ? { ...s, currentPrice: p } : s;
+        });
+        saveStocks(next);
+        return next;
       });
-      saveStocks(next);
-      return next;
-    });
+      setLastUpdated(new Date());
+    } finally {
+      isRefreshingRef.current = false;
+      setIsRefreshing(false);
+    }
   }
 
   const ptrEnabled = view === 'home' || view === 'holdings' || view === 'profile';
@@ -273,6 +286,8 @@ export default function App() {
                 onBellClick={() => handleNavigate('notifications')}
                 onVisibleStocksChange={handleVisibleStocksChange}
                 hasUnread={hasUnread}
+                onRefresh={handleRefreshAll}
+                isRefreshing={isRefreshing}
               />
             )}
             {view === 'notifications' && (
@@ -292,6 +307,9 @@ export default function App() {
                 onUpdateTarget={handleUpdateTarget}
                 onSaveTx={handleSaveTx}
                 onDeleteTx={handleDeleteTx}
+                onRefresh={handleRefreshAll}
+                isRefreshing={isRefreshing}
+                lastUpdated={lastUpdated}
               />
             )}
             {view === 'holdings' && (

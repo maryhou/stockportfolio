@@ -60,3 +60,11 @@ export function formatNTD(amount: number): string {
 export function formatNumber(n: number): string {
   return new Intl.NumberFormat('zh-TW').format(n);
 }
+
+/** Format a stock price with exactly 2 decimal places (e.g. 2,310.50). */
+export function formatPrice(n: number): string {
+  return new Intl.NumberFormat('zh-TW', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+}

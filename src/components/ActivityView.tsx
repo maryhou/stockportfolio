@@ -8,9 +8,10 @@ import {
   calcTotalNetProceeds,
   formatNTD,
   formatNumber,
+  formatPrice,
 } from '../utils/calculations';
 import DonutChart from './DonutChart';
-import { TargetIcon, TrendUpIcon, TrendDownIcon } from './icons/Icons';
+import { TargetIcon, TrendUpIcon, TrendDownIcon, RefreshIcon } from './icons/Icons';
 import EditTransactionModal from './EditTransactionModal';
 
 interface ActivityViewProps {
@@ -22,9 +23,12 @@ interface ActivityViewProps {
   onUpdateTarget: (stockId: string, price: number) => void;
   onSaveTx: (stockId: string, type: 'buy' | 'sell', tx: BuyTransaction | SellTransaction) => void;
   onDeleteTx: (stockId: string, type: 'buy' | 'sell', txId: string) => void;
+  onRefresh: () => Promise<void>;
+  isRefreshing: boolean;
+  lastUpdated: Date | null;
 }
 
-export default function ActivityView({ stocks, selectedStockId, settings, onSelectStock, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx }: ActivityViewProps) {
+export default function ActivityView({ stocks, selectedStockId, settings, onSelectStock, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx, onRefresh, isRefreshing, lastUpdated }: ActivityViewProps) {
   const stock = selectedStockId ? stocks.find((s) => s.id === selectedStockId) : null;
 
   if (stock) {
@@ -36,6 +40,9 @@ export default function ActivityView({ stocks, selectedStockId, settings, onSele
         onUpdateTarget={onUpdateTarget}
         onSaveTx={(type, tx) => onSaveTx(stock.id, type, tx)}
         onDeleteTx={(type, txId) => onDeleteTx(stock.id, type, txId)}
+        onRefresh={onRefresh}
+        isRefreshing={isRefreshing}
+        lastUpdated={lastUpdated}
       />
     );
   }
@@ -235,7 +242,7 @@ function StockSummaryRow({ stock, color, onClick }: { stock: Stock; color: strin
           </div>
           <div>
             <p className="text-[10px] text-gray-400">目前股價</p>
-            <p className="text-xs font-semibold text-gray-600">{formatNumber(stock.currentPrice)}</p>
+            <p className="text-xs font-semibold text-gray-600">{formatPrice(stock.currentPrice)}</p>
           </div>
         </div>
       </div>
@@ -276,13 +283,20 @@ function TradeTileRow({ stockName, stockSymbol, type, date, shares, price, amoun
 
 // ─── Single Stock Detail ──────────────────────────────────────────────────────
 
-function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx }: {
+function fmtTime(d: Date) {
+  return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+}
+
+function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx, onRefresh, isRefreshing, lastUpdated }: {
   stock: Stock;
   settings: AppSettings;
   onUpdatePrice: (id: string, price: number) => void;
   onUpdateTarget: (id: string, price: number) => void;
   onSaveTx: (type: 'buy' | 'sell', tx: BuyTransaction | SellTransaction) => void;
   onDeleteTx: (type: 'buy' | 'sell', txId: string) => void;
+  onRefresh: () => Promise<void>;
+  isRefreshing: boolean;
+  lastUpdated: Date | null;
 }) {
   const [editingPrice, setEditingPrice] = useState(false);
   const [editingTarget, setEditingTarget] = useState(false);
@@ -367,9 +381,22 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
 
       {/* Target & current price */}
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
-          <TargetIcon size={15} className="text-violet-500" /> 價格設定
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+            <TargetIcon size={15} className="text-violet-500" /> 價格設定
+          </h3>
+          <button
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 active:text-gray-600 disabled:opacity-40 transition-colors"
+            aria-label="更新股價"
+          >
+            {lastUpdated && (
+              <span className="text-[10px]">最後更新 {fmtTime(lastUpdated)}</span>
+            )}
+            <RefreshIcon size={13} className={isRefreshing ? 'animate-spin' : ''} />
+          </button>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <div>
             <p className="text-xs text-gray-400 mb-1">目前股價</p>
@@ -384,7 +411,7 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
             ) : (
               <button onClick={() => { setPriceInput(String(stock.currentPrice)); setEditingPrice(true); }}
                 className="flex items-center gap-1 text-base font-bold text-gray-800 hover:text-violet-600 transition-colors">
-                {formatNumber(stock.currentPrice)}
+                {formatPrice(stock.currentPrice)}
                 <span className="text-[10px] text-gray-400 font-normal">點擊更新</span>
               </button>
             )}

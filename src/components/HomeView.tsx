@@ -8,8 +8,9 @@ import {
   calcTotalInvested,
   formatNTD,
   formatNumber,
+  formatPrice,
 } from '../utils/calculations';
-import { BellIcon, SearchIcon, TrendUpIcon, TrendDownIcon } from './icons/Icons';
+import { BellIcon, SearchIcon, TrendUpIcon, TrendDownIcon, RefreshIcon } from './icons/Icons';
 
 interface HomeViewProps {
   stocks: Stock[];
@@ -21,9 +22,11 @@ interface HomeViewProps {
   onBellClick: () => void;
   onVisibleStocksChange: (ids: Set<string>) => void;
   hasUnread: boolean;
+  onRefresh: () => Promise<void>;
+  isRefreshing: boolean;
 }
 
-export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onVisibleStocksChange, hasUnread, onAddClick }: HomeViewProps) {
+export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onVisibleStocksChange, hasUnread, onAddClick, onRefresh, isRefreshing }: HomeViewProps) {
   const totalProfit = stocks.reduce((s, st) => s + calcTotalRealizedProfit(st.sells), 0);
   const totalProceeds = stocks.reduce((s, st) => s + calcTotalNetProceeds(st.sells), 0);
   const totalCurrentValue = stocks.reduce((acc, stock) => {
@@ -113,7 +116,17 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
       >
         <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full bg-white/10" />
         <div className="absolute -right-4 -bottom-10 w-32 h-32 rounded-full bg-white/10" />
-        <p className="text-sm text-white/70 mb-1">投資組合價值</p>
+        <div className="flex items-center gap-2 mb-1">
+          <p className="text-sm text-white/70">投資組合價值</p>
+          <button
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className="opacity-60 hover:opacity-100 active:opacity-100 disabled:opacity-30 transition-opacity"
+            aria-label="更新股價"
+          >
+            <RefreshIcon size={13} className={`text-white ${isRefreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
         <div className="flex items-end justify-between">
           <div>
             <p className="text-3xl font-bold tracking-tight">
@@ -254,7 +267,7 @@ function StockCard({ stock, onClick, carousel = false }: { stock: Stock; onClick
         </div>
         <div>
           <p className="text-[10px] text-gray-400">現價</p>
-          <p className="text-xs font-semibold text-gray-700">{formatNumber(stock.currentPrice)}</p>
+          <p className="text-xs font-semibold text-gray-700">{formatPrice(stock.currentPrice)}</p>
         </div>
         <div>
           <p className="text-[10px] text-gray-400">股數</p>
