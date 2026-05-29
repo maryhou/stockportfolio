@@ -12,7 +12,7 @@ export function calcAvgCost(buys: BuyTransaction[]): number {
   const totalShares = buys.reduce((s, b) => s + b.shares, 0);
   if (totalShares === 0) return 0;
   const totalCost = buys.reduce((s, b) => s + b.price * b.shares + b.fee, 0);
-  return Math.floor(totalCost / totalShares);
+  return totalCost / totalShares;
 }
 
 export function calcRemainingShares(buys: BuyTransaction[], sells: SellTransaction[]): number {

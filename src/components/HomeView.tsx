@@ -221,7 +221,8 @@ function StockCard({ stock, onClick, carousel = false }: { stock: Stock; onClick
   const realized   = calcTotalRealizedProfit(stock.sells);
   const unrealized = remaining > 0 ? (stock.currentPrice - avgCost) * remaining : 0;
   const totalPL    = realized + unrealized;
-  const isUp       = totalPL >= 0;
+  const isUp       = totalPL > 0;
+  const isZero     = totalPL === 0;
   const invested   = calcTotalInvested(stock.buys);
   const plPct      = invested > 0 ? (totalPL / invested) * 100 : 0;
   const holdingVal = remaining * stock.currentPrice;
@@ -249,11 +250,11 @@ function StockCard({ stock, onClick, carousel = false }: { stock: Stock; onClick
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-gray-800 text-sm leading-snug">{stock.name}</p>
-          <p className={`text-xl font-bold leading-tight mt-1 ${isUp ? 'text-red-500' : 'text-emerald-600'}`}>
+          <p className={`text-xl font-bold leading-tight mt-1 ${isZero ? 'text-gray-800' : isUp ? 'text-red-500' : 'text-emerald-600'}`}>
             {isUp ? '+' : ''}{formatNTD(totalPL)}
           </p>
-          <p className={`text-[11px] font-medium mt-0.5 ${isUp ? 'text-red-400' : 'text-emerald-500'}`}>
-            {isUp ? '+' : ''}{plPct.toFixed(2)}%
+          <p className={`text-[11px] font-medium mt-0.5 ${isZero ? 'text-gray-600' : isUp ? 'text-red-400' : 'text-emerald-500'}`}>
+            {isZero ? '0%' : `${isUp ? '+' : ''}${plPct.toFixed(2)}%`}
           </p>
         </div>
         <MiniChart prices={chartPrices} isUp={isUp} />
