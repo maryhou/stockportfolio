@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Stock } from '../types';
 import {
   calcAvgCost,
@@ -14,22 +15,58 @@ interface HoldingsViewProps {
   onStockClick: (id: string) => void;
 }
 
+type HoldingFilter = 'all' | 'holding' | 'closed';
+
+const TABS: { key: HoldingFilter; label: string }[] = [
+  { key: 'all',     label: '全部' },
+  { key: 'holding', label: '持倉中' },
+  { key: 'closed',  label: '已清倉' },
+];
+
 export default function HoldingsView({ stocks, onStockClick }: HoldingsViewProps) {
+  const [filter, setFilter] = useState<HoldingFilter>('all');
+
+  const filtered = stocks.filter((s) => {
+    const remaining = calcRemainingShares(s.buys, s.sells);
+    if (filter === 'holding') return remaining > 0;
+    if (filter === 'closed')  return remaining === 0;
+    return true;
+  });
+
   return (
     <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-800">持倉列表</h2>
-        <span className="text-xs text-gray-400">{stocks.length} 檔股票</span>
+        <span className="text-xs text-gray-400">{filtered.length} 檔股票</span>
       </div>
 
-      {stocks.length === 0 ? (
+      {/* Filter tabs */}
+      <div className="flex gap-2 p-1 bg-gray-100 rounded-2xl">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setFilter(t.key)}
+            className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${
+              filter === t.key
+                ? 'bg-white text-gray-800 shadow-sm'
+                : 'text-gray-400'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
           <p className="text-4xl mb-3">📭</p>
-          <p className="text-sm">尚無持股，點擊 + 新增交易</p>
+          <p className="text-sm">
+            {stocks.length === 0 ? '尚無持股，點擊 + 新增交易' : '此分類目前沒有資料'}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {stocks.map((stock) => (
+          {filtered.map((stock) => (
             <HoldingCard key={stock.id} stock={stock} onClick={() => onStockClick(stock.id)} />
           ))}
         </div>
@@ -94,7 +131,7 @@ function HoldingCard({ stock, onClick }: { stock: Stock; onClick: () => void }) 
           <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full mt-0.5 ${
             isClosed ? 'bg-gray-100 text-gray-400' : 'bg-violet-100 text-violet-600'
           }`}>
-            {isClosed ? '已清倉' : '股'}
+            {isClosed ? '已清倉' : '持倉中'}
           </span>
         </div>
 
