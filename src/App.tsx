@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useStockPoller } from './hooks/useStockPoller';
 import { usePullToRefresh } from './hooks/usePullToRefresh';
 import type { Stock, ViewName, BuyTransaction, SellTransaction, AppNotification, AppSettings } from './types';
@@ -6,6 +6,7 @@ import { DEFAULT_SETTINGS } from './types';
 import { INITIAL_STOCKS } from './data/initialData';
 import { INITIAL_NOTIFICATIONS } from './data/initialNotifications';
 import { fetchStockPrices } from './utils/fetchPrices';
+import { fetchStockHistory } from './utils/fetchHistory';
 import BottomNav from './components/BottomNav';
 import SideNav from './components/SideNav';
 import HomeView from './components/HomeView';
@@ -83,6 +84,23 @@ export default function App() {
 
   // Ref for the main scrollable container (used by pull-to-refresh)
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Market price history for sparklines: { symbol → close prices oldest→newest }
+  const [priceHistory, setPriceHistory] = useState<Record<string, number[]>>({});
+  const historyFetchedRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const missing = stocks.filter((s) => !historyFetchedRef.current.has(s.symbol));
+    if (missing.length === 0) return;
+    missing.forEach((s) => {
+      historyFetchedRef.current.add(s.symbol);
+      fetchStockHistory(s.symbol).then((prices) => {
+        if (prices.length > 1) {
+          setPriceHistory((prev) => ({ ...prev, [s.symbol]: prices }));
+        }
+      });
+    });
+  }, [stocks]);
 
   // Tracks which stock cards are currently in the viewport (reported by HomeView)
   const [visibleStockIds, setVisibleStockIds] = useState<Set<string>>(new Set());
@@ -288,6 +306,7 @@ export default function App() {
                 hasUnread={hasUnread}
                 onRefresh={handleRefreshAll}
                 isRefreshing={isRefreshing}
+                priceHistory={priceHistory}
               />
             )}
             {view === 'notifications' && (

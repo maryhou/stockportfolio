@@ -24,9 +24,10 @@ interface HomeViewProps {
   hasUnread: boolean;
   onRefresh: () => Promise<void>;
   isRefreshing: boolean;
+  priceHistory: Record<string, number[]>;
 }
 
-export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onVisibleStocksChange, hasUnread, onAddClick, onRefresh, isRefreshing }: HomeViewProps) {
+export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onVisibleStocksChange, hasUnread, onAddClick, onRefresh, isRefreshing, priceHistory }: HomeViewProps) {
   const totalProfit = stocks.reduce((s, st) => s + calcTotalRealizedProfit(st.sells), 0);
   const totalProceeds = stocks.reduce((s, st) => s + calcTotalNetProceeds(st.sells), 0);
   const totalCurrentValue = stocks.reduce((acc, stock) => {
@@ -165,7 +166,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
             }
           >
             {stocks.map((stock) => (
-              <StockCard key={stock.id} stock={stock} onClick={() => onStockClick(stock.id)} carousel={stocks.length > 2} />
+              <StockCard key={stock.id} stock={stock} onClick={() => onStockClick(stock.id)} carousel={stocks.length > 2} marketHistory={priceHistory[stock.symbol]} />
             ))}
           </div>
         </div>
@@ -215,7 +216,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
   );
 }
 
-function StockCard({ stock, onClick, carousel = false }: { stock: Stock; onClick: () => void; carousel?: boolean }) {
+function StockCard({ stock, onClick, carousel = false, marketHistory }: { stock: Stock; onClick: () => void; carousel?: boolean; marketHistory?: number[] }) {
   const avgCost    = calcAvgCost(stock.buys);
   const remaining  = calcRemainingShares(stock.buys, stock.sells);
   const realized   = calcTotalRealizedProfit(stock.sells);
@@ -227,11 +228,27 @@ function StockCard({ stock, onClick, carousel = false }: { stock: Stock; onClick
   const plPct      = invested > 0 ? (totalPL / invested) * 100 : 0;
   const holdingVal = remaining * stock.currentPrice;
 
-  // Sparkline: transaction prices sorted by date
-  const chartPrices = [
-    ...stock.buys.map( b => ({ d: b.date, p: b.price })),
-    ...stock.sells.map(s => ({ d: s.date, p: s.price })),
-  ].sort((a, b) => a.d.localeCompare(b.d)).map(t => t.p);
+  // Sparkline: prefer real market history (+ live price as final point),
+  // fall back to transaction prices while history is loading.
+  const chartPrices = (() => {
+    if (marketHistory && marketHistory.length > 1) {
+      // Append current price so chart always ends at today's value
+      const last = marketHistory[marketHistory.length - 1];
+      return last === stock.currentPrice
+        ? marketHistory
+        : [...marketHistory, stock.currentPrice];
+    }
+    // Fallback: transaction prices sorted by date
+    return [
+      ...stock.buys.map( b => ({ d: b.date, p: b.price })),
+      ...stock.sells.map(s => ({ d: s.date, p: s.price })),
+    ].sort((a, b) => a.d.localeCompare(b.d)).map(t => t.p);
+  })();
+
+  // Chart colour based on market trend (first vs last price), not P&L
+  const chartIsUp = chartPrices.length > 1
+    ? chartPrices[chartPrices.length - 1] >= chartPrices[0]
+    : isUp || isZero;
 
   return (
     <button
@@ -257,7 +274,7 @@ function StockCard({ stock, onClick, carousel = false }: { stock: Stock; onClick
             {isZero ? '0%' : `${isUp ? '+' : ''}${plPct.toFixed(2)}%`}
           </p>
         </div>
-        <MiniChart prices={chartPrices} isUp={isUp} />
+        <MiniChart prices={chartPrices} isUp={chartIsUp} />
       </div>
 
       {/* Info grid */}
