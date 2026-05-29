@@ -341,13 +341,14 @@ function RecentItem({ symbol, name, type, date, shares, amount, profit }: {
       <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
         type === 'buy' ? 'bg-violet-100' : 'bg-emerald-50'
       }`}>
-        <span className={`text-xs font-bold ${type === 'buy' ? 'text-violet-600' : 'text-emerald-600'}`}>
-          {symbol.slice(0, 2)}
+        <span className={`text-sm font-bold ${type === 'buy' ? 'text-violet-600' : 'text-emerald-600'}`}>
+          {type === 'buy' ? '買' : '賣'}
         </span>
       </div>
       <div className="flex-1 min-w-0">
+        <p className="text-[10px] text-gray-400 leading-none mb-0.5">{symbol}</p>
         <p className="text-sm font-semibold text-gray-800">{name}</p>
-        <p className="text-xs text-gray-400">{date} · {type === 'buy' ? '買入' : '賣出'} {shares} 股</p>
+        <p className="text-xs text-gray-400">{date} · {shares} 股</p>
       </div>
       <div className="text-right">
         <p className={`text-sm font-semibold ${type === 'sell' ? 'text-emerald-600' : 'text-gray-700'}`}>
