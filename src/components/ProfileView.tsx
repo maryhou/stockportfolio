@@ -188,7 +188,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
                 <p className="text-2xl font-bold tracking-tight leading-none text-amber-500">
                   +{bestStock.pct.toFixed(1)}%
                 </p>
-                <p className="text-[11px] text-gray-500 mt-1 font-medium truncate">{bestStock.name}</p>
+                <p className="text-[11px] text-gray-500 mt-1 font-medium truncate">{bestStock.symbol} · {bestStock.name}</p>
               </div>
             ) : (
               <div>
