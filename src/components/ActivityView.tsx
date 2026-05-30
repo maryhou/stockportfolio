@@ -18,6 +18,7 @@ interface ActivityViewProps {
   stocks: Stock[];
   selectedStockId: string | null;
   settings: AppSettings;
+  priceHistory?: Record<string, number[]>;
   onSelectStock: (id: string) => void;
   onUpdatePrice: (stockId: string, price: number) => void;
   onUpdateTarget: (stockId: string, price: number) => void;
@@ -28,7 +29,7 @@ interface ActivityViewProps {
   lastUpdated: Date | null;
 }
 
-export default function ActivityView({ stocks, selectedStockId, settings, onSelectStock, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx, onRefresh, isRefreshing, lastUpdated }: ActivityViewProps) {
+export default function ActivityView({ stocks, selectedStockId, settings, priceHistory, onSelectStock, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx, onRefresh, isRefreshing, lastUpdated }: ActivityViewProps) {
   const stock = selectedStockId ? stocks.find((s) => s.id === selectedStockId) : null;
 
   if (stock) {
@@ -36,6 +37,7 @@ export default function ActivityView({ stocks, selectedStockId, settings, onSele
       <StockDetail
         stock={stock}
         settings={settings}
+        marketHistory={priceHistory?.[stock.symbol]}
         onUpdatePrice={onUpdatePrice}
         onUpdateTarget={onUpdateTarget}
         onSaveTx={(type, tx) => onSaveTx(stock.id, type, tx)}
@@ -297,9 +299,10 @@ function fmtTime(d: Date) {
   return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
 }
 
-function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx, onRefresh, isRefreshing, lastUpdated }: {
+function StockDetail({ stock, settings, marketHistory, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx, onRefresh, isRefreshing, lastUpdated }: {
   stock: Stock;
   settings: AppSettings;
+  marketHistory?: number[];
   onUpdatePrice: (id: string, price: number) => void;
   onUpdateTarget: (id: string, price: number) => void;
   onSaveTx: (type: 'buy' | 'sell', tx: BuyTransaction | SellTransaction) => void;
@@ -332,12 +335,15 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
   const unrealizedPL = remaining > 0 ? (stock.currentPrice - avgCost) * remaining : 0;
   const currentHoldingValue = remaining * stock.currentPrice;
   const totalPL = realizedProfit + unrealizedPL;
+  const plPct = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
+  const isProfit = totalPL > 0;
 
-  const donutSegments = [
-    { label: '買入成本', value: totalInvested - realizedProfit, color: '#6C63FF' },
-    { label: '已實現損益', value: Math.abs(realizedProfit), color: realizedProfit >= 0 ? '#ef4444' : '#10b981' },
-    ...(remaining > 0 ? [{ label: '未實現損益', value: Math.abs(unrealizedPL), color: unrealizedPL >= 0 ? '#f87171' : '#34d399' }] : []),
-  ].filter((s) => s.value > 0);
+  // Today's change — based on last historical close vs current price
+  const sparklinePrices = marketHistory?.length ? [...marketHistory, stock.currentPrice] : undefined;
+  const prevClose = marketHistory?.length ? marketHistory[marketHistory.length - 1] : null;
+  const todayChangePerShare = prevClose !== null ? stock.currentPrice - prevClose : null;
+  const todayChangeTotal = todayChangePerShare !== null && remaining > 0 ? todayChangePerShare * remaining : null;
+  const todayChangePct = todayChangePerShare !== null && prevClose ? (todayChangePerShare / prevClose) * 100 : null;
 
   return (
     <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full">
@@ -353,34 +359,89 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
       </div>
 
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[360px_1fr] lg:gap-6 lg:items-start">
-      {/* Left: Balance card */}
-      <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-xs text-gray-400">投入成本</p>
-          <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
-            totalPL >= 0 ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-600'
-          }`}>
-            {totalPL >= 0 ? <TrendUpIcon size={11} /> : <TrendDownIcon size={11} />}
-            {totalPL > 0 ? '+' : ''}{formatNTD(totalPL)}
+      {/* Hero card — gradient */}
+      <div className="rounded-3xl overflow-hidden shadow-lg" style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' }}>
+        {/* Top: P&L + sparkline */}
+        <div className="p-5">
+          <div className="flex items-start justify-between gap-3">
+            {/* Left: P&L */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 mb-2">
+                <p className="text-sm text-white/70 font-medium">總損益</p>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="rgba(255,255,255,0.45)">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.45)" stroke="none" />
+                </svg>
+              </div>
+              <p className="text-4xl font-bold text-white tracking-tight leading-none">
+                {totalPL > 0 ? '+' : ''}{formatNTD(totalPL)}
+              </p>
+              <p className={`text-xl font-semibold mt-2 ${totalPL === 0 ? 'text-white/60' : isProfit ? 'text-orange-300' : 'text-emerald-300'}`}>
+                {plPct > 0 ? '+' : ''}{plPct.toFixed(2)}%
+              </p>
+              <div className="mt-3 inline-flex items-center gap-1.5 bg-white rounded-full px-3 py-1.5">
+                {totalPL === 0 ? (
+                  <span className="text-sm font-semibold text-gray-500">持平</span>
+                ) : isProfit ? (
+                  <>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
+                    </svg>
+                    <span className="text-sm font-semibold text-red-500">獲利中</span>
+                  </>
+                ) : (
+                  <>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" /><polyline points="17 18 23 18 23 12" />
+                    </svg>
+                    <span className="text-sm font-semibold text-emerald-600">虧損中</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Right: today badge + sparkline */}
+            <div className="flex flex-col items-end gap-2 flex-shrink-0">
+              {todayChangeTotal !== null && todayChangePct !== null && (
+                <div className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-white/20 text-white whitespace-nowrap">
+                  今日 {todayChangeTotal >= 0 ? '+' : ''}{formatNTD(todayChangeTotal)} ({todayChangePct >= 0 ? '+' : ''}{todayChangePct.toFixed(2)}%)
+                </div>
+              )}
+              {sparklinePrices && sparklinePrices.length > 1 && (
+                <HeroSparkline prices={sparklinePrices} />
+              )}
+            </div>
           </div>
         </div>
-        <p className="text-2xl font-bold text-gray-800">{formatNTD(totalInvested)}</p>
-        <div className="flex items-center justify-center mt-4">
-          <DonutChart
-            segments={donutSegments}
-            centerLabel={formatNTD(netProceeds + currentHoldingValue)}
-            centerSub="總收付"
-            size={180}
-            strokeWidth={26}
-          />
-        </div>
-        <div className="flex justify-center gap-5 mt-4">
-          {donutSegments.map((seg) => (
-            <div key={seg.label} className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: seg.color }} />
-              <span className="text-xs text-gray-500">{seg.label}</span>
+
+        {/* Bottom: 2×2 stats grid */}
+        <div className="border-t border-white/20">
+          <div className="grid grid-cols-2">
+            <div className="p-4 border-r border-white/20">
+              <p className="text-[11px] text-white/60 mb-1">已實現損益</p>
+              <p className={`text-lg font-bold ${realizedProfit === 0 ? 'text-white/80' : realizedProfit > 0 ? 'text-orange-300' : 'text-emerald-300'}`}>
+                {realizedProfit > 0 ? '+' : ''}{formatNTD(realizedProfit)}
+              </p>
             </div>
-          ))}
+            <div className="p-4">
+              <p className="text-[11px] text-white/60 mb-1">未實現損益</p>
+              <p className={`text-lg font-bold ${unrealizedPL === 0 ? 'text-white/80' : unrealizedPL > 0 ? 'text-orange-300' : 'text-emerald-300'}`}>
+                {unrealizedPL > 0 ? '+' : ''}{formatNTD(unrealizedPL)}
+              </p>
+            </div>
+            <div className="col-span-2 border-t border-white/20" />
+            <div className="p-4 border-r border-white/20">
+              <div className="flex items-center gap-1 mb-1">
+                <p className="text-[11px] text-white/60">總投入成本(含手續費)</p>
+              </div>
+              <p className="text-base font-bold text-white">{formatNTD(totalInvested)}</p>
+            </div>
+            <div className="p-4">
+              <p className="text-[11px] text-white/60 mb-1">目前市值</p>
+              <p className="text-base font-bold text-white">{formatNTD(currentHoldingValue)}</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -606,6 +667,48 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
         />
       )}
     </div>
+  );
+}
+
+// ─── Hero sparkline ──────────────────────────────────────────────────────────
+
+function HeroSparkline({ prices }: { prices: number[] }) {
+  const w = 136;
+  const h = 68;
+  const pad = 5;
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min || 1;
+
+  const pts = prices.map((p, i) => ({
+    x: pad + (i / (prices.length - 1)) * (w - pad * 2),
+    y: pad + (1 - (p - min) / range) * (h - pad * 2),
+  }));
+
+  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+  const fillPath = `${linePath} L${pts[pts.length - 1].x},${h} L${pts[0].x},${h} Z`;
+
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+      <defs>
+        <linearGradient id="heroGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="white" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="white" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={fillPath} fill="url(#heroGrad)" />
+      <path d={linePath} fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      {pts.map((pt, i) => (
+        <circle
+          key={i}
+          cx={pt.x}
+          cy={pt.y}
+          r={i === pts.length - 1 ? 4 : 2}
+          fill="white"
+          opacity={i === pts.length - 1 ? 1 : 0.55}
+        />
+      ))}
+    </svg>
   );
 }
 

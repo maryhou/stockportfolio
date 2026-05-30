@@ -339,6 +339,7 @@ export default function App() {
                 stocks={stocks}
                 selectedStockId={selectedStockId}
                 settings={settings}
+                priceHistory={priceHistory}
                 onSelectStock={(id) => setSelectedStockId(id)}
                 onUpdatePrice={handleUpdatePrice}
                 onUpdateTarget={handleUpdateTarget}
