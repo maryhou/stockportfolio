@@ -303,7 +303,16 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
   const [priceInput, setPriceInput] = useState('');
   const [targetInput, setTargetInput] = useState('');
   const [editTx, setEditTx] = useState<{ type: 'buy' | 'sell'; tx: BuyTransaction | SellTransaction } | null>(null);
-  const [txFilter, setTxFilter] = useState<'all' | 'buy' | 'sell'>('all');
+  const [txFilter,     setTxFilter]     = useState<'all' | 'buy' | 'sell'>('all');
+  const [brokerFilter, setBrokerFilter] = useState<string>('all'); // 'all' or brokerId
+
+  // Broker chips — only show when this stock has txs from >1 broker
+  const usedBrokerIds = new Set([
+    ...stock.buys.map((b) => b.brokerId).filter(Boolean),
+    ...stock.sells.map((s) => s.brokerId).filter(Boolean),
+  ]) as Set<string>;
+  const brokerOptions = settings.brokers.filter((b) => usedBrokerIds.has(b.id));
+  const showBrokerFilter = brokerOptions.length > 1;
 
   const avgCost = calcAvgCost(stock.buys);
   const remaining = calcRemainingShares(stock.buys, stock.sells);
@@ -448,7 +457,7 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
 
       {/* Transaction history */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-semibold text-gray-700">
             交易記錄 <span className="text-gray-400 font-normal text-xs">點擊可編輯</span>
           </h3>
@@ -466,6 +475,35 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
             ))}
           </div>
         </div>
+
+        {/* Broker filter chips — only shown when stock has txs from multiple brokers */}
+        {showBrokerFilter && (
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 mb-3">
+            <button
+              onClick={() => setBrokerFilter('all')}
+              className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                brokerFilter === 'all'
+                  ? 'bg-violet-100 text-violet-700'
+                  : 'bg-gray-100 text-gray-500'
+              }`}
+            >
+              全部券商
+            </button>
+            {brokerOptions.map((b) => (
+              <button
+                key={b.id}
+                onClick={() => setBrokerFilter(b.id)}
+                className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                  brokerFilter === b.id
+                    ? 'bg-violet-100 text-violet-700'
+                    : 'bg-gray-100 text-gray-500'
+                }`}
+              >
+                {b.name}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex flex-col gap-2">
           {[
             ...stock.sells.map((tx) => ({ type: 'sell' as const, date: tx.date, id: tx.id, tx })),
@@ -473,6 +511,7 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
           ]
             .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id))
             .filter((item) => txFilter === 'all' || item.type === txFilter)
+            .filter((item) => brokerFilter === 'all' || item.tx.brokerId === brokerFilter)
             .map(({ type, tx }) =>
               type === 'sell' ? (
                 <button
