@@ -315,6 +315,7 @@ function StockDetail({ stock, settings, marketHistory, onUpdatePrice, onUpdateTa
   const [targetInput, setTargetInput] = useState('');
   const [editTx, setEditTx] = useState<{ type: 'buy' | 'sell'; tx: BuyTransaction | SellTransaction } | null>(null);
   const [txFilter,     setTxFilter]     = useState<'all' | 'buy' | 'sell'>('all');
+  const [showPLInfo,   setShowPLInfo]   = useState(false);
   const [brokerFilter, setBrokerFilter] = useState<string>('all'); // 'all' or brokerId
 
   // Broker chips — only show when this stock has txs from >1 broker
@@ -367,14 +368,17 @@ function StockDetail({ stock, settings, marketHistory, onUpdatePrice, onUpdateTa
           <div className="flex items-start justify-between gap-3">
             {/* Left: P&L */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 mb-2">
+              <button
+                onClick={() => setShowPLInfo(true)}
+                className="flex items-center gap-1.5 mb-2 active:opacity-70 transition-opacity"
+              >
                 <p className="text-sm text-white/70 font-medium">總損益</p>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="rgba(255,255,255,0.45)">
                   <circle cx="12" cy="12" r="10" />
                   <line x1="12" y1="16" x2="12" y2="12" />
                   <circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.45)" stroke="none" />
                 </svg>
-              </div>
+              </button>
               <p className="text-4xl font-bold text-white tracking-tight leading-none">
                 {totalPL > 0 ? '+' : ''}{formatNTD(totalPL)}
               </p>
@@ -663,6 +667,80 @@ function StockDetail({ stock, settings, marketHistory, onUpdatePrice, onUpdateTa
           onDelete={() => { onDeleteTx(editTx.type, editTx.tx.id); }}
           onClose={() => setEditTx(null)}
         />
+      )}
+
+      {/* P&L info modal */}
+      {showPLInfo && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-4 pb-6 sm:pb-0"
+          onClick={() => setShowPLInfo(false)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="white">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <circle cx="12" cy="8" r="1" fill="white" stroke="none" />
+                  </svg>
+                </div>
+                <h3 className="text-base font-bold text-gray-800">總損益 說明</h3>
+              </div>
+              <button
+                onClick={() => setShowPLInfo(false)}
+                className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Formula */}
+            <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-xs text-violet-500 font-medium mb-1.5">計算公式</p>
+              <p className="text-sm font-semibold text-violet-800 leading-relaxed">
+                總損益 ＝ 賣出淨額合計<br />
+                　　　＋ 目前持倉市值<br />
+                　　　－ 總投入成本
+              </p>
+            </div>
+
+            {/* Breakdown */}
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">賣出淨額合計</p>
+                  <p className="text-xs text-gray-400 mt-0.5">所有已賣出股票扣除手續費與交易稅後的實際入帳金額</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-indigo-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">目前持倉市值</p>
+                  <p className="text-xs text-gray-400 mt-0.5">剩餘股數 × 目前股價，反映尚未賣出的部位當前價值</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-gray-300 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">總投入成本</p>
+                  <p className="text-xs text-gray-400 mt-0.5">所有買入金額含手續費，為計算損益的基準</p>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
+              此公式確保「已實現損益 ＋ 未實現損益 ＝ 總損益」恆成立
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );
