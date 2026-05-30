@@ -40,10 +40,6 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
 
   // ── Performance ────────────────────────────────────────────────────────────
   const cumulativeReturn = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
-  const allSells = stocks.flatMap((s) => s.sells);
-  const winRate  = allSells.length > 0
-    ? (allSells.filter((s) => s.profit > 0).length / allSells.length) * 100
-    : null;
 
   // Best stock by realized profit %
   const bestStock = stocks
@@ -141,45 +137,67 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
 
       {/* 績效分析 */}
       <Section title="績效分析">
-        <div className="grid grid-cols-3 gap-3">
-          {/* 累積報酬率 */}
-          <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
-            <p className={`text-base font-bold ${
-              cumulativeReturn === 0 ? 'text-gray-700' : cumulativeReturn > 0 ? 'text-red-500' : 'text-emerald-600'
-            }`}>
-              {cumulativeReturn === 0 ? '0%' : `${cumulativeReturn > 0 ? '+' : ''}${cumulativeReturn.toFixed(2)}%`}
-            </p>
-            <p className="text-[10px] text-gray-400 mt-1">累積報酬率</p>
-          </div>
+        <div className="grid grid-cols-2 gap-3">
 
-          {/* 勝率 */}
-          <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
-            <p className="text-base font-bold text-gray-800">
-              {winRate === null ? '—' : `${winRate.toFixed(0)}%`}
-            </p>
-            <p className="text-[10px] text-gray-400 mt-1">勝率</p>
-            {winRate !== null && (
-              <p className="text-[9px] text-gray-300 mt-0.5">{allSells.filter(s => s.profit > 0).length}/{allSells.length} 筆</p>
-            )}
+          {/* 累積報酬率 */}
+          <div className={`rounded-2xl p-4 shadow-sm border flex flex-col gap-3 ${
+            cumulativeReturn > 0 ? 'bg-red-50 border-red-100' :
+            cumulativeReturn < 0 ? 'bg-emerald-50 border-emerald-100' :
+            'bg-white border-gray-100'
+          }`}>
+            <div className="flex items-center gap-2">
+              {/* Trending chart icon */}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                stroke={cumulativeReturn > 0 ? '#ef4444' : cumulativeReturn < 0 ? '#10b981' : '#9ca3af'}
+                strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+                <polyline points="16 7 22 7 22 13"/>
+              </svg>
+              <p className="text-xs font-semibold text-gray-500">累積報酬率</p>
+            </div>
+            <div>
+              <p className={`text-2xl font-bold tracking-tight leading-none ${
+                cumulativeReturn === 0 ? 'text-gray-700' :
+                cumulativeReturn > 0 ? 'text-red-500' : 'text-emerald-600'
+              }`}>
+                {cumulativeReturn === 0 ? '0%' : `${cumulativeReturn > 0 ? '+' : ''}${cumulativeReturn.toFixed(2)}%`}
+              </p>
+              <p className="text-[11px] text-gray-400 mt-1">基於總投入計算</p>
+            </div>
           </div>
 
           {/* 最佳交易 */}
-          <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
+          <div className={`rounded-2xl p-4 shadow-sm border flex flex-col gap-3 ${
+            bestStock && bestStock.pct > 0 ? 'bg-amber-50 border-amber-100' : 'bg-white border-gray-100'
+          }`}>
+            <div className="flex items-center gap-2">
+              {/* Trophy icon */}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                stroke={bestStock && bestStock.pct > 0 ? '#f59e0b' : '#9ca3af'}
+                strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9H4a2 2 0 0 1-2-2V5a1 1 0 0 1 1-1h3"/>
+                <path d="M18 9h2a2 2 0 0 0 2-2V5a1 1 0 0 0-1-1h-3"/>
+                <path d="M6 4h12v6a6 6 0 0 1-12 0V4z"/>
+                <path d="M12 16v4"/>
+                <path d="M9 20h6"/>
+              </svg>
+              <p className="text-xs font-semibold text-gray-500">最佳交易</p>
+            </div>
             {bestStock ? (
-              <>
-                <p className="text-base font-bold text-red-500">
+              <div>
+                <p className="text-2xl font-bold tracking-tight leading-none text-amber-500">
                   +{bestStock.pct.toFixed(1)}%
                 </p>
-                <p className="text-[10px] text-gray-400 mt-1">最佳交易</p>
-                <p className="text-[9px] text-gray-500 mt-0.5 font-medium truncate">{bestStock.name}</p>
-              </>
+                <p className="text-[11px] text-gray-500 mt-1 font-medium truncate">{bestStock.name}</p>
+              </div>
             ) : (
-              <>
-                <p className="text-base font-bold text-gray-300">—</p>
-                <p className="text-[10px] text-gray-400 mt-1">最佳交易</p>
-              </>
+              <div>
+                <p className="text-2xl font-bold text-gray-300 leading-none">—</p>
+                <p className="text-[11px] text-gray-400 mt-1">尚無賣出記錄</p>
+              </div>
             )}
           </div>
+
         </div>
       </Section>
 
