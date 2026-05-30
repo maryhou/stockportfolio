@@ -213,10 +213,8 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
 function StockSummaryRow({ stock, color, onClick }: { stock: Stock; color: string; onClick: () => void }) {
   const avgCost = calcAvgCost(stock.buys);
   const remaining = calcRemainingShares(stock.buys, stock.sells);
-  const realized = calcTotalRealizedProfit(stock.sells);
-  const unrealized = remaining > 0 ? (stock.currentPrice - avgCost) * remaining : 0;
-  const totalPL = realized + unrealized;
   const invested = calcTotalInvested(stock.buys);
+  const totalPL = calcTotalNetProceeds(stock.sells) + remaining * stock.currentPrice - invested;
   const plPct = invested > 0 ? (totalPL / invested) * 100 : 0;
   const isClosed = remaining === 0;
 
@@ -332,9 +330,12 @@ function StockDetail({ stock, settings, marketHistory, onUpdatePrice, onUpdateTa
   const totalInvested = calcTotalInvested(stock.buys);
   const realizedProfit = calcTotalRealizedProfit(stock.sells);
   const netProceeds = calcTotalNetProceeds(stock.sells);
-  const unrealizedPL = remaining > 0 ? (stock.currentPrice - avgCost) * remaining : 0;
   const currentHoldingValue = remaining * stock.currentPrice;
-  const totalPL = realizedProfit + unrealizedPL;
+  // Ground-truth P&L: total receipts + current holding value − total paid
+  // This is always accurate regardless of when buys/sells were recorded.
+  const totalPL = netProceeds + currentHoldingValue - totalInvested;
+  // Derive unrealized from the ground truth so the three values always sum correctly.
+  const unrealizedPL = remaining > 0 ? totalPL - realizedProfit : 0;
   const plPct = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
   const isProfit = totalPL > 0;
 

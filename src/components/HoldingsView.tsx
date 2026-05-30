@@ -3,7 +3,7 @@ import type { Stock } from '../types';
 import {
   calcAvgCost,
   calcRemainingShares,
-  calcTotalRealizedProfit,
+  calcTotalNetProceeds,
   formatNTD,
   formatNumber,
   formatPrice,
@@ -103,10 +103,9 @@ export default function HoldingsView({ stocks, onStockClick }: HoldingsViewProps
 function HoldingCard({ stock, onClick }: { stock: Stock; onClick: () => void }) {
   const avgCost = calcAvgCost(stock.buys);
   const remaining = calcRemainingShares(stock.buys, stock.sells);
-  const realizedProfit = calcTotalRealizedProfit(stock.sells);
-  const unrealizedPL = remaining > 0 ? (stock.currentPrice - avgCost) * remaining : 0;
-  const totalPL = realizedProfit + unrealizedPL;
+  const currentHoldingValue = remaining * stock.currentPrice;
   const totalInvested = stock.buys.reduce((s, b) => s + b.price * b.shares + b.fee, 0);
+  const totalPL = calcTotalNetProceeds(stock.sells) + currentHoldingValue - totalInvested;
   const plPct = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
   const isProfit = totalPL >= 0;
   const isClosed = remaining === 0;

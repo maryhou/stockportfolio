@@ -237,14 +237,12 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
 function StockCard({ stock, onClick, carousel = false, marketHistory }: { stock: Stock; onClick: () => void; carousel?: boolean; marketHistory?: number[] }) {
   const avgCost    = calcAvgCost(stock.buys);
   const remaining  = calcRemainingShares(stock.buys, stock.sells);
-  const realized   = calcTotalRealizedProfit(stock.sells);
-  const unrealized = remaining > 0 ? (stock.currentPrice - avgCost) * remaining : 0;
-  const totalPL    = realized + unrealized;
+  const invested   = calcTotalInvested(stock.buys);
+  const holdingVal = remaining * stock.currentPrice;
+  const totalPL    = calcTotalNetProceeds(stock.sells) + holdingVal - invested;
   const isUp       = totalPL > 0;
   const isZero     = totalPL === 0;
-  const invested   = calcTotalInvested(stock.buys);
   const plPct      = invested > 0 ? (totalPL / invested) * 100 : 0;
-  const holdingVal = remaining * stock.currentPrice;
 
   // Sparkline: prefer real market history (+ live price as final point),
   // fall back to transaction prices while history is loading.
