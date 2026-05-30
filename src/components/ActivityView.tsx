@@ -67,7 +67,8 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
             <line x1="12" y1="11" x2="12" y2="17" />
             <line x1="9" y1="14" x2="15" y2="14" />
           </svg>
-          <p className="text-sm">尚無資料，點擊 + 新增交易</p>
+          <p className="text-sm font-semibold text-gray-700 mb-1">新增第一筆交易</p>
+          <p className="text-xs text-gray-400">開始你的投資旅程</p>
         </div>
       </div>
     );
