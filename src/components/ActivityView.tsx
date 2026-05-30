@@ -364,10 +364,10 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
           </svg>
         </button>
         <div>
-          <span className="inline-flex items-center bg-violet-100 text-violet-600 text-[11px] font-bold rounded-full px-2.5 py-0.5 mb-1">
+          <h2 className="text-xl font-bold text-gray-800">{stock.name}</h2>
+          <span className="inline-flex items-center bg-violet-100 text-violet-600 text-[11px] font-bold rounded-full px-2.5 py-0.5 mt-1">
             {stock.symbol}
           </span>
-          <h2 className="text-xl font-bold text-gray-800">{stock.name}</h2>
         </div>
       </div>
 
