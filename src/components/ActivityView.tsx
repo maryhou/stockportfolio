@@ -418,7 +418,7 @@ function StockDetail({ stock, settings, marketHistory, onUpdatePrice, onUpdateTa
         {/* Bottom: 2×2 stats grid */}
         <div className="border-t border-white/20">
           <div className="grid grid-cols-2">
-            <div className="p-4 border-r border-white/20">
+            <div className="p-4">
               <p className="text-[11px] text-white/60 mb-1">已實現損益</p>
               <p className={`text-lg font-bold ${realizedProfit === 0 ? 'text-white/80' : realizedProfit > 0 ? 'text-orange-300' : 'text-emerald-300'}`}>
                 {realizedProfit > 0 ? '+' : ''}{formatNTD(realizedProfit)}
@@ -430,11 +430,8 @@ function StockDetail({ stock, settings, marketHistory, onUpdatePrice, onUpdateTa
                 {unrealizedPL > 0 ? '+' : ''}{formatNTD(unrealizedPL)}
               </p>
             </div>
-            <div className="col-span-2 border-t border-white/20" />
-            <div className="p-4 border-r border-white/20">
-              <div className="flex items-center gap-1 mb-1">
-                <p className="text-[11px] text-white/60">總投入成本(含手續費)</p>
-              </div>
+            <div className="p-4">
+              <p className="text-[11px] text-white/60 mb-1">總投入成本(含手續費)</p>
               <p className="text-base font-bold text-white">{formatNTD(totalInvested)}</p>
             </div>
             <div className="p-4">
