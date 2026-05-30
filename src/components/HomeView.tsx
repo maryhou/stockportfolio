@@ -139,7 +139,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
             </div>
           </div>
           <div className="text-right text-white/70 text-xs space-y-1">
-            <p>可取得金額</p>
+            <p>總回收金額</p>
             <p className="text-white font-semibold text-sm">{formatNTD(totalProceeds)}</p>
           </div>
         </div>

@@ -181,7 +181,7 @@ export default function EditTransactionModal({
                     <PreviewRow label="賣出金額" value={formatNTD(priceN * sharesN)} />
                     <PreviewRow label="手續費" value={`-${formatNTD(fee)}`} />
                     <PreviewRow label="交易稅" value={`-${formatNTD(tax)}`} />
-                    <PreviewRow label="可取得金額" value={formatNTD(netProceeds)} highlight />
+                    <PreviewRow label="總回收金額" value={formatNTD(netProceeds)} highlight />
                     <PreviewRow label="損益" value={`${profit >= 0 ? '+' : ''}${formatNTD(profit)}`} profit={profit} />
                   </>
                 )}

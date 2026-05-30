@@ -245,7 +245,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
           })}
           <div className="text-xs text-violet-600 mt-1 flex flex-col gap-0.5">
             <p>· 交易稅：賣出金額 × {taxPct}%</p>
-            <p>· 損益 = 可取得金額 − 平均成本 × 股數</p>
+            <p>· 損益 = 總回收金額 − 平均成本 × 股數</p>
           </div>
         </div>
       </div>

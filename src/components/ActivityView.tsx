@@ -158,7 +158,7 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <StatCard label="已實現損益" value={`${totalRealized > 0 ? '+' : ''}${formatNTD(totalRealized)}`} sub="含手續費及稅" accent={totalRealized === 0 ? 'gray' : totalRealized > 0 ? 'red' : 'green'} />
             <StatCard label="未實現損益" value={`${totalUnrealized > 0 ? '+' : ''}${formatNTD(totalUnrealized)}`} sub="按目前股價" accent={totalUnrealized === 0 ? 'gray' : totalUnrealized > 0 ? 'red' : 'green'} />
-            <StatCard label="可取得金額" value={formatNTD(totalNetProceeds)} sub="賣出淨額合計" accent={totalNetProceeds === 0 ? 'gray' : 'violet'} />
+            <StatCard label="總回收金額" value={formatNTD(totalNetProceeds)} sub="實際入帳(賣出淨額合計)" accent={totalNetProceeds === 0 ? 'gray' : 'violet'} />
             <StatCard label="持倉市值" value={formatNTD(totalHoldingValue)} sub="按目前股價" accent="gray" />
             <StatCard label="總投入" value={formatNTD(totalInvested)} sub="含所有手續費" accent="gray" />
             <StatCard label="持股檔數" value={`${stocks.length} 檔`} sub={`${stocks.filter(s => calcRemainingShares(s.buys, s.sells) > 0).length} 檔持倉中`} accent="violet" />
@@ -454,7 +454,7 @@ function StockDetail({ stock, settings, marketHistory, onUpdatePrice, onUpdateTa
         <StatCard label="平均成本" value={formatPrice(avgCost)} sub="NT$/股" accent="violet" />
         <StatCard label="剩餘股數" value={`${remaining} 股`} sub={remaining > 0 ? '持有中' : '已清倉'} accent={remaining > 0 ? 'violet' : 'gray'} />
         <StatCard label="已實現損益" value={`${realizedProfit > 0 ? '+' : ''}${formatNTD(realizedProfit)}`} sub="含手續費及稅" accent={realizedProfit === 0 ? 'gray' : realizedProfit > 0 ? 'red' : 'green'} />
-        <StatCard label="可取得金額" value={formatNTD(netProceeds)} sub="賣出淨額" accent={netProceeds === 0 ? 'gray' : 'green'} />
+        <StatCard label="總回收金額" value={formatNTD(netProceeds)} sub="實際入帳(賣出淨額)" accent={netProceeds === 0 ? 'gray' : 'green'} />
         {remaining > 0 && (
           <StatCard label="未實現損益" value={`${unrealizedPL > 0 ? '+' : ''}${formatNTD(unrealizedPL)}`} sub={`持有 ${remaining} 股`} accent={unrealizedPL === 0 ? 'gray' : unrealizedPL > 0 ? 'red' : 'green'} />
         )}
@@ -704,7 +704,7 @@ function StockDetail({ stock, settings, marketHistory, onUpdatePrice, onUpdateTa
             <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
               <p className="text-xs text-violet-500 font-medium mb-1.5">計算公式</p>
               <p className="text-sm font-semibold text-violet-800 leading-relaxed">
-                總損益 ＝ 賣出淨額合計<br />
+                總損益 ＝ 實際入帳(賣出淨額合計)<br />
                 　　　＋ 目前持倉市值<br />
                 　　　－ 總投入成本
               </p>
@@ -715,7 +715,7 @@ function StockDetail({ stock, settings, marketHistory, onUpdatePrice, onUpdateTa
               <div className="flex gap-3">
                 <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
                 <div>
-                  <p className="text-xs font-semibold text-gray-700">賣出淨額合計</p>
+                  <p className="text-xs font-semibold text-gray-700">實際入帳(賣出淨額合計)</p>
                   <p className="text-xs text-gray-400 mt-0.5">所有已賣出股票扣除手續費與交易稅後的實際入帳金額</p>
                 </div>
               </div>
