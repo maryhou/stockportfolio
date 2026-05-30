@@ -158,17 +158,31 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
               查看全部
             </button>
           </div>
-          <div
-            ref={containerRef}
-            className={stocks.length > 2
-              ? 'flex gap-3 overflow-x-auto scrollbar-hide pb-1 lg:grid lg:grid-cols-2 lg:overflow-visible'
-              : 'grid grid-cols-2 gap-3'
-            }
-          >
-            {stocks.map((stock) => (
-              <StockCard key={stock.id} stock={stock} onClick={() => onStockClick(stock.id)} carousel={stocks.length > 2} marketHistory={priceHistory[stock.symbol]} />
-            ))}
-          </div>
+          {stocks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-center bg-white rounded-2xl shadow-sm border border-gray-50">
+              <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center mb-3">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="7" width="20" height="14" rx="2" />
+                  <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+                  <line x1="12" y1="12" x2="12" y2="16" />
+                  <line x1="10" y1="14" x2="14" y2="14" />
+                </svg>
+              </div>
+              <p className="text-sm font-semibold text-gray-700">尚未建立投資組合</p>
+            </div>
+          ) : (
+            <div
+              ref={containerRef}
+              className={stocks.length > 2
+                ? 'flex gap-3 overflow-x-auto scrollbar-hide pb-1 lg:grid lg:grid-cols-2 lg:overflow-visible'
+                : 'grid grid-cols-2 gap-3'
+              }
+            >
+              {stocks.map((stock) => (
+                <StockCard key={stock.id} stock={stock} onClick={() => onStockClick(stock.id)} carousel={stocks.length > 2} marketHistory={priceHistory[stock.symbol]} />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Recent Transactions */}
