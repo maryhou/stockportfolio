@@ -60,7 +60,11 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
   if (stocks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-gray-400 px-5">
-        <p className="text-4xl mb-3">📊</p>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-3">
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+        </svg>
         <p className="text-sm">尚無資料，點擊 + 新增交易</p>
       </div>
     );
