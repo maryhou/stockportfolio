@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useStockPoller } from './hooks/useStockPoller';
 import { usePullToRefresh } from './hooks/usePullToRefresh';
 import type { Stock, ViewName, BuyTransaction, SellTransaction, AppNotification, AppSettings } from './types';
-import { DEFAULT_SETTINGS } from './types';
+import { DEFAULT_SETTINGS, DEFAULT_BROKER } from './types';
 import { INITIAL_STOCKS } from './data/initialData';
 import { INITIAL_NOTIFICATIONS } from './data/initialNotifications';
 import { fetchStockPrices } from './utils/fetchPrices';
@@ -61,7 +61,25 @@ function saveStocks(stocks: Stock[]) {
 function loadSettings(): AppSettings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    if (raw) {
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      // ── Migration: old format had top-level brokerName / feeRate / feeDiscount ──
+      if (!parsed.brokers && parsed.brokerName) {
+        const migrated: AppSettings = {
+          userName: (parsed.userName as string) ?? DEFAULT_SETTINGS.userName,
+          taxRate:  (parsed.taxRate  as number) ?? DEFAULT_SETTINGS.taxRate,
+          brokers: [{
+            id: 'default',
+            name:        (parsed.brokerName  as string) ?? DEFAULT_BROKER.name,
+            feeRate:     (parsed.feeRate     as number) ?? DEFAULT_BROKER.feeRate,
+            feeDiscount: (parsed.feeDiscount as number) ?? DEFAULT_BROKER.feeDiscount,
+          }],
+        };
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(migrated));
+        return migrated;
+      }
+      return { ...DEFAULT_SETTINGS, ...parsed } as AppSettings;
+    }
   } catch {}
   return DEFAULT_SETTINGS;
 }

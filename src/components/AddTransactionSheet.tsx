@@ -59,6 +59,10 @@ export default function AddTransactionSheet({
   const [nameLocked, setNameLocked] = useState(false); // true once auto-filled
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
+  // Broker selection — defaults to first broker
+  const [brokerId, setBrokerId] = useState(settings.brokers[0]?.id ?? '');
+  const selectedBroker = settings.brokers.find((b) => b.id === brokerId) ?? settings.brokers[0];
+
   // Transaction fields
   const [date, setDate] = useState(todayStr());
   const [price, setPrice] = useState('');
@@ -67,7 +71,9 @@ export default function AddTransactionSheet({
 
   const priceN = parseFloat(price) || 0;
   const sharesN = parseInt(shares) || 0;
-  const autoFee = priceN > 0 && sharesN > 0 ? calcFee(priceN, sharesN, settings.feeRate, settings.feeDiscount) : 0;
+  const autoFee = priceN > 0 && sharesN > 0 && selectedBroker
+    ? calcFee(priceN, sharesN, selectedBroker.feeRate, selectedBroker.feeDiscount)
+    : 0;
   const fee = feeOverride !== '' ? parseInt(feeOverride) : autoFee;
   const tax = txType === 'sell' && priceN > 0 && sharesN > 0 ? calcTax(priceN, sharesN, settings.taxRate) : 0;
 
@@ -112,11 +118,11 @@ export default function AddTransactionSheet({
     if (isNewStock) {
       if (!newName || !newSymbol) return;
       if (txType === 'buy') {
-        const tx: BuyTransaction = { id: `b${Date.now()}`, date, price: priceN, shares: sharesN, fee };
+        const tx: BuyTransaction = { id: `b${Date.now()}`, date, price: priceN, shares: sharesN, fee, brokerId };
         onAddStock({ id: newSymbol, name: newName, symbol: newSymbol, targetPrice: 0, currentPrice: priceN, buys: [tx], sells: [] });
       } else {
         const np = priceN * sharesN - fee - tax;
-        const tx: SellTransaction = { id: `s${Date.now()}`, date, price: priceN, shares: sharesN, fee, tax, netProceeds: np, profit: np };
+        const tx: SellTransaction = { id: `s${Date.now()}`, date, price: priceN, shares: sharesN, fee, tax, netProceeds: np, profit: np, brokerId };
         onAddStock({ id: newSymbol, name: newName, symbol: newSymbol, targetPrice: 0, currentPrice: priceN, buys: [], sells: [tx] });
       }
       handleClose();
@@ -124,11 +130,11 @@ export default function AddTransactionSheet({
     }
 
     if (txType === 'buy') {
-      const tx: BuyTransaction = { id: `b${Date.now()}`, date, price: priceN, shares: sharesN, fee };
+      const tx: BuyTransaction = { id: `b${Date.now()}`, date, price: priceN, shares: sharesN, fee, brokerId };
       onAddBuy(stockId, tx);
     } else {
       const np = priceN * sharesN - fee - tax;
-      const tx: SellTransaction = { id: `s${Date.now()}`, date, price: priceN, shares: sharesN, fee, tax, netProceeds: np, profit: np - avgCost * sharesN };
+      const tx: SellTransaction = { id: `s${Date.now()}`, date, price: priceN, shares: sharesN, fee, tax, netProceeds: np, profit: np - avgCost * sharesN, brokerId };
       onAddSell(stockId, tx);
     }
     handleClose();
@@ -160,7 +166,7 @@ export default function AddTransactionSheet({
           </div>
 
           {/* Buy / Sell toggle */}
-          <div className="flex gap-2 mb-5 p-1 bg-gray-100 rounded-2xl">
+          <div className="flex gap-2 mb-4 p-1 bg-gray-100 rounded-2xl">
             {(['buy', 'sell'] as TxType[]).map((t) => (
               <button
                 key={t}
@@ -175,6 +181,18 @@ export default function AddTransactionSheet({
               </button>
             ))}
           </div>
+
+          {/* Broker selector (only shown when multiple brokers exist) */}
+          {settings.brokers.length > 1 && (
+            <div className="mb-4">
+              <label className="label">券商</label>
+              <select value={brokerId} onChange={(e) => { setBrokerId(e.target.value); setFeeOverride(''); }} className="input">
+                {settings.brokers.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Stock selection */}
           <div className="mb-4">

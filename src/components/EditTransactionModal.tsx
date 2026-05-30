@@ -30,6 +30,10 @@ export default function EditTransactionModal({
     setTimeout(onClose, 280);
   }
 
+  // Broker — default to transaction's brokerId, or first broker
+  const [brokerId, setBrokerId] = useState(transaction.brokerId ?? settings.brokers[0]?.id ?? '');
+  const selectedBroker = settings.brokers.find((b) => b.id === brokerId) ?? settings.brokers[0];
+
   const [date, setDate] = useState(transaction.date);
   const [price, setPrice] = useState(String(transaction.price));
   const [shares, setShares] = useState(String(transaction.shares));
@@ -41,7 +45,9 @@ export default function EditTransactionModal({
 
   const priceN = parseFloat(price) || 0;
   const sharesN = parseInt(shares) || 0;
-  const autoFee = priceN > 0 && sharesN > 0 ? calcFee(priceN, sharesN, settings.feeRate, settings.feeDiscount) : 0;
+  const autoFee = priceN > 0 && sharesN > 0 && selectedBroker
+    ? calcFee(priceN, sharesN, selectedBroker.feeRate, selectedBroker.feeDiscount)
+    : 0;
   const autoTax = priceN > 0 && sharesN > 0 ? calcTax(priceN, sharesN, settings.taxRate) : 0;
   const fee = feeOverride !== '' ? (parseInt(feeOverride) || 0) : autoFee;
   const tax = txType === 'sell'
@@ -59,9 +65,9 @@ export default function EditTransactionModal({
   function handleSave() {
     if (!priceN || !sharesN || !date) return;
     if (txType === 'buy') {
-      onSave({ id: transaction.id, date, price: priceN, shares: sharesN, fee } as BuyTransaction);
+      onSave({ id: transaction.id, date, price: priceN, shares: sharesN, fee, brokerId } as BuyTransaction);
     } else {
-      onSave({ id: transaction.id, date, price: priceN, shares: sharesN, fee, tax, netProceeds, profit } as SellTransaction);
+      onSave({ id: transaction.id, date, price: priceN, shares: sharesN, fee, tax, netProceeds, profit, brokerId } as SellTransaction);
     }
     handleClose();
   }
@@ -114,6 +120,18 @@ export default function EditTransactionModal({
               {isBuy ? '買入' : '賣出'}
             </span>
           </div>
+
+          {/* Broker (only when multiple brokers exist) */}
+          {settings.brokers.length > 1 && (
+            <div className="mb-4">
+              <label className="label">券商</label>
+              <select value={brokerId} onChange={(e) => { setBrokerId(e.target.value); setFeeOverride(''); }} className="input">
+                {settings.brokers.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Date */}
           <div className="mb-4">

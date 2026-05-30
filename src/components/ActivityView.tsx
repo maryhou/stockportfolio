@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Stock, BuyTransaction, SellTransaction, AppSettings } from '../types';
+import type { Stock, BuyTransaction, SellTransaction, AppSettings, Broker } from '../types';
 import {
   calcAvgCost,
   calcRemainingShares,
@@ -487,7 +487,10 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-gray-800">{(tx as SellTransaction).date}</p>
-                        <p className="text-xs text-gray-400">{formatNumber((tx as SellTransaction).price)} × {(tx as SellTransaction).shares} 股</p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-xs text-gray-400">{formatNumber((tx as SellTransaction).price)} × {(tx as SellTransaction).shares} 股</p>
+                          <BrokerTag brokerId={(tx as SellTransaction).brokerId} brokers={settings.brokers} />
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
@@ -516,7 +519,10 @@ function StockDetail({ stock, settings, onUpdatePrice, onUpdateTarget, onSaveTx,
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-gray-800">{(tx as BuyTransaction).date}</p>
-                        <p className="text-xs text-gray-400">{formatNumber((tx as BuyTransaction).price)} × {(tx as BuyTransaction).shares} 股</p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-xs text-gray-400">{formatNumber((tx as BuyTransaction).price)} × {(tx as BuyTransaction).shares} 股</p>
+                          <BrokerTag brokerId={(tx as BuyTransaction).brokerId} brokers={settings.brokers} />
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
@@ -575,5 +581,16 @@ function MiniStat({ label, value, highlight }: { label: string; value: string; h
       <p className="text-[10px] text-gray-400">{label}</p>
       <p className={`text-xs font-semibold ${highlight ? 'text-emerald-600' : 'text-gray-600'}`}>{value}</p>
     </div>
+  );
+}
+
+function BrokerTag({ brokerId, brokers }: { brokerId?: string; brokers: Broker[] }) {
+  if (!brokerId || brokers.length <= 1) return null;
+  const name = brokers.find((b) => b.id === brokerId)?.name;
+  if (!name) return null;
+  return (
+    <span className="text-[10px] font-medium text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded-full leading-none">
+      {name}
+    </span>
   );
 }

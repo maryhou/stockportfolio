@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { AppSettings } from '../types';
+import type { AppSettings, Broker } from '../types';
 import { CloseIcon } from './icons/Icons';
 
 interface SettingsSheetProps {
@@ -8,30 +8,69 @@ interface SettingsSheetProps {
   onClose: () => void;
 }
 
-export default function SettingsSheet({ settings, onSave, onClose }: SettingsSheetProps) {
-  const [userName, setUserName] = useState(settings.userName);
-  const [brokerName, setBrokerName] = useState(settings.brokerName);
-  // Display as percentages (e.g. 0.001425 → "0.1425")
-  const [feeRateInput, setFeeRateInput] = useState(String(+(settings.feeRate * 100).toPrecision(6)));
-  const [feeDiscountInput, setFeeDiscountInput] = useState(String(+(settings.feeDiscount * 100).toPrecision(6)));
-  const [taxRateInput, setTaxRateInput] = useState(String(+(settings.taxRate * 100).toPrecision(6)));
+type EditMode = { kind: 'none' } | { kind: 'edit'; broker: Broker } | { kind: 'new' };
 
-  const feeRateVal = parseFloat(feeRateInput) || 0;
-  const feeDiscountVal = parseFloat(feeDiscountInput) || 0;
-  const taxRateVal = parseFloat(taxRateInput) || 0;
-  const effectiveFee = ((feeRateVal * feeDiscountVal) / 100).toFixed(4);
-  const zhe = (feeDiscountVal / 10).toFixed(1);
+function emptyBrokerForm() {
+  return { name: '', feeRateInput: '0.1425', feeDiscountInput: '60' };
+}
+
+export default function SettingsSheet({ settings, onSave, onClose }: SettingsSheetProps) {
+  const [userName,     setUserName]     = useState(settings.userName);
+  const [taxRateInput, setTaxRateInput] = useState(String(+(settings.taxRate * 100).toPrecision(6)));
+  const [brokers,      setBrokers]      = useState<Broker[]>([...settings.brokers]);
+  const [editMode,     setEditMode]     = useState<EditMode>({ kind: 'none' });
+
+  // Inline broker form fields
+  const [formName,     setFormName]     = useState('');
+  const [formFeeRate,  setFormFeeRate]  = useState('0.1425');
+  const [formDiscount, setFormDiscount] = useState('60');
+
+  function openEdit(broker: Broker) {
+    setEditMode({ kind: 'edit', broker });
+    setFormName(broker.name);
+    setFormFeeRate(String(+(broker.feeRate * 100).toPrecision(6)));
+    setFormDiscount(String(+(broker.feeDiscount * 100).toPrecision(6)));
+  }
+
+  function openNew() {
+    const f = emptyBrokerForm();
+    setEditMode({ kind: 'new' });
+    setFormName(f.name);
+    setFormFeeRate(f.feeRateInput);
+    setFormDiscount(f.feeDiscountInput);
+  }
+
+  function cancelEdit() { setEditMode({ kind: 'none' }); }
+
+  function saveBroker() {
+    const rate = parseFloat(formFeeRate) / 100 || 0;
+    const disc = parseFloat(formDiscount) / 100 || 1;
+    const name = formName.trim();
+    if (!name) return;
+
+    if (editMode.kind === 'new') {
+      setBrokers((prev) => [...prev, { id: `b${Date.now()}`, name, feeRate: rate, feeDiscount: disc }]);
+    } else if (editMode.kind === 'edit') {
+      const id = editMode.broker.id;
+      setBrokers((prev) => prev.map((b) => b.id === id ? { ...b, name, feeRate: rate, feeDiscount: disc } : b));
+    }
+    setEditMode({ kind: 'none' });
+  }
+
+  function deleteBroker(id: string) {
+    setBrokers((prev) => prev.filter((b) => b.id !== id));
+  }
 
   function handleSave() {
     onSave({
       userName: userName.trim() || settings.userName,
-      brokerName: brokerName.trim() || settings.brokerName,
-      feeRate: feeRateVal / 100,
-      feeDiscount: feeDiscountVal / 100,
-      taxRate: taxRateVal / 100,
+      brokers: brokers.length > 0 ? brokers : settings.brokers,
+      taxRate: parseFloat(taxRateInput) / 100 || settings.taxRate,
     });
     onClose();
   }
+
+  const formEffective = ((parseFloat(formFeeRate) || 0) * (parseFloat(formDiscount) || 0) / 100).toFixed(4);
 
   return (
     <>
@@ -41,13 +80,11 @@ export default function SettingsSheet({ settings, onSave, onClose }: SettingsShe
         className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] lg:max-w-lg bg-white rounded-t-3xl z-50 shadow-2xl"
         style={{ maxHeight: '92vh', overflowY: 'auto' }}
       >
-        {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-gray-200 rounded-full" />
         </div>
 
         <div className="px-5 pb-10">
-          {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-gray-800">偏好設定</h2>
             <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
@@ -55,95 +92,101 @@ export default function SettingsSheet({ settings, onSave, onClose }: SettingsShe
             </button>
           </div>
 
-          {/* Section: User */}
+          {/* 個人 */}
           <SectionLabel>個人</SectionLabel>
           <div className="mb-5">
             <label className="label">使用者名稱</label>
-            <input
-              className="input"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-              placeholder="Mary"
-            />
+            <input className="input" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="Mary" />
           </div>
 
-          {/* Section: Broker */}
-          <SectionLabel>券商與費用</SectionLabel>
+          {/* 券商管理 */}
+          <SectionLabel>券商費率</SectionLabel>
+          <div className="flex flex-col gap-2 mb-3">
+            {brokers.map((broker) => {
+              const isEditing = editMode.kind === 'edit' && editMode.broker.id === broker.id;
+              const effective = (broker.feeRate * broker.feeDiscount * 100).toFixed(4);
+              const zhe       = (broker.feeDiscount * 10).toFixed(1);
 
-          <div className="mb-4">
-            <label className="label">券商名稱</label>
-            <input
-              className="input"
-              value={brokerName}
-              onChange={(e) => setBrokerName(e.target.value)}
-              placeholder="元大券商"
-            />
-          </div>
+              return (
+                <div key={broker.id} className="bg-gray-50 rounded-2xl overflow-hidden">
+                  {/* View row */}
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">{broker.name}</p>
+                      <p className="text-xs text-gray-400">
+                        {(broker.feeRate * 100).toFixed(4)}% × {zhe}折 = 有效 {effective}%
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => isEditing ? cancelEdit() : openEdit(broker)}
+                        className="text-xs text-violet-600 font-semibold px-2.5 py-1 bg-violet-100 rounded-lg active:bg-violet-200"
+                      >
+                        {isEditing ? '取消' : '編輯'}
+                      </button>
+                      {brokers.length > 1 && (
+                        <button
+                          onClick={() => deleteBroker(broker.id)}
+                          className="text-xs text-red-500 font-semibold px-2.5 py-1 bg-red-50 rounded-lg active:bg-red-100"
+                        >
+                          刪除
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
-          {/* Fee rate */}
-          <div className="mb-4">
-            <label className="label">手續費率</label>
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <input
-                  type="number"
-                  className="input pr-8"
-                  value={feeRateInput}
-                  onChange={(e) => setFeeRateInput(e.target.value)}
-                  step="0.0001"
-                  min="0"
+                  {/* Inline edit form */}
+                  {isEditing && (
+                    <BrokerForm
+                      name={formName} onName={setFormName}
+                      feeRate={formFeeRate} onFeeRate={setFormFeeRate}
+                      discount={formDiscount} onDiscount={setFormDiscount}
+                      effective={formEffective}
+                      onSave={saveBroker} onCancel={cancelEdit}
+                    />
+                  )}
+                </div>
+              );
+            })}
+
+            {/* New broker inline form */}
+            {editMode.kind === 'new' && (
+              <div className="bg-violet-50 rounded-2xl overflow-hidden">
+                <p className="text-xs font-semibold text-violet-700 px-4 pt-3">新增券商</p>
+                <BrokerForm
+                  name={formName} onName={setFormName}
+                  feeRate={formFeeRate} onFeeRate={setFormFeeRate}
+                  discount={formDiscount} onDiscount={setFormDiscount}
+                  effective={formEffective}
+                  onSave={saveBroker} onCancel={cancelEdit}
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
               </div>
-            </div>
-            <p className="text-[11px] text-gray-400 mt-1 pl-1">台灣標準費率為 0.1425%</p>
+            )}
           </div>
 
-          {/* Fee discount */}
-          <div className="mb-4">
-            <label className="label">手續費折扣</label>
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <input
-                  type="number"
-                  className="input pr-8"
-                  value={feeDiscountInput}
-                  onChange={(e) => setFeeDiscountInput(e.target.value)}
-                  step="1"
-                  min="0"
-                  max="100"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
-              </div>
-              <span className="text-sm text-violet-600 font-semibold whitespace-nowrap">= {zhe} 折</span>
-            </div>
-            <p className="text-[11px] text-gray-400 mt-1 pl-1">例：60 表示 6 折優惠</p>
-          </div>
+          {editMode.kind !== 'new' && (
+            <button
+              onClick={openNew}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold text-violet-600 border border-violet-200 bg-violet-50 active:bg-violet-100 mb-5"
+            >
+              + 新增券商
+            </button>
+          )}
 
-          {/* Effective fee preview */}
-          <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-5 flex items-center justify-between">
-            <p className="text-xs text-violet-700 font-medium">有效手續費率</p>
-            <p className="text-sm font-bold text-violet-700">{effectiveFee}%</p>
-          </div>
-
-          {/* Tax rate */}
+          {/* 交易稅 */}
+          <SectionLabel>交易稅（賣出適用）</SectionLabel>
           <div className="mb-6">
-            <label className="label">交易稅率（賣出適用）</label>
             <div className="relative">
               <input
-                type="number"
-                className="input pr-8"
-                value={taxRateInput}
-                onChange={(e) => setTaxRateInput(e.target.value)}
-                step="0.01"
-                min="0"
+                type="number" className="input pr-8"
+                value={taxRateInput} onChange={(e) => setTaxRateInput(e.target.value)}
+                step="0.01" min="0"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
             </div>
-            <p className="text-[11px] text-gray-400 mt-1 pl-1">台灣標準交易稅為 0.3%（ETF 為 0.1%）</p>
+            <p className="text-[11px] text-gray-400 mt-1 pl-1">一般股票 0.3%，ETF 0.1%</p>
           </div>
 
-          {/* Save */}
           <button
             onClick={handleSave}
             className="w-full py-4 rounded-2xl font-semibold text-white bg-violet-600 active:bg-violet-700 transition-all"
@@ -153,6 +196,59 @@ export default function SettingsSheet({ settings, onSave, onClose }: SettingsShe
         </div>
       </div>
     </>
+  );
+}
+
+// ── Reusable broker inline form ─────────────────────────────────────────────
+function BrokerForm({ name, onName, feeRate, onFeeRate, discount, onDiscount, effective, onSave, onCancel }: {
+  name: string; onName: (v: string) => void;
+  feeRate: string; onFeeRate: (v: string) => void;
+  discount: string; onDiscount: (v: string) => void;
+  effective: string;
+  onSave: () => void; onCancel: () => void;
+}) {
+  const zhe = (parseFloat(discount) / 10 || 0).toFixed(1);
+  return (
+    <div className="px-4 pb-4 pt-2 flex flex-col gap-3">
+      <div>
+        <label className="label">券商名稱</label>
+        <input className="input" placeholder="元大券商" value={name} onChange={(e) => onName(e.target.value)} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="label">手續費率</label>
+          <div className="relative">
+            <input type="number" className="input pr-8" step="0.0001" min="0"
+              value={feeRate} onChange={(e) => onFeeRate(e.target.value)} />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+          </div>
+          <p className="text-[10px] text-gray-400 mt-1 pl-1">標準 0.1425%</p>
+        </div>
+        <div>
+          <label className="label">折扣</label>
+          <div className="relative">
+            <input type="number" className="input pr-8" step="1" min="0" max="100"
+              value={discount} onChange={(e) => onDiscount(e.target.value)} />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+          </div>
+          <p className="text-[10px] text-gray-400 mt-1 pl-1">= {zhe} 折</p>
+        </div>
+      </div>
+      <div className="bg-white rounded-xl px-3 py-2 flex items-center justify-between">
+        <p className="text-xs text-violet-700 font-medium">有效手續費率</p>
+        <p className="text-sm font-bold text-violet-700">{effective}%</p>
+      </div>
+      <div className="flex gap-2">
+        <button onClick={onCancel}
+          className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 bg-gray-100 active:bg-gray-200">
+          取消
+        </button>
+        <button onClick={onSave} disabled={!name.trim()}
+          className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-violet-600 active:bg-violet-700 disabled:bg-violet-200">
+          儲存
+        </button>
+      </div>
+    </div>
   );
 }
 

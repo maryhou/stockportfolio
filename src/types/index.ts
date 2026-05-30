@@ -1,9 +1,17 @@
+export interface Broker {
+  id: string;
+  name: string;
+  feeRate: number;      // decimal, e.g. 0.001425 (= 0.1425%)
+  feeDiscount: number;  // decimal, e.g. 0.6 (= 60折)
+}
+
 export interface BuyTransaction {
   id: string;
   date: string;
   price: number;
   shares: number;
   fee: number;
+  brokerId?: string;    // which broker executed this trade
 }
 
 export interface SellTransaction {
@@ -15,6 +23,7 @@ export interface SellTransaction {
   tax: number;
   profit: number;
   netProceeds: number;
+  brokerId?: string;
 }
 
 export interface Stock {
@@ -31,17 +40,20 @@ export type ViewName = 'home' | 'activity' | 'holdings' | 'profile' | 'notificat
 
 export interface AppSettings {
   userName: string;
-  brokerName: string;
-  feeRate: number;      // decimal, e.g. 0.001425 (= 0.1425%)
-  feeDiscount: number;  // decimal, e.g. 0.6 (= 60折)
-  taxRate: number;      // decimal, e.g. 0.003 (= 0.3%)
+  brokers: Broker[];    // replaces old brokerName / feeRate / feeDiscount
+  taxRate: number;      // universal across brokers, e.g. 0.003 (= 0.3%)
 }
+
+export const DEFAULT_BROKER: Broker = {
+  id: 'default',
+  name: '元大券商',
+  feeRate: 0.001425,
+  feeDiscount: 0.6,
+};
 
 export const DEFAULT_SETTINGS: AppSettings = {
   userName: 'Mary',
-  brokerName: '元大券商',
-  feeRate: 0.001425,
-  feeDiscount: 0.6,
+  brokers: [DEFAULT_BROKER],
   taxRate: 0.003,
 };
 

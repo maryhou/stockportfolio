@@ -57,10 +57,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
     .sort((a, b) => b.pct - a.pct)[0] ?? null;
 
   // ── Settings display ───────────────────────────────────────────────────────
-  const effectiveFee = ((settings.feeRate * settings.feeDiscount) * 100).toFixed(4);
-  const discountPct  = (settings.feeDiscount * 100).toFixed(0);
   const taxPct       = (settings.taxRate * 100).toFixed(2).replace(/\.?0+$/, '');
-  const feeRatePct   = (settings.feeRate * 100).toFixed(4).replace(/\.?0+$/, '');
   const avatarLetter = settings.userName.charAt(0).toUpperCase();
 
   // ── Export ─────────────────────────────────────────────────────────────────
@@ -215,14 +212,23 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
 
       {/* 費用計算說明 */}
       <div className="bg-violet-50 rounded-2xl p-4">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-semibold text-violet-700">費用計算說明</p>
-          <span className="text-[11px] text-violet-500 bg-violet-100 px-2 py-0.5 rounded-full">{settings.brokerName}</span>
-        </div>
-        <div className="flex flex-col gap-1 text-xs text-violet-600">
-          <p>· 手續費：成交金額 × {feeRatePct}% × {discountPct}折 = {effectiveFee}%</p>
-          <p>· 交易稅：賣出金額 × {taxPct}%</p>
-          <p>· 損益 = 可取得金額 − 平均成本 × 股數</p>
+        <p className="text-xs font-semibold text-violet-700 mb-3">費用計算說明</p>
+        <div className="flex flex-col gap-2">
+          {settings.brokers.map((broker) => {
+            const eff  = (broker.feeRate * broker.feeDiscount * 100).toFixed(4);
+            const rate = (broker.feeRate * 100).toFixed(4).replace(/\.?0+$/, '');
+            const zhe  = (broker.feeDiscount * 10).toFixed(1);
+            return (
+              <div key={broker.id} className="bg-violet-100/60 rounded-xl px-3 py-2">
+                <p className="text-xs font-semibold text-violet-700 mb-0.5">{broker.name}</p>
+                <p className="text-xs text-violet-600">手續費：{rate}% × {zhe}折 = 有效 {eff}%</p>
+              </div>
+            );
+          })}
+          <div className="text-xs text-violet-600 mt-1 flex flex-col gap-0.5">
+            <p>· 交易稅：賣出金額 × {taxPct}%</p>
+            <p>· 損益 = 可取得金額 − 平均成本 × 股數</p>
+          </div>
         </div>
       </div>
 
