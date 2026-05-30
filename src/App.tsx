@@ -339,6 +339,14 @@ export default function App() {
                 stocks={stocks}
                 settings={settings}
                 onSettingsClick={() => setShowSettings(true)}
+                onImport={(imported) => {
+                  update(imported);
+                  showToast('資料已匯入');
+                }}
+                onClearAll={() => {
+                  update([]);
+                  showToast('所有資料已清空');
+                }}
               />
             )}
           </div>
