@@ -84,7 +84,9 @@ export default function HoldingsView({ stocks, onStockClick }: HoldingsViewProps
             {stocks.length === 0 ? '尚無持股' : '此分類目前沒有資料'}
           </p>
           <p className="text-xs text-gray-400">
-            {stocks.length === 0 ? '點擊 + 新增交易開始追蹤' : '試試切換其他分類'}
+            {stocks.length === 0 ? (
+              <>點擊 ＋ 新增第一筆交易<br />開始建立你的投資組合</>
+            ) : '試試切換其他分類'}
           </p>
         </div>
       ) : (
