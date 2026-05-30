@@ -19,6 +19,7 @@ interface ActivityViewProps {
   selectedStockId: string | null;
   settings: AppSettings;
   priceHistory?: Record<string, number[]>;
+  onBack: () => void;
   onSelectStock: (id: string) => void;
   onUpdatePrice: (stockId: string, price: number) => void;
   onUpdateTarget: (stockId: string, price: number) => void;
@@ -29,7 +30,7 @@ interface ActivityViewProps {
   lastUpdated: Date | null;
 }
 
-export default function ActivityView({ stocks, selectedStockId, settings, priceHistory, onSelectStock, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx, onRefresh, isRefreshing, lastUpdated }: ActivityViewProps) {
+export default function ActivityView({ stocks, selectedStockId, settings, priceHistory, onBack, onSelectStock, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx, onRefresh, isRefreshing, lastUpdated }: ActivityViewProps) {
   const stock = selectedStockId ? stocks.find((s) => s.id === selectedStockId) : null;
 
   if (stock) {
@@ -38,6 +39,7 @@ export default function ActivityView({ stocks, selectedStockId, settings, priceH
         stock={stock}
         settings={settings}
         marketHistory={priceHistory?.[stock.symbol]}
+        onBack={onBack}
         onUpdatePrice={onUpdatePrice}
         onUpdateTarget={onUpdateTarget}
         onSaveTx={(type, tx) => onSaveTx(stock.id, type, tx)}
@@ -297,10 +299,11 @@ function fmtTime(d: Date) {
   return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
 }
 
-function StockDetail({ stock, settings, marketHistory, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx, onRefresh, isRefreshing, lastUpdated }: {
+function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx, onRefresh, isRefreshing, lastUpdated }: {
   stock: Stock;
   settings: AppSettings;
   marketHistory?: number[];
+  onBack: () => void;
   onUpdatePrice: (id: string, price: number) => void;
   onUpdateTarget: (id: string, price: number) => void;
   onSaveTx: (type: 'buy' | 'sell', tx: BuyTransaction | SellTransaction) => void;
@@ -351,9 +354,15 @@ function StockDetail({ stock, settings, marketHistory, onUpdatePrice, onUpdateTa
     <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full">
       {/* Stock header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-          <span className="text-xs font-bold text-violet-600">{stock.symbol}</span>
-        </div>
+        <button
+          onClick={onBack}
+          className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform"
+          aria-label="返回"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
         <div>
           <h2 className="text-xl font-bold text-gray-800">{stock.name}</h2>
           <p className="text-xs text-gray-400">{stock.symbol} · 個股分析</p>

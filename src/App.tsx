@@ -340,6 +340,7 @@ export default function App() {
                 selectedStockId={selectedStockId}
                 settings={settings}
                 priceHistory={priceHistory}
+                onBack={() => { setSelectedStockId(null); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                 onSelectStock={(id) => setSelectedStockId(id)}
                 onUpdatePrice={handleUpdatePrice}
                 onUpdateTarget={handleUpdateTarget}
