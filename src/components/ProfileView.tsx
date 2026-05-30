@@ -213,7 +213,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
                 <div key={stock.id} className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100 flex items-center justify-between">
                   <div>
                     <p className="font-semibold text-gray-800 text-sm">{stock.name}</p>
-                    <p className="text-xs text-gray-400">{stock.symbol} · 平均 {formatPrice(avgCost)}</p>
+                    <p className="text-xs text-gray-400">{stock.symbol} · 平均成本 {formatPrice(avgCost)}</p>
                   </div>
                   <div className="text-right">
                     <p className={`text-sm font-bold ${profit === 0 ? 'text-gray-700' : profit > 0 ? 'text-red-500' : 'text-emerald-600'}`}>
