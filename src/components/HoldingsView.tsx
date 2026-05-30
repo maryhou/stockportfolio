@@ -58,10 +58,28 @@ export default function HoldingsView({ stocks, onStockClick }: HoldingsViewProps
       </div>
 
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-          <p className="text-4xl mb-3">📭</p>
-          <p className="text-sm">
-            {stocks.length === 0 ? '尚無持股，點擊 + 新增交易' : '此分類目前沒有資料'}
+        <div className="flex flex-col items-center justify-center py-10 text-center bg-white rounded-2xl shadow-sm border border-gray-50">
+          <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center mb-3">
+            {stocks.length === 0 ? (
+              /* No stocks at all: briefcase/portfolio icon */
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" />
+                <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+                <line x1="12" y1="12" x2="12" y2="16" />
+                <line x1="10" y1="14" x2="14" y2="14" />
+              </svg>
+            ) : (
+              /* Filter has no results: filter icon */
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+              </svg>
+            )}
+          </div>
+          <p className="text-sm font-semibold text-gray-700 mb-1">
+            {stocks.length === 0 ? '尚無持股' : '此分類目前沒有資料'}
+          </p>
+          <p className="text-xs text-gray-400">
+            {stocks.length === 0 ? '點擊 + 新增交易開始追蹤' : '試試切換其他分類'}
           </p>
         </div>
       ) : (
