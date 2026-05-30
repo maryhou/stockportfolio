@@ -683,7 +683,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
       {/* P&L info modal */}
       {showPLInfo && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-4 pb-6 sm:pb-0"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
           onClick={() => setShowPLInfo(false)}
         >
           <div
