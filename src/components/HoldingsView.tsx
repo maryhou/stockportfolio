@@ -69,9 +69,14 @@ export default function HoldingsView({ stocks, onStockClick }: HoldingsViewProps
                 <line x1="10" y1="14" x2="14" y2="14" />
               </svg>
             ) : (
-              /* Filter has no results: filter icon */
+              /* Filter has no results: list icon */
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                <line x1="8" y1="6" x2="21" y2="6" />
+                <line x1="8" y1="12" x2="21" y2="12" />
+                <line x1="8" y1="18" x2="21" y2="18" />
+                <circle cx="3" cy="6" r="1" fill="#d1d5db" stroke="none" />
+                <circle cx="3" cy="12" r="1" fill="#d1d5db" stroke="none" />
+                <circle cx="3" cy="18" r="1" fill="#d1d5db" stroke="none" />
               </svg>
             )}
           </div>
