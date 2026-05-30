@@ -7,11 +7,24 @@
  * Returns an array of close prices ordered oldest → newest (up to 30 points).
  * Returns [] on any error so callers can fall back gracefully.
  */
+/**
+ * AbortSignal.timeout() was introduced in Safari 16 / iPadOS 16.
+ * Older devices throw TypeError — this wrapper falls back to AbortController.
+ */
+function timeoutSignal(ms: number): AbortSignal {
+  if (typeof AbortSignal.timeout === 'function') {
+    return AbortSignal.timeout(ms);
+  }
+  const ctrl = new AbortController();
+  setTimeout(() => ctrl.abort(), ms);
+  return ctrl.signal;
+}
+
 export async function fetchStockHistory(symbol: string): Promise<number[]> {
   try {
     if (!import.meta.env.DEV) {
       const res = await fetch(`/api/history?symbol=${symbol}`, {
-        signal: AbortSignal.timeout(10_000),
+        signal: timeoutSignal(10_000),
       });
       if (!res.ok) return [];
       const data = await res.json();
@@ -30,7 +43,7 @@ export async function fetchStockHistory(symbol: string): Promise<number[]> {
     for (const date of months) {
       const res = await fetch(
         `${BASE}?response=json&date=${date}&stockNo=${symbol}`,
-        { signal: AbortSignal.timeout(8_000) },
+        { signal: timeoutSignal(8_000) },
       );
       if (!res.ok) continue;
       const data = (await res.json()) as { stat?: string; data?: string[][] };

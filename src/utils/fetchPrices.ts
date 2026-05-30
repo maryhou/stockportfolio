@@ -11,6 +11,19 @@
  * Throws only on genuine network/server failures so callers can surface the error.
  * Returns {} when prices are unavailable but the service is reachable.
  */
+/**
+ * AbortSignal.timeout() was introduced in Safari 16 / iPadOS 16.
+ * Older devices throw TypeError — this wrapper falls back to AbortController.
+ */
+function timeoutSignal(ms: number): AbortSignal {
+  if (typeof AbortSignal.timeout === 'function') {
+    return AbortSignal.timeout(ms);
+  }
+  const ctrl = new AbortController();
+  setTimeout(() => ctrl.abort(), ms);
+  return ctrl.signal;
+}
+
 export async function fetchStockPrices(
   symbols: string[],
 ): Promise<Record<string, number>> {
@@ -20,7 +33,7 @@ export async function fetchStockPrices(
   if (!import.meta.env.DEV) {
     const res = await fetch(
       `/api/prices?symbols=${symbols.join(',')}`,
-      { signal: AbortSignal.timeout(12_000) },
+      { signal: timeoutSignal(12_000) },
     );
     if (!res.ok) throw new Error(`Price proxy ${res.status}`);
     const data = await res.json() as Record<string, number> & { error?: string };
@@ -37,7 +50,7 @@ export async function fetchStockPrices(
 
   const res = await fetch(url, {
     headers: { Accept: 'application/json', Referer: 'https://mis.twse.com.tw/' },
-    signal: AbortSignal.timeout(8_000),
+    signal: timeoutSignal(8_000),
   });
 
   if (!res.ok) throw new Error(`TWSE ${res.status}`);
