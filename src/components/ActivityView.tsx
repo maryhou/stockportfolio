@@ -131,7 +131,8 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
                 <DonutChart
                   segments={donutSegments}
                   centerLabel={formatNTD(centerValue)}
-                  centerSub="持倉 + 收付"
+                  centerSub="總收付"
+                  centerSub2="持倉 + 收付"
                   size={180}
                   strokeWidth={26}
                 />
