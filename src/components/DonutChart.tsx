@@ -58,9 +58,9 @@ export default function DonutChart({
           );
         })}
       </svg>
-      <div className="absolute flex flex-col items-center justify-center text-center">
-        <span className="text-xl font-bold text-gray-800">{centerLabel}</span>
-        <span className={`font-medium text-gray-600 mt-0.5 ${centerSub2 ? 'text-xs' : 'text-xs text-gray-500'}`}>{centerSub}</span>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        <span className="text-xl font-bold text-gray-800 leading-tight">{centerLabel}</span>
+        <span className="text-xs font-medium text-gray-600 mt-1">{centerSub}</span>
         {centerSub2 && <span className="text-[10px] text-gray-400 mt-0.5">{centerSub2}</span>}
       </div>
     </div>
