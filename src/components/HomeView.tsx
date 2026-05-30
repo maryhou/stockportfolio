@@ -151,12 +151,14 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-gray-800">我的持股</h2>
-            <button
-              onClick={onViewAllHoldings}
-              className="text-xs text-violet-600 font-medium hover:text-violet-800 transition-colors"
-            >
-              查看全部
-            </button>
+            {stocks.length > 0 && (
+              <button
+                onClick={onViewAllHoldings}
+                className="text-xs text-violet-600 font-medium hover:text-violet-800 transition-colors"
+              >
+                查看全部
+              </button>
+            )}
           </div>
           {stocks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center bg-white rounded-2xl shadow-sm border border-gray-50">
@@ -189,12 +191,14 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-gray-800">最近交易</h2>
-            <button
-              onClick={onViewAllActivity}
-              className="text-xs text-violet-600 font-medium hover:text-violet-800 transition-colors"
-            >
-              查看全部
-            </button>
+            {allTrades.length > 0 && (
+              <button
+                onClick={onViewAllActivity}
+                className="text-xs text-violet-600 font-medium hover:text-violet-800 transition-colors"
+              >
+                查看全部
+              </button>
+            )}
           </div>
           {allTrades.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center bg-white rounded-2xl shadow-sm border border-gray-50">
