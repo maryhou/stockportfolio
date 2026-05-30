@@ -133,6 +133,7 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
                   centerLabel={formatNTD(centerValue)}
                   centerSub="總收付"
                   centerSub2="持倉 + 收付"
+                  centerOffsetY={24}
                   size={180}
                   strokeWidth={26}
                 />

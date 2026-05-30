@@ -9,6 +9,7 @@ interface DonutChartProps {
   centerLabel: string;
   centerSub: string;
   centerSub2?: string;
+  centerOffsetY?: number;
   size?: number;
   strokeWidth?: number;
 }
@@ -18,6 +19,7 @@ export default function DonutChart({
   centerLabel,
   centerSub,
   centerSub2,
+  centerOffsetY = 0,
   size = 200,
   strokeWidth = 28,
 }: DonutChartProps) {
@@ -58,7 +60,10 @@ export default function DonutChart({
           );
         })}
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+      <div
+        className="absolute inset-0 flex flex-col items-center justify-center text-center"
+        style={centerOffsetY ? { paddingTop: centerOffsetY } : undefined}
+      >
         <span className="text-xl font-bold text-gray-800 leading-tight">{centerLabel}</span>
         <span className="text-xs font-medium text-gray-600 mt-1">{centerSub}</span>
         {centerSub2 && <span className="text-[10px] text-gray-400 mt-0.5">{centerSub2}</span>}
