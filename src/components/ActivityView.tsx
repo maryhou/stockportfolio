@@ -101,7 +101,9 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
     const rem = calcRemainingShares(st.buys, st.sells);
     return s + rem * st.currentPrice;
   }, 0);
-  const totalPL = totalRealized + totalUnrealized;
+  // Ground-truth P&L: always correct regardless of when sells were recorded.
+  // (totalRealized + totalUnrealized can drift when avgCost changed between sell events)
+  const totalPL = totalNetProceeds + totalHoldingValue - totalInvested;
 
   // Donut: allocation by current holding value + net proceeds per stock
   const donutSegments = displayStocks
