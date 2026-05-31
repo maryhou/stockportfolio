@@ -37,7 +37,10 @@ export default function HoldingsView({ stocks, onStockClick }: HoldingsViewProps
     <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-800">持倉列表</h2>
-        <span className="text-xs text-gray-400">{filtered.length} 檔股票</span>
+        {filter === 'closed'
+          ? <span className="text-xs text-gray-400">已完成的投資紀錄（{filtered.length} 筆）</span>
+          : <span className="text-xs text-gray-400">{filtered.length} 檔股票</span>
+        }
       </div>
 
       {/* Filter tabs — sliding pill */}
@@ -63,9 +66,6 @@ export default function HoldingsView({ stocks, onStockClick }: HoldingsViewProps
         ))}
       </div>
 
-      {filter === 'closed' && (
-        <p className="text-xs text-gray-400 text-center -mt-1">已完成的投資紀錄</p>
-      )}
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-10 text-center bg-white rounded-2xl shadow-sm border border-gray-50">
