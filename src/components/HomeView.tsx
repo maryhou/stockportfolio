@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Stock, AppSettings } from '../types';
 import {
   calcAvgCost,
@@ -7,10 +7,9 @@ import {
   calcTotalNetProceeds,
   calcTotalInvested,
   formatNTD,
-  formatNumber,
   formatPrice,
 } from '../utils/calculations';
-import { BellIcon, SearchIcon, TrendUpIcon, TrendDownIcon, RefreshIcon } from './icons/Icons';
+import { BellIcon, SearchIcon, RefreshIcon } from './icons/Icons';
 
 interface HomeViewProps {
   stocks: Stock[];
@@ -28,15 +27,49 @@ interface HomeViewProps {
 }
 
 export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onVisibleStocksChange, hasUnread, onAddClick, onRefresh, isRefreshing, priceHistory }: HomeViewProps) {
-  const totalProfit = stocks.reduce((s, st) => s + calcTotalRealizedProfit(st.sells), 0);
-  const totalProceeds = stocks.reduce((s, st) => s + calcTotalNetProceeds(st.sells), 0);
-  const totalCurrentValue = stocks.reduce((acc, stock) => {
-    const remaining = calcRemainingShares(stock.buys, stock.sells);
-    return acc + remaining * stock.currentPrice;
-  }, 0);
+  const [showPortfolioInfo,  setShowPortfolioInfo]  = useState(false);
+  const [showRealizedInfo,   setShowRealizedInfo]   = useState(false);
+  const [showCumulativeInfo, setShowCumulativeInfo] = useState(false);
+  const [showProceedsInfo,   setShowProceedsInfo]   = useState(false);
 
-  const displayValue = totalCurrentValue + totalProceeds;
-  const isProfitable = totalProfit >= 0;
+  // ── Portfolio calculations ──────────────────────────────────────────────────
+  const totalInvested    = stocks.reduce((s, st) => s + calcTotalInvested(st.buys), 0);
+  const realizedProfit   = stocks.reduce((s, st) => s + calcTotalRealizedProfit(st.sells), 0);
+  const totalProceeds    = stocks.reduce((s, st) => s + calcTotalNetProceeds(st.sells), 0);
+  const totalCurrentValue = stocks.reduce((acc, st) => {
+    const rem = calcRemainingShares(st.buys, st.sells);
+    return acc + rem * st.currentPrice;
+  }, 0);
+  // Ground-truth P&L (same formula as ActivityView / ProfileView)
+  const cumulativePL     = totalProceeds + totalCurrentValue - totalInvested;
+  const realizedReturn   = totalInvested > 0 ? (realizedProfit / totalInvested) * 100 : 0;
+  const cumulativeReturn = totalInvested > 0 ? (cumulativePL  / totalInvested) * 100 : 0;
+
+  // Date range across all sell transactions
+  const allSellDates = stocks.flatMap((s) => s.sells.map((tx) => tx.date)).sort();
+  const firstSell    = allSellDates[0] ?? null;
+  const lastSell     = allSellDates[allSellDates.length - 1] ?? null;
+
+  // Portfolio aggregate sparkline (holding stocks only)
+  const portfolioSparkline = (() => {
+    const hs = stocks.filter((s) => calcRemainingShares(s.buys, s.sells) > 0);
+    if (!hs.length) return [] as number[];
+    const lens = hs.map((s) => (priceHistory[s.symbol] ?? []).length).filter((l) => l > 0);
+    if (!lens.length) return [] as number[];
+    const minLen = Math.min(...lens);
+    if (minLen < 2) return [] as number[];
+    const pts: number[] = [];
+    for (let i = 0; i < minLen; i++) {
+      let v = 0;
+      for (const s of hs) {
+        const h = priceHistory[s.symbol];
+        if (h && i < h.length) v += calcRemainingShares(s.buys, s.sells) * h[i];
+      }
+      pts.push(v);
+    }
+    pts.push(totalCurrentValue);
+    return pts;
+  })();
 
   // ── Visibility tracking ─────────────────────────────────────────────────────
   // Observe each stock card with IntersectionObserver so the poller only
@@ -110,37 +143,97 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
         </div>
       </div>
 
-      {/* Portfolio Value Card */}
+      {/* Portfolio Hero Card */}
       <div
-        className="rounded-3xl p-6 text-white relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #6C63FF 0%, #a78bfa 100%)' }}
+        className="rounded-3xl overflow-hidden shadow-lg"
+        style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' }}
       >
-        <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full bg-white/10" />
-        <div className="absolute -right-4 -bottom-10 w-32 h-32 rounded-full bg-white/10" />
-        <div className="flex items-center gap-2 mb-1">
-          <p className="text-sm text-white/70">投資組合價值</p>
-          <button
-            onClick={onRefresh}
-            disabled={isRefreshing}
-            className="opacity-60 hover:opacity-100 active:opacity-100 disabled:opacity-30 transition-opacity"
-            aria-label="更新股價"
-          >
-            <RefreshIcon size={13} className={`text-white ${isRefreshing ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-3xl font-bold tracking-tight">
-              NT${formatNumber(Math.round(displayValue))}
-            </p>
-            <div className={`flex items-center gap-1 mt-2 text-sm font-medium ${isProfitable ? 'text-red-300' : 'text-emerald-300'}`}>
-              {isProfitable ? <TrendUpIcon size={14} /> : <TrendDownIcon size={14} />}
-              <span>已實現損益 {isProfitable ? '+' : ''}{formatNTD(totalProfit)}</span>
-            </div>
+        {/* Top: label + value + sparkline */}
+        <div className="p-5 pb-4">
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={() => setShowPortfolioInfo(true)}
+              className="flex items-center gap-1.5 active:opacity-70 transition-opacity"
+            >
+              <p className="text-sm text-white/70 font-medium">投資組合價值</p>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/>
+                <circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.45)" stroke="none"/>
+              </svg>
+            </button>
+            <button
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="opacity-60 hover:opacity-100 active:opacity-100 disabled:opacity-30 transition-opacity"
+              aria-label="更新股價"
+            >
+              <RefreshIcon size={15} className={`text-white ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
           </div>
-          <div className="text-right text-white/70 text-xs space-y-1">
-            <p>總回收金額</p>
-            <p className="text-white font-semibold text-sm">{formatNTD(totalProceeds)}</p>
+
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-4xl font-bold text-white tracking-tight leading-none">
+              {formatNTD(totalCurrentValue)}
+            </p>
+            {portfolioSparkline.length > 1 && (
+              <PortfolioSparkline prices={portfolioSparkline} isUp={cumulativePL >= 0} />
+            )}
+          </div>
+        </div>
+
+        {/* Bottom: 3-col stats */}
+        <div className="border-t border-white/20">
+          <div className="grid grid-cols-3">
+            {/* 已實現損益 */}
+            <div className="pt-3 pb-3.5 px-3">
+              <button
+                onClick={() => setShowRealizedInfo(true)}
+                className="flex items-center gap-1 mb-1.5 active:opacity-70 transition-opacity"
+              >
+                <p className="text-[10px] text-white/60 leading-none">已實現損益</p>
+                <HeroInfoIcon />
+              </button>
+              <p className={`text-sm font-bold leading-none ${realizedProfit === 0 ? 'text-white/80' : realizedProfit > 0 ? 'text-orange-300' : 'text-emerald-300'}`}>
+                {realizedProfit > 0 ? '+' : ''}{formatNTD(realizedProfit)}
+              </p>
+              <p className="text-[10px] text-white/50 mt-1 leading-none">
+                ({realizedReturn > 0 ? '+' : ''}{realizedReturn.toFixed(2)}%)
+              </p>
+            </div>
+
+            {/* 累積總損益 */}
+            <div className="pt-3 pb-3.5 px-3 border-l border-white/10">
+              <button
+                onClick={() => setShowCumulativeInfo(true)}
+                className="flex items-center gap-1 mb-1.5 active:opacity-70 transition-opacity"
+              >
+                <p className="text-[10px] text-white/60 leading-none">累積總損益</p>
+                <HeroInfoIcon />
+              </button>
+              <p className={`text-sm font-bold leading-none ${cumulativePL === 0 ? 'text-white/80' : cumulativePL > 0 ? 'text-orange-300' : 'text-emerald-300'}`}>
+                {cumulativePL > 0 ? '+' : ''}{formatNTD(cumulativePL)}
+              </p>
+              <p className="text-[10px] text-white/50 mt-1 leading-none">
+                ({cumulativeReturn > 0 ? '+' : ''}{cumulativeReturn.toFixed(2)}%)
+              </p>
+            </div>
+
+            {/* 總回收金額 */}
+            <div className="pt-3 pb-3.5 px-3 border-l border-white/10">
+              <button
+                onClick={() => setShowProceedsInfo(true)}
+                className="flex items-center gap-1 mb-1.5 active:opacity-70 transition-opacity"
+              >
+                <p className="text-[10px] text-white/60 leading-none">總回收金額</p>
+                <HeroInfoIcon />
+              </button>
+              <p className="text-sm font-bold text-white leading-none">
+                {formatNTD(totalProceeds)}
+              </p>
+              {firstSell && (
+                <p className="text-[9px] text-white/40 mt-1 leading-none">{firstSell} ～ {lastSell}</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -230,6 +323,183 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
           )}
         </div>
       </div>
+      {/* ── 投資組合價值 modal ──────────────────────────────────────────────── */}
+      {showPortfolioInfo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={() => setShowPortfolioInfo(false)}>
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                  </svg>
+                </div>
+                <h3 className="text-base font-bold text-gray-800">投資組合價值 說明</h3>
+              </div>
+              <ModalCloseBtn onClose={() => setShowPortfolioInfo(false)} />
+            </div>
+            <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-xs text-violet-500 font-medium mb-1.5">計算方式</p>
+              <p className="text-sm font-semibold text-violet-800 leading-relaxed">
+                持有股數 × 目前股價<br />
+                （依各持倉股票加總）
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 mb-4">
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">目前持倉市值</p>
+                  <p className="text-xs text-gray-400 mt-0.5">每支持倉股票的剩餘股數乘以目前股價，加總得出整體投資組合市值</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-gray-50 rounded-xl px-3 py-2.5">
+              <p className="text-xs font-semibold text-gray-600 mb-1.5">不包含</p>
+              <div className="flex flex-col gap-1">
+                {['已清倉投資', '已實現損益', '總回收金額'].map((item) => (
+                  <div key={item} className="flex items-center gap-1.5">
+                    <div className="w-1 h-1 rounded-full bg-gray-400 flex-shrink-0" />
+                    <p className="text-xs text-gray-500">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">此數值會隨市場即時股價變動</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── 已實現損益 modal ────────────────────────────────────────────────── */}
+      {showRealizedInfo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={() => setShowRealizedInfo(false)}>
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </div>
+                <h3 className="text-base font-bold text-gray-800">已實現損益 說明</h3>
+              </div>
+              <ModalCloseBtn onClose={() => setShowRealizedInfo(false)} />
+            </div>
+            <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-xs text-violet-500 font-medium mb-1.5">定義</p>
+              <p className="text-sm font-semibold text-violet-800 leading-relaxed">
+                已完成賣出交易所產生的<br />
+                獲利或虧損總和
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">計算基準</p>
+                  <p className="text-xs text-gray-400 mt-0.5">賣出淨額 − (賣出股數 × 平均成本)</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-gray-300 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">已扣除費用</p>
+                  <p className="text-xs text-gray-400 mt-0.5">包含手續費與交易稅，為實際入帳後的真實損益</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">僅統計已完成賣出的交易，持倉中的損益不計入</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── 累積總損益 modal ────────────────────────────────────────────────── */}
+      {showCumulativeInfo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={() => setShowCumulativeInfo(false)}>
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+                  </svg>
+                </div>
+                <h3 className="text-base font-bold text-gray-800">累積總損益 說明</h3>
+              </div>
+              <ModalCloseBtn onClose={() => setShowCumulativeInfo(false)} />
+            </div>
+            <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-xs text-violet-500 font-medium mb-1.5">計算公式</p>
+              <p className="text-sm font-semibold text-violet-800 leading-relaxed">
+                累積總損益 ＝ 已實現損益<br />
+                　　　　　＋ 未實現損益
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">已實現損益</p>
+                  <p className="text-xs text-gray-400 mt-0.5">已完成賣出交易的實際損益，扣除手續費與稅</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-indigo-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">未實現損益</p>
+                  <p className="text-xs text-gray-400 mt-0.5">目前持倉的帳面損益，依即時股價計算</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">此為整體投資組合的完整損益指標</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── 總回收金額 modal ────────────────────────────────────────────────── */}
+      {showProceedsInfo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={() => setShowProceedsInfo(false)}>
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                  </svg>
+                </div>
+                <h3 className="text-base font-bold text-gray-800">總回收金額 說明</h3>
+              </div>
+              <ModalCloseBtn onClose={() => setShowProceedsInfo(false)} />
+            </div>
+            <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-xs text-violet-500 font-medium mb-1.5">定義</p>
+              <p className="text-sm font-semibold text-violet-800 leading-relaxed">
+                所有賣出交易的賣出淨額總和
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">計算方式</p>
+                  <p className="text-xs text-gray-400 mt-0.5">賣出金額扣除手續費與交易稅後實際入帳的金額，加總所有賣出交易</p>
+                </div>
+              </div>
+              {firstSell && (
+                <div className="flex gap-3">
+                  <div className="w-1.5 rounded-full bg-gray-300 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700">時間區間</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{firstSell} ～ {lastSell}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">與損益不同，此為實際回到帳戶的現金總額</p>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -377,5 +647,52 @@ function RecentItem({ symbol, name, type, date, shares, amount, profit }: {
         )}
       </div>
     </div>
+  );
+}
+
+// ─── Hero card helpers ────────────────────────────────────────────────────────
+
+function HeroInfoIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/>
+      <circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.4)" stroke="none"/>
+    </svg>
+  );
+}
+
+function ModalCloseBtn({ onClose }: { onClose: () => void }) {
+  return (
+    <button onClick={onClose} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 active:bg-gray-200">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  );
+}
+
+function PortfolioSparkline({ prices, isUp }: { prices: number[]; isUp: boolean }) {
+  const color = isUp ? '#fb923c' : '#34d399';
+  const w = 120, h = 58, pad = 4;
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min || 1;
+  const pts = prices.map((p, i) => ({
+    x: pad + (i / (prices.length - 1)) * (w - pad * 2),
+    y: pad + (1 - (p - min) / range) * (h - pad * 2),
+  }));
+  const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const fill = `${line} L${pts[pts.length - 1].x},${h} L${pts[0].x},${h} Z`;
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="flex-shrink-0">
+      <defs>
+        <linearGradient id="pgGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.35"/>
+          <stop offset="100%" stopColor={color} stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d={fill} fill="url(#pgGrad)"/>
+      <path d={line} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
   );
 }
