@@ -595,7 +595,6 @@ function StockCard({ stock, onClick, carousel = false, marketHistory }: { stock:
   const displayPct     = invested > 0 ? (displayPL / invested) * 100 : 0;
   const isUp           = displayPL > 0;
   const isZero         = displayPL === 0;
-  const plPct          = invested > 0 ? (totalPL / invested) * 100 : 0;
 
   // Sparkline: prefer real market history (+ live price as final point),
   // fall back to transaction prices while history is loading.
