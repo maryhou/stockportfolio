@@ -245,9 +245,6 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
               <p className="text-sm font-bold text-white leading-none">
                 {formatNTD(totalProceeds)}
               </p>
-              {firstSell && (
-                <p className="text-[9px] text-white/40 mt-1 leading-none">{firstSell} ～ {lastSell}</p>
-              )}
             </div>
           </div>
         </div>
