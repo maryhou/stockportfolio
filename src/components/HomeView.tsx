@@ -314,10 +314,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
           ) : (
             <div
               ref={containerRef}
-              className={displayedStocks.length > 2
-                ? 'flex gap-3 overflow-x-auto scrollbar-hide pb-1 lg:grid lg:grid-cols-2 lg:overflow-visible'
-                : 'flex gap-3'
-              }
+              className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 lg:grid lg:grid-cols-2 lg:overflow-visible"
             >
               {displayedStocks.map((stock) => (
                 <StockCard key={stock.id} stock={stock} onClick={() => onStockClick(stock.id)} carousel={displayedStocks.length > 2} marketHistory={priceHistory[stock.symbol]} />
@@ -589,7 +586,7 @@ function StockCard({ stock, onClick, carousel = false, marketHistory }: { stock:
       data-stock-id={stock.id}
       onClick={onClick}
       className={`bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-left active:scale-[0.98] transition-transform ${
-        carousel ? 'min-w-[44%] flex-shrink-0 lg:min-w-0 lg:w-full' : 'flex-1'
+        carousel ? 'min-w-[44%] flex-shrink-0 lg:min-w-0 lg:w-full' : 'min-w-[210px] flex-shrink-0'
       }`}
     >
       {/* Code badge */}
