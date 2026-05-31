@@ -187,11 +187,14 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
 
           {/* Right: profit */}
           {bestTrade ? (
-            <p className={`text-xl font-bold flex-shrink-0 ${
-              bestTrade.profit > 0 ? 'text-amber-500' : bestTrade.profit < 0 ? 'text-emerald-600' : 'text-gray-400'
-            }`}>
-              {bestTrade.profit > 0 ? '+' : ''}{formatNTD(bestTrade.profit)}
-            </p>
+            <div className="text-right flex-shrink-0">
+              <p className="text-[10px] text-gray-400 mb-0.5">已實現損益</p>
+              <p className={`text-xl font-bold ${
+                bestTrade.profit > 0 ? 'text-amber-500' : bestTrade.profit < 0 ? 'text-emerald-600' : 'text-gray-400'
+              }`}>
+                {bestTrade.profit > 0 ? '+' : ''}{formatNTD(bestTrade.profit)}
+              </p>
+            </div>
           ) : (
             <p className="text-xl font-bold text-gray-300 flex-shrink-0">—</p>
           )}
