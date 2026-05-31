@@ -263,8 +263,11 @@ function StockSummaryRow({ stock, color, onClick }: { stock: Stock; color: strin
   const remaining = calcRemainingShares(stock.buys, stock.sells);
   const invested = calcTotalInvested(stock.buys);
   const totalPL = calcTotalNetProceeds(stock.sells) + remaining * stock.currentPrice - invested;
-  const plPct = invested > 0 ? (totalPL / invested) * 100 : 0;
+  const realizedProfit = calcTotalRealizedProfit(stock.sells);
   const isClosed = remaining === 0;
+  // 已清倉顯示已實現損益＋已實現報酬率，持倉中顯示總損益
+  const displayPL  = isClosed ? realizedProfit : totalPL;
+  const plPct = invested > 0 ? (displayPL / invested) * 100 : 0;
 
   return (
     <button
@@ -279,11 +282,11 @@ function StockSummaryRow({ stock, color, onClick }: { stock: Stock; color: strin
             <span className="text-xs text-gray-400 ml-2">{stock.symbol}</span>
           </div>
           <div className="text-right">
-            <p className={`text-sm font-bold ${totalPL >= 0 ? 'text-red-500' : 'text-emerald-600'}`}>
-              {totalPL > 0 ? '+' : ''}{formatNTD(totalPL)}
+            <p className={`text-sm font-bold ${displayPL >= 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+              {displayPL > 0 ? '+' : ''}{formatNTD(displayPL)}
             </p>
-            <p className={`text-xs ${totalPL >= 0 ? 'text-red-400' : 'text-emerald-500'}`}>
-              {totalPL > 0 ? '+' : ''}{plPct.toFixed(2)}%
+            <p className={`text-xs ${displayPL >= 0 ? 'text-red-400' : 'text-emerald-500'}`}>
+              {displayPL > 0 ? '+' : ''}{plPct.toFixed(2)}%
             </p>
           </div>
         </div>
