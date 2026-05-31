@@ -112,9 +112,9 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
       {/* ── 我的投資成績 ────────────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
         <p className="text-sm font-bold text-gray-800 mb-4">我的投資成績</p>
-        <div className="grid grid-cols-3">
+        <div className="flex">
           {/* 總損益 */}
-          <div className="pr-4">
+          <div className="flex-1 pr-4">
             <button onClick={() => setShowPLInfo(true)} className="flex items-center gap-1 mb-2 active:opacity-60 transition-opacity">
               <p className="text-xs text-gray-400">總損益</p>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -122,15 +122,17 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
                 <circle cx="12" cy="8" r="1" fill="#d1d5db" stroke="none"/>
               </svg>
             </button>
-            <p className={`text-lg font-bold leading-tight tabular-nums ${
+            <p className={`text-xl font-bold leading-tight tabular-nums ${
               totalPL === 0 ? 'text-gray-700' : totalPL > 0 ? 'text-red-500' : 'text-emerald-600'
             }`}>
               {totalPL > 0 ? '+' : ''}{formatNTD(totalPL)}
             </p>
           </div>
 
+          <div className="w-px bg-gray-100 my-1 flex-shrink-0" />
+
           {/* 累積報酬率 */}
-          <div className="px-4 border-l border-gray-100">
+          <div className="flex-1 pl-4">
             <button onClick={() => setShowReturnInfo(true)} className="flex items-center gap-1 mb-2 active:opacity-60 transition-opacity">
               <p className="text-xs text-gray-400">累積報酬率</p>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -138,18 +140,25 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
                 <circle cx="12" cy="8" r="1" fill="#d1d5db" stroke="none"/>
               </svg>
             </button>
-            <p className={`text-lg font-bold leading-tight ${
+            <p className={`text-xl font-bold leading-tight ${
               cumulativeReturn === 0 ? 'text-gray-700' : cumulativeReturn > 0 ? 'text-red-500' : 'text-emerald-600'
             }`}>
               {cumulativeReturn > 0 ? '+' : ''}{cumulativeReturn.toFixed(2)}%
             </p>
             <p className="text-[10px] text-gray-400 mt-1">基於總投入計算</p>
           </div>
+        </div>
+      </div>
 
-          {/* 最佳交易 */}
-          <div className="pl-4 border-l border-gray-100">
-            <div className="flex items-center gap-1.5 mb-2">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+      {/* ── 最佳交易 ─────────────────────────────────────────────────────── */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+        <div className="flex items-center justify-between gap-3">
+          {/* Left: icon + info */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+              bestTrade && bestTrade.profit > 0 ? 'bg-amber-50' : 'bg-gray-50'
+            }`}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
                 stroke={bestTrade && bestTrade.profit > 0 ? '#f59e0b' : '#d1d5db'}
                 strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M6 9H4a2 2 0 0 1-2-2V5a1 1 0 0 1 1-1h3"/>
@@ -157,23 +166,35 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
                 <path d="M6 4h12v6a6 6 0 0 1-12 0V4z"/>
                 <path d="M12 16v4"/><path d="M9 20h6"/>
               </svg>
-              <p className="text-xs text-gray-400">最佳交易</p>
             </div>
-            {bestTrade ? (
-              <>
-                <p className="text-xs font-semibold text-gray-700 leading-tight truncate">{bestTrade.name}</p>
-                <p className={`text-lg font-bold leading-tight ${bestTrade.profit >= 0 ? 'text-amber-500' : 'text-emerald-600'}`}>
-                  {bestTrade.profit > 0 ? '+' : ''}{formatNTD(bestTrade.profit)}
-                </p>
-                <p className="text-[10px] text-gray-400 mt-0.5">{bestTrade.symbol} · {bestTrade.isClosed ? '已清倉' : '持倉中'}</p>
-              </>
-            ) : (
-              <>
-                <p className="text-lg font-bold text-gray-300 leading-tight">—</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">尚無賣出記錄</p>
-              </>
-            )}
+            <div className="min-w-0">
+              <p className="text-xs text-gray-400 mb-0.5">最佳交易</p>
+              {bestTrade ? (
+                <>
+                  <p className="text-sm font-semibold text-gray-800 truncate">{bestTrade.name}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[10px] text-gray-400">{bestTrade.symbol}</span>
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                      bestTrade.isClosed ? 'bg-gray-100 text-gray-400' : 'bg-violet-100 text-violet-600'
+                    }`}>{bestTrade.isClosed ? '已清倉' : '持倉中'}</span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-gray-300">尚無賣出記錄</p>
+              )}
+            </div>
           </div>
+
+          {/* Right: profit */}
+          {bestTrade ? (
+            <p className={`text-xl font-bold flex-shrink-0 ${
+              bestTrade.profit > 0 ? 'text-amber-500' : bestTrade.profit < 0 ? 'text-emerald-600' : 'text-gray-400'
+            }`}>
+              {bestTrade.profit > 0 ? '+' : ''}{formatNTD(bestTrade.profit)}
+            </p>
+          ) : (
+            <p className="text-xl font-bold text-gray-300 flex-shrink-0">—</p>
+          )}
         </div>
       </div>
 
