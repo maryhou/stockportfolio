@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Stock, BuyTransaction, SellTransaction, AppSettings } from '../types';
-import { calcFee, calcTax, formatNTD } from '../utils/calculations';
+import { calcFee, calcTax, formatNTD, isETFSymbol, ETF_TAX_RATE } from '../utils/calculations';
 import { CloseIcon } from './icons/Icons';
 
 interface EditTransactionModalProps {
@@ -48,7 +48,9 @@ export default function EditTransactionModal({
   const autoFee = priceN > 0 && sharesN > 0 && selectedBroker
     ? calcFee(priceN, sharesN, selectedBroker.feeRate, selectedBroker.feeDiscount)
     : 0;
-  const autoTax = priceN > 0 && sharesN > 0 ? calcTax(priceN, sharesN, settings.taxRate) : 0;
+  const detectedETF = isETFSymbol(stock.symbol);
+  const effectiveTaxRate = detectedETF ? ETF_TAX_RATE : settings.taxRate;
+  const autoTax = priceN > 0 && sharesN > 0 ? calcTax(priceN, sharesN, effectiveTaxRate) : 0;
   const fee = feeOverride !== '' ? (parseInt(feeOverride) || 0) : autoFee;
   const tax = txType === 'sell'
     ? (taxOverride !== '' ? (parseInt(taxOverride) || 0) : autoTax)
@@ -180,7 +182,15 @@ export default function EditTransactionModal({
                   <>
                     <PreviewRow label="賣出金額" value={formatNTD(priceN * sharesN)} />
                     <PreviewRow label="手續費" value={`-${formatNTD(fee)}`} />
-                    <PreviewRow label="交易稅" value={`-${formatNTD(tax)}`} />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-500">交易稅</span>
+                        {detectedETF && (
+                          <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">ETF 0.1%</span>
+                        )}
+                      </div>
+                      <span className="text-xs font-semibold text-gray-700">-{formatNTD(tax)}</span>
+                    </div>
                     <PreviewRow label="總回收金額" value={formatNTD(netProceeds)} highlight />
                     <PreviewRow label="損益" value={`${profit >= 0 ? '+' : ''}${formatNTD(profit)}`} profit={profit} />
                   </>
