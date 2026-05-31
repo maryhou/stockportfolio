@@ -24,6 +24,7 @@ const TABS: { key: HoldingFilter; label: string }[] = [
 
 export default function HoldingsView({ stocks, onStockClick }: HoldingsViewProps) {
   const [filter, setFilter] = useState<HoldingFilter>('holding');
+  const activeIdx = TABS.findIndex((t) => t.key === filter);
 
   const filtered = stocks.filter((s) => {
     const remaining = calcRemainingShares(s.buys, s.sells);
@@ -39,16 +40,22 @@ export default function HoldingsView({ stocks, onStockClick }: HoldingsViewProps
         <span className="text-xs text-gray-400">{filtered.length} 檔股票</span>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 p-1 bg-gray-100 rounded-2xl">
+      {/* Filter tabs — sliding pill */}
+      <div className="relative flex p-1 bg-gray-100 rounded-2xl">
+        <div
+          className="absolute top-1 bottom-1 bg-white rounded-xl shadow-sm transition-transform duration-300 ease-in-out"
+          style={{
+            width: `calc((100% - 8px) / ${TABS.length})`,
+            transform: `translateX(calc(${activeIdx} * 100%))`,
+            left: '4px',
+          }}
+        />
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setFilter(t.key)}
-            className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${
-              filter === t.key
-                ? 'bg-white text-gray-800 shadow-sm'
-                : 'text-gray-400'
+            className={`relative z-10 flex-1 py-2 rounded-xl text-sm font-semibold transition-colors duration-200 ${
+              filter === t.key ? 'text-gray-800' : 'text-gray-400'
             }`}
           >
             {t.label}

@@ -44,7 +44,7 @@ export default function BottomNav({ active, onNavigate, onAddClick }: BottomNavP
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}
     >
       {tab('home',     HomeIcon,       '首頁')}
-      {tab('activity', ChartIcon,      '活動')}
+      {tab('activity', ChartIcon,      '分析')}
 
       {/* Centre FAB */}
       <button

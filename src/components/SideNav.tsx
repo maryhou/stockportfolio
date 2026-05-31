@@ -22,7 +22,7 @@ function BriefcaseIcon({ size = 22, className = '' }: { size?: number; className
 export default function SideNav({ active, onNavigate, onAddClick, hasUnread }: SideNavProps) {
   const items: { view: ViewName; Icon: React.ComponentType<{ size?: number; className?: string }>; label: string }[] = [
     { view: 'home',     Icon: HomeIcon,       label: '首頁' },
-    { view: 'activity', Icon: ChartIcon,      label: '活動分析' },
+    { view: 'activity', Icon: ChartIcon,      label: '分析' },
     { view: 'holdings', Icon: BriefcaseIcon,  label: '持倉列表' },
     { view: 'profile',  Icon: UserIcon,       label: '我的' },
   ];

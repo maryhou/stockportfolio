@@ -62,6 +62,12 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
   const [txFilter, setTxFilter] = useState<'all' | 'buy' | 'sell'>('all');
   const [portfolioView, setPortfolioView] = useState<'holding' | 'cumulative'>('holding');
 
+  const PORTFOLIO_TABS = [
+    { key: 'holding'    as const, label: '目前持倉' },
+    { key: 'cumulative' as const, label: '累積績效' },
+  ];
+  const portfolioActiveIdx = PORTFOLIO_TABS.findIndex((t) => t.key === portfolioView);
+
   const displayStocks = portfolioView === 'holding'
     ? stocks.filter((s) => calcRemainingShares(s.buys, s.sells) > 0)
     : stocks;
@@ -69,7 +75,7 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
   if (stocks.length === 0) {
     return (
       <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full">
-        <h2 className="text-xl font-bold text-gray-800">投資組合分析</h2>
+        <h2 className="text-xl font-bold text-gray-800">投資分析</h2>
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-3">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
@@ -118,23 +124,31 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
 
   return (
     <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full">
-      <h2 className="text-xl font-bold text-gray-800">投資組合分析</h2>
+      <h2 className="text-xl font-bold text-gray-800">投資分析</h2>
 
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[360px_1fr] lg:gap-6 lg:items-start">
         {/* Left: Tab + description + Summary card with donut */}
         <div className="flex flex-col gap-3">
 
-        {/* Portfolio view tabs */}
-        <div className="flex gap-1 p-1 bg-gray-100 rounded-2xl">
-          {(['holding', 'cumulative'] as const).map((v) => (
+        {/* Portfolio view tabs — sliding pill */}
+        <div className="relative flex p-1 bg-gray-100 rounded-2xl">
+          <div
+            className="absolute top-1 bottom-1 bg-white rounded-xl shadow-sm transition-transform duration-300 ease-in-out"
+            style={{
+              width: `calc((100% - 8px) / ${PORTFOLIO_TABS.length})`,
+              transform: `translateX(calc(${portfolioActiveIdx} * 100%))`,
+              left: '4px',
+            }}
+          />
+          {PORTFOLIO_TABS.map((t) => (
             <button
-              key={v}
-              onClick={() => setPortfolioView(v)}
-              className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all leading-tight ${
-                portfolioView === v ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
+              key={t.key}
+              onClick={() => setPortfolioView(t.key)}
+              className={`relative z-10 flex-1 py-2 rounded-xl text-sm font-semibold transition-colors duration-200 ${
+                portfolioView === t.key ? 'text-gray-800' : 'text-gray-400'
               }`}
             >
-              {v === 'holding' ? '目前持倉' : '累積績效\n(含已清倉紀錄)'}
+              {t.label}
             </button>
           ))}
         </div>
