@@ -193,7 +193,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
         </div>
 
         {/* Bottom: 3-col stats */}
-        <div className="border-t border-white/20">
+        <div>
           <div className="grid grid-cols-3">
             {/* 已實現損益 */}
             <div className="pt-3 pb-3.5 px-3">
