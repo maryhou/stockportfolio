@@ -103,9 +103,10 @@ export default function HoldingsView({ stocks, onStockClick }: HoldingsViewProps
 function HoldingCard({ stock, onClick }: { stock: Stock; onClick: () => void }) {
   const avgCost = calcAvgCost(stock.buys);
   const remaining = calcRemainingShares(stock.buys, stock.sells);
+  const netProceeds = calcTotalNetProceeds(stock.sells);
   const currentHoldingValue = remaining * stock.currentPrice;
   const totalInvested = stock.buys.reduce((s, b) => s + b.price * b.shares + b.fee, 0);
-  const totalPL = calcTotalNetProceeds(stock.sells) + currentHoldingValue - totalInvested;
+  const totalPL = netProceeds + currentHoldingValue - totalInvested;
   const plPct = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
   const isProfit = totalPL >= 0;
   const isClosed = remaining === 0;
@@ -125,7 +126,11 @@ function HoldingCard({ stock, onClick }: { stock: Stock; onClick: () => void }) 
           </div>
           <div>
             <p className="text-sm font-semibold text-gray-800">{stock.name}</p>
-            <p className="text-xs text-gray-400">{stock.symbol}</p>
+            <span className={`inline-block text-[9px] font-medium px-1.5 py-0.5 rounded-full mt-0.5 ${
+              isClosed ? 'bg-gray-100 text-gray-400' : 'bg-violet-100 text-violet-600'
+            }`}>
+              {isClosed ? '已清倉' : '持倉中'}
+            </span>
           </div>
         </div>
         <div className="text-right">
@@ -139,30 +144,32 @@ function HoldingCard({ stock, onClick }: { stock: Stock; onClick: () => void }) 
         </div>
       </div>
 
-      {/* Stats row — styled like transaction card detail rows */}
+      {/* Stats row */}
       <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-3 gap-2 text-center">
         <div>
           <p className="text-[10px] text-gray-400">平均成本</p>
           <p className="text-xs font-semibold text-gray-600">{formatPrice(avgCost)}</p>
         </div>
 
-        {/* Remaining shares — most prominent */}
-        <div className="flex flex-col items-center">
+        <div>
           <p className="text-[10px] text-gray-400">剩餘股數</p>
           <p className={`text-base font-bold leading-tight ${isClosed ? 'text-gray-400' : 'text-violet-600'}`}>
             {remaining}
           </p>
-          <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full mt-0.5 ${
-            isClosed ? 'bg-gray-100 text-gray-400' : 'bg-violet-100 text-violet-600'
-          }`}>
-            {isClosed ? '已清倉' : '持倉中'}
-          </span>
         </div>
 
-        <div>
-          <p className="text-[10px] text-gray-400">目前股價</p>
-          <p className="text-xs font-semibold text-gray-600">{formatNumber(stock.currentPrice)}</p>
-        </div>
+        {isClosed ? (
+          <div>
+            <p className="text-[10px] text-gray-400">總回收金額</p>
+            <p className="text-xs font-semibold text-gray-600">{formatNTD(netProceeds)}</p>
+          </div>
+        ) : (
+          <div>
+            <p className="text-[10px] text-gray-400">目前市值</p>
+            <p className="text-xs font-semibold text-gray-600">{formatNTD(currentHoldingValue)}</p>
+            <p className="text-[9px] text-gray-400">${formatNumber(stock.currentPrice)}/股</p>
+          </div>
+        )}
       </div>
     </button>
   );
