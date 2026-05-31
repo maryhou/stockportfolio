@@ -365,7 +365,10 @@ export default function App() {
                 }}
                 onClearAll={() => {
                   update([]);
-                  showToast('所有資料已清空');
+                  // Keep only system announcements (版本更新公告 etc.);
+                  // clear trade / target / pnl notifications that reference stock data.
+                  saveNotifications(notifications.filter((n) => n.type === 'system'));
+                  showToast('所有交易資料已清空');
                 }}
               />
             )}
