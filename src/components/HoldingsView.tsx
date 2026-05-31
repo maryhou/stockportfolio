@@ -4,6 +4,8 @@ import {
   calcAvgCost,
   calcRemainingShares,
   calcTotalNetProceeds,
+  calcTotalRealizedProfit,
+  calcTotalInvested,
   formatNTD,
   formatNumber,
   formatPrice,
@@ -115,11 +117,14 @@ function HoldingCard({ stock, onClick }: { stock: Stock; onClick: () => void }) 
   const remaining = calcRemainingShares(stock.buys, stock.sells);
   const netProceeds = calcTotalNetProceeds(stock.sells);
   const currentHoldingValue = remaining * stock.currentPrice;
-  const totalInvested = stock.buys.reduce((s, b) => s + b.price * b.shares + b.fee, 0);
+  const totalInvested = calcTotalInvested(stock.buys);
+  const realizedProfit = calcTotalRealizedProfit(stock.sells);
   const totalPL = netProceeds + currentHoldingValue - totalInvested;
-  const plPct = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
-  const isProfit = totalPL >= 0;
   const isClosed = remaining === 0;
+  // 已清倉時顯示「已實現損益」，持倉中顯示「總損益」
+  const displayPL  = isClosed ? realizedProfit : totalPL;
+  const displayPct = totalInvested > 0 ? (displayPL / totalInvested) * 100 : 0;
+  const isProfit = displayPL >= 0;
 
   return (
     <button
@@ -145,11 +150,11 @@ function HoldingCard({ stock, onClick }: { stock: Stock; onClick: () => void }) 
         </div>
         <div className="text-right">
           <p className={`text-sm font-bold ${isProfit ? 'text-red-500' : 'text-emerald-600'}`}>
-            {isProfit ? '+' : ''}{formatNTD(totalPL)}
+            {isProfit ? '+' : ''}{formatNTD(displayPL)}
           </p>
           <div className={`flex items-center justify-end gap-0.5 text-xs ${isProfit ? 'text-red-400' : 'text-emerald-500'}`}>
             {isProfit ? <TrendUpIcon size={11} /> : <TrendDownIcon size={11} />}
-            <span>{isProfit ? '+' : ''}{plPct.toFixed(2)}%</span>
+            <span>{isProfit ? '+' : ''}{displayPct.toFixed(2)}%</span>
           </div>
         </div>
       </div>

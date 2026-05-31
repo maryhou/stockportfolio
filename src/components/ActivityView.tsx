@@ -384,21 +384,24 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
   const currentHoldingValue = remaining * stock.currentPrice;
 
   // 持有天數 (first buy → last sell), only meaningful when closed
-  let holdingDays = 0;
-  if (isClosed && stock.sells.length > 0) {
-    const firstBuy = stock.buys.map((b) => b.date).sort()[0];
-    const lastSell = stock.sells.map((s) => s.date).sort().reverse()[0];
-    holdingDays = Math.max(0, Math.round(
-      (new Date(lastSell).getTime() - new Date(firstBuy).getTime()) / 86400000
-    ));
-  }
+  const firstBuyDate = isClosed && stock.buys.length > 0  ? stock.buys.map((b) => b.date).sort()[0]                : null;
+  const lastSellDate = isClosed && stock.sells.length > 0 ? stock.sells.map((s) => s.date).sort().reverse()[0]    : null;
+  const holdingDays  = firstBuyDate && lastSellDate
+    ? Math.max(0, Math.round((new Date(lastSellDate).getTime() - new Date(firstBuyDate).getTime()) / 86400000))
+    : 0;
+  // 格式化日期為 YYYY/MM/DD
+  const fmtShort = (d: string) => d.replace(/-/g, '/'); // "2025-04-17" → "2025/04/17"
   // Ground-truth P&L: total receipts + current holding value − total paid
   // This is always accurate regardless of when buys/sells were recorded.
   const totalPL = netProceeds + currentHoldingValue - totalInvested;
   // Derive unrealized from the ground truth so the three values always sum correctly.
   const unrealizedPL = remaining > 0 ? totalPL - realizedProfit : 0;
   const plPct = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
-  const isProfit = totalPL > 0;
+  // 已清倉：Hero 改顯示「已實現損益」與「已實現報酬率」
+  const realizedPct    = totalInvested > 0 ? (realizedProfit / totalInvested) * 100 : 0;
+  const heroDisplayPL  = isClosed ? realizedProfit : totalPL;
+  const heroDisplayPct = isClosed ? realizedPct : plPct;
+  const isProfit = heroDisplayPL > 0;
 
   // Today's change — based on last historical close vs current price
   const sparklinePrices = marketHistory?.length ? [...marketHistory, stock.currentPrice] : undefined;
@@ -440,7 +443,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                 onClick={() => setShowPLInfo(true)}
                 className="flex items-center gap-1.5 mb-2 active:opacity-70 transition-opacity"
               >
-                <p className="text-sm text-white/70 font-medium">總損益</p>
+                <p className="text-sm text-white/70 font-medium">{isClosed ? '已實現損益' : '總損益'}</p>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="rgba(255,255,255,0.45)">
                   <circle cx="12" cy="12" r="10" />
                   <line x1="12" y1="16" x2="12" y2="12" />
@@ -448,10 +451,10 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                 </svg>
               </button>
               <p className="text-4xl font-bold text-white tracking-tight leading-none">
-                {totalPL > 0 ? '+' : ''}{formatNTD(totalPL)}
+                {heroDisplayPL > 0 ? '+' : ''}{formatNTD(heroDisplayPL)}
               </p>
-              <p className={`text-xl font-semibold mt-2 ${totalPL === 0 ? 'text-white/60' : isProfit ? 'text-orange-300' : 'text-emerald-300'}`}>
-                {plPct > 0 ? '+' : ''}{plPct.toFixed(2)}%
+              <p className={`text-xl font-semibold mt-2 ${heroDisplayPL === 0 ? 'text-white/60' : isProfit ? 'text-red-400' : 'text-emerald-300'}`}>
+                {heroDisplayPct > 0 ? '+' : ''}{heroDisplayPct.toFixed(2)}%
               </p>
               <div className="mt-3 inline-flex items-center gap-1.5 bg-white rounded-full px-3 py-1.5">
                 {isClosed ? (
@@ -498,12 +501,21 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
         {/* Bottom: 2×2 stats grid */}
         <div className="border-t border-white/20">
           <div className="grid grid-cols-2">
-            <div className="pt-[9px] pb-1.5 px-4">
-              <p className="text-[11px] text-white/60 mb-0.5">已實現損益</p>
-              <p className={`text-lg font-bold ${realizedProfit === 0 ? 'text-white/80' : realizedProfit > 0 ? 'text-orange-300' : 'text-emerald-300'}`}>
-                {realizedProfit > 0 ? '+' : ''}{formatNTD(realizedProfit)}
-              </p>
-            </div>
+            {/* Top-left: 已清倉→總回收金額 / 持倉→已實現損益 */}
+            {isClosed ? (
+              <div className="pt-[9px] pb-1.5 px-4">
+                <p className="text-[11px] text-white/60 mb-0.5">總回收金額</p>
+                <p className="text-lg font-bold text-white">{formatNTD(netProceeds)}</p>
+              </div>
+            ) : (
+              <div className="pt-[9px] pb-1.5 px-4">
+                <p className="text-[11px] text-white/60 mb-0.5">已實現損益</p>
+                <p className={`text-lg font-bold ${realizedProfit === 0 ? 'text-white/80' : realizedProfit > 0 ? 'text-red-400' : 'text-emerald-300'}`}>
+                  {realizedProfit > 0 ? '+' : ''}{formatNTD(realizedProfit)}
+                </p>
+              </div>
+            )}
+            {/* Top-right: 已清倉→持有天數 / 持倉→未實現損益 */}
             {isClosed ? (
               <div className="pt-[9px] pb-1.5 px-4">
                 <p className="text-[11px] text-white/60 mb-0.5">持有天數</p>
@@ -512,19 +524,23 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
             ) : (
               <div className="pt-[9px] pb-1.5 px-4">
                 <p className="text-[11px] text-white/60 mb-0.5">未實現損益</p>
-                <p className={`text-lg font-bold ${unrealizedPL === 0 ? 'text-white/80' : unrealizedPL > 0 ? 'text-orange-300' : 'text-emerald-300'}`}>
+                <p className={`text-lg font-bold ${unrealizedPL === 0 ? 'text-white/80' : unrealizedPL > 0 ? 'text-red-400' : 'text-emerald-300'}`}>
                   {unrealizedPL > 0 ? '+' : ''}{formatNTD(unrealizedPL)}
                 </p>
               </div>
             )}
+            {/* Bottom-left: 總投入成本（所有情況相同） */}
             <div className="pt-1.5 pb-[9px] px-4">
               <p className="text-[11px] text-white/60 mb-0.5">總投入成本(含手續費)</p>
               <p className="text-base font-bold text-white">{formatNTD(totalInvested)}</p>
             </div>
+            {/* Bottom-right: 已清倉→時間區間 / 持倉→目前市值 */}
             {isClosed ? (
               <div className="pt-1.5 pb-[9px] px-4">
-                <p className="text-[11px] text-white/60 mb-0.5">總回收金額</p>
-                <p className="text-base font-bold text-white">{formatNTD(netProceeds)}</p>
+                <p className="text-[11px] text-white/60 mb-0.5">時間區間</p>
+                <p className="text-xs font-bold text-white whitespace-nowrap">
+                  {firstBuyDate ? fmtShort(firstBuyDate) : '—'}<span className="text-white/60">-</span>{lastSellDate ? fmtShort(lastSellDate) : '—'}
+                </p>
               </div>
             ) : (
               <div className="pt-1.5 pb-[9px] px-4">
@@ -777,7 +793,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                     <polyline points="17 6 23 6 23 12" />
                   </svg>
                 </div>
-                <h3 className="text-base font-bold text-gray-800">總損益 說明</h3>
+                <h3 className="text-base font-bold text-gray-800">{isClosed ? '已實現損益' : '總損益'} 說明</h3>
               </div>
               <button
                 onClick={() => setShowPLInfo(false)}
@@ -789,44 +805,73 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
               </button>
             </div>
 
-            {/* Formula */}
-            <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
-              <p className="text-xs text-violet-500 font-medium mb-1.5">計算公式</p>
-              <p className="text-sm font-semibold text-violet-800 leading-relaxed">
-                總損益 ＝ 實際入帳(賣出淨額合計)<br />
-                　　　＋ 目前持倉市值<br />
-                　　　－ 總投入成本
-              </p>
-            </div>
-
-            {/* Breakdown */}
-            <div className="flex flex-col gap-3">
-              <div className="flex gap-3">
-                <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
-                <div>
-                  <p className="text-xs font-semibold text-gray-700">實際入帳(賣出淨額合計)</p>
-                  <p className="text-xs text-gray-400 mt-0.5">所有已賣出股票扣除手續費與交易稅後的實際入帳金額</p>
+            {isClosed ? (
+              <>
+                <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
+                  <p className="text-xs text-violet-500 font-medium mb-1.5">計算公式</p>
+                  <p className="text-sm font-semibold text-violet-800 leading-relaxed">
+                    已實現損益 ＝ 賣出淨額合計<br />
+                    　　　　　－ 已賣出持股成本
+                  </p>
                 </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="w-1.5 rounded-full bg-indigo-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
-                <div>
-                  <p className="text-xs font-semibold text-gray-700">目前持倉市值</p>
-                  <p className="text-xs text-gray-400 mt-0.5">剩餘股數 × 目前股價，反映尚未賣出的部位當前價值</p>
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-3">
+                    <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700">賣出淨額合計</p>
+                      <p className="text-xs text-gray-400 mt-0.5">賣出金額扣除手續費與交易稅後實際入帳金額</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="w-1.5 rounded-full bg-gray-300 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700">已賣出持股成本</p>
+                      <p className="text-xs text-gray-400 mt-0.5">每次賣出時，依當下平均買入成本計算該筆賣出部位的成本</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="w-1.5 rounded-full bg-gray-300 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
-                <div>
-                  <p className="text-xs font-semibold text-gray-700">總投入成本</p>
-                  <p className="text-xs text-gray-400 mt-0.5">所有買入金額含手續費，為計算損益的基準</p>
+                <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
+                  僅統計已完成賣出的交易，反映實際已鎖定的獲利或虧損
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
+                  <p className="text-xs text-violet-500 font-medium mb-1.5">計算公式</p>
+                  <p className="text-sm font-semibold text-violet-800 leading-relaxed">
+                    總損益 ＝ 實際入帳(賣出淨額合計)<br />
+                    　　　＋ 目前持倉市值<br />
+                    　　　－ 總投入成本
+                  </p>
                 </div>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
-              此公式確保「已實現損益 ＋ 未實現損益 ＝ 總損益」恆成立
-            </p>
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-3">
+                    <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700">實際入帳(賣出淨額合計)</p>
+                      <p className="text-xs text-gray-400 mt-0.5">所有已賣出股票扣除手續費與交易稅後的實際入帳金額</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="w-1.5 rounded-full bg-indigo-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700">目前持倉市值</p>
+                      <p className="text-xs text-gray-400 mt-0.5">剩餘股數 × 目前股價，反映尚未賣出的部位當前價值</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="w-1.5 rounded-full bg-gray-300 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700">總投入成本</p>
+                      <p className="text-xs text-gray-400 mt-0.5">所有買入金額含手續費，為計算損益的基準</p>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
+                  此公式確保「已實現損益 ＋ 未實現損益 ＝ 總損益」恆成立
+                </p>
+              </>
+            )}
           </div>
         </div>
       )}

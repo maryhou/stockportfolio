@@ -589,8 +589,12 @@ function StockCard({ stock, onClick, carousel = false, marketHistory }: { stock:
   const realizedProfit = calcTotalRealizedProfit(stock.sells);
   const holdingVal     = remaining * stock.currentPrice;
   const totalPL        = netProceeds + holdingVal - invested;
-  const isUp           = totalPL > 0;
-  const isZero         = totalPL === 0;
+  const isClosed       = remaining === 0;
+  // 已清倉顯示已實現損益，持倉中顯示總損益
+  const displayPL      = isClosed ? realizedProfit : totalPL;
+  const displayPct     = invested > 0 ? (displayPL / invested) * 100 : 0;
+  const isUp           = displayPL > 0;
+  const isZero         = displayPL === 0;
   const plPct          = invested > 0 ? (totalPL / invested) * 100 : 0;
 
   // Sparkline: prefer real market history (+ live price as final point),
@@ -633,10 +637,10 @@ function StockCard({ stock, onClick, carousel = false, marketHistory }: { stock:
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-gray-800 text-sm leading-snug">{stock.name}</p>
           <p className={`text-xl font-bold leading-tight mt-1 ${isZero ? 'text-gray-800' : isUp ? 'text-red-500' : 'text-emerald-600'}`}>
-            {isUp ? '+' : ''}{formatNTD(totalPL)}
+            {isUp ? '+' : ''}{formatNTD(displayPL)}
           </p>
           <p className={`text-[11px] font-medium mt-0.5 ${isZero ? 'text-gray-600' : isUp ? 'text-red-400' : 'text-emerald-500'}`}>
-            {isZero ? '0%' : `${isUp ? '+' : ''}${plPct.toFixed(2)}%`}
+            {isZero ? '0%' : `${isUp ? '+' : ''}${displayPct.toFixed(2)}%`}
           </p>
         </div>
         <MiniChart prices={chartPrices} isUp={chartIsUp} />
@@ -691,15 +695,18 @@ function StockCard({ stock, onClick, carousel = false, marketHistory }: { stock:
 }
 
 function StockListRow({ stock, onClick }: { stock: Stock; onClick: () => void }) {
-  const remaining   = calcRemainingShares(stock.buys, stock.sells);
-  const invested    = calcTotalInvested(stock.buys);
-  const netProceeds = calcTotalNetProceeds(stock.sells);
-  const holdingVal  = remaining * stock.currentPrice;
-  const totalPL     = netProceeds + holdingVal - invested;
-  const isUp        = totalPL > 0;
-  const isZero      = totalPL === 0;
-  const plPct       = invested > 0 ? (totalPL / invested) * 100 : 0;
-  const isClosed    = remaining === 0;
+  const remaining      = calcRemainingShares(stock.buys, stock.sells);
+  const invested       = calcTotalInvested(stock.buys);
+  const netProceeds    = calcTotalNetProceeds(stock.sells);
+  const realizedProfit = calcTotalRealizedProfit(stock.sells);
+  const holdingVal     = remaining * stock.currentPrice;
+  const totalPL        = netProceeds + holdingVal - invested;
+  const isClosed       = remaining === 0;
+  // 已清倉顯示已實現損益，持倉中顯示總損益
+  const displayPL      = isClosed ? realizedProfit : totalPL;
+  const displayPct     = invested > 0 ? (displayPL / invested) * 100 : 0;
+  const isUp           = displayPL > 0;
+  const isZero         = displayPL === 0;
 
   return (
     <button
@@ -722,10 +729,10 @@ function StockListRow({ stock, onClick }: { stock: Stock; onClick: () => void })
 
       <div className="text-right flex-shrink-0">
         <p className={`text-sm font-bold ${isZero ? 'text-gray-700' : isUp ? 'text-red-500' : 'text-emerald-600'}`}>
-          {isUp ? '+' : ''}{formatNTD(totalPL)}
+          {isUp ? '+' : ''}{formatNTD(displayPL)}
         </p>
         <p className={`text-[10px] font-medium mt-0.5 ${isZero ? 'text-gray-400' : isUp ? 'text-red-400' : 'text-emerald-500'}`}>
-          {isZero ? '0.00%' : `${isUp ? '+' : ''}${plPct.toFixed(2)}%`}
+          {isZero ? '0.00%' : `${isUp ? '+' : ''}${displayPct.toFixed(2)}%`}
         </p>
       </div>
 
