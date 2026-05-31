@@ -48,7 +48,6 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
   const totalTrades  = stocks.reduce((s, st) => s + st.buys.length + st.sells.length, 0);
   const holdingCount = stocks.filter((s) => calcRemainingShares(s.buys, s.sells) > 0).length;
   const closedCount  = stocks.filter((s) => calcRemainingShares(s.buys, s.sells) === 0 && s.buys.length > 0).length;
-  const trackedCount = new Set(stocks.map((s) => s.symbol)).size;
 
   // ── Settings display ───────────────────────────────────────────────────────
   const taxPct       = (settings.taxRate * 100).toFixed(2).replace(/\.?0+$/, '');
@@ -179,7 +178,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
       {/* ── 投資統計 ─────────────────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
         <p className="text-sm font-bold text-gray-800 mb-4">投資統計</p>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {/* 投資紀錄 */}
           <div className="flex flex-col items-center gap-1.5 text-center">
             <div className="w-10 h-10 rounded-full bg-violet-50 flex items-center justify-center">
@@ -227,19 +226,6 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
             </div>
           </div>
 
-          {/* 追蹤股票 */}
-          <div className="flex flex-col items-center gap-1.5 text-center">
-            <div className="w-10 h-10 rounded-full bg-violet-50 flex items-center justify-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-            </div>
-            <p className="text-xl font-bold text-gray-800">{trackedCount}</p>
-            <div>
-              <p className="text-xs font-semibold text-gray-600">追蹤股票</p>
-              <p className="text-[10px] text-gray-400">追蹤中清單</p>
-            </div>
-          </div>
         </div>
       </div>
 
