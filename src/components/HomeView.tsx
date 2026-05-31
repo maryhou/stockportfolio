@@ -31,6 +31,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
   const [showRealizedInfo,   setShowRealizedInfo]   = useState(false);
   const [showCumulativeInfo, setShowCumulativeInfo] = useState(false);
   const [showProceedsInfo,   setShowProceedsInfo]   = useState(false);
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
 
   // ── Portfolio calculations ──────────────────────────────────────────────────
   const totalInvested    = stocks.reduce((s, st) => s + calcTotalInvested(st.buys), 0);
@@ -257,14 +258,41 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
           {/* Header */}
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-gray-800">我的投資</h2>
-            {displayedStocks.length > 0 && (
-              <button
-                onClick={onViewAllHoldings}
-                className="text-xs text-violet-600 font-medium hover:text-violet-800 transition-colors"
-              >
-                查看全部
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {/* View mode toggle */}
+              <div className="flex bg-gray-100 rounded-lg p-0.5 gap-0.5">
+                <button
+                  onClick={() => setViewMode('card')}
+                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'card' ? 'bg-white shadow-sm text-violet-600' : 'text-gray-400'}`}
+                  aria-label="卡片檢視"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-violet-600' : 'text-gray-400'}`}
+                  aria-label="列表檢視"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+                    <circle cx="3" cy="6" r="1" fill="currentColor" stroke="none"/>
+                    <circle cx="3" cy="12" r="1" fill="currentColor" stroke="none"/>
+                    <circle cx="3" cy="18" r="1" fill="currentColor" stroke="none"/>
+                  </svg>
+                </button>
+              </div>
+              {displayedStocks.length > 0 && (
+                <button
+                  onClick={onViewAllHoldings}
+                  className="text-xs text-violet-600 font-medium hover:text-violet-800 transition-colors"
+                >
+                  查看全部
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Sliding tabs */}
@@ -310,6 +338,12 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
               <p className="text-xs text-gray-400">
                 {stockTab === 'holding' ? '新增買入交易以開始追蹤' : '完成賣出後將顯示於此'}
               </p>
+            </div>
+          ) : viewMode === 'list' ? (
+            <div ref={containerRef} className="bg-white rounded-2xl shadow-sm border border-gray-50 overflow-hidden">
+              {displayedStocks.map((stock) => (
+                <StockListRow key={stock.id} stock={stock} onClick={() => onStockClick(stock.id)} />
+              ))}
             </div>
           ) : (
             <div
@@ -652,6 +686,52 @@ function StockCard({ stock, onClick, carousel = false, marketHistory }: { stock:
           </>
         )}
       </div>
+    </button>
+  );
+}
+
+function StockListRow({ stock, onClick }: { stock: Stock; onClick: () => void }) {
+  const remaining   = calcRemainingShares(stock.buys, stock.sells);
+  const invested    = calcTotalInvested(stock.buys);
+  const netProceeds = calcTotalNetProceeds(stock.sells);
+  const holdingVal  = remaining * stock.currentPrice;
+  const totalPL     = netProceeds + holdingVal - invested;
+  const isUp        = totalPL > 0;
+  const isZero      = totalPL === 0;
+  const plPct       = invested > 0 ? (totalPL / invested) * 100 : 0;
+  const isClosed    = remaining === 0;
+
+  return (
+    <button
+      data-stock-id={stock.id}
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-4 py-3 text-left border-b border-gray-50 last:border-b-0 active:bg-gray-50 transition-colors"
+    >
+      <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
+        <span className="text-[9px] font-bold text-violet-600 leading-tight text-center px-0.5">{stock.symbol}</span>
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-gray-800 truncate">{stock.name}</p>
+        <p className="text-[10px] text-gray-400 mt-0.5 truncate">
+          {isClosed
+            ? `${stock.symbol} · 已清倉`
+            : `${stock.symbol} · ${remaining} 股 · ${formatPrice(stock.currentPrice)}`}
+        </p>
+      </div>
+
+      <div className="text-right flex-shrink-0">
+        <p className={`text-sm font-bold ${isZero ? 'text-gray-700' : isUp ? 'text-red-500' : 'text-emerald-600'}`}>
+          {isUp ? '+' : ''}{formatNTD(totalPL)}
+        </p>
+        <p className={`text-[10px] font-medium mt-0.5 ${isZero ? 'text-gray-400' : isUp ? 'text-red-400' : 'text-emerald-500'}`}>
+          {isZero ? '0.00%' : `${isUp ? '+' : ''}${plPct.toFixed(2)}%`}
+        </p>
+      </div>
+
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
     </button>
   );
 }
