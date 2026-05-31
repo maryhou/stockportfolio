@@ -19,6 +19,8 @@ interface ProfileViewProps {
 
 export default function ProfileView({ stocks, settings, onSettingsClick, onImport, onClearAll }: ProfileViewProps) {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showPLInfo,       setShowPLInfo]       = useState(false);
+  const [showReturnInfo,   setShowReturnInfo]   = useState(false);
   const [importError, setImportError]   = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -113,13 +115,13 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
         <div className="grid grid-cols-3">
           {/* 總損益 */}
           <div className="pr-4">
-            <div className="flex items-center gap-1 mb-2">
+            <button onClick={() => setShowPLInfo(true)} className="flex items-center gap-1 mb-2 active:opacity-60 transition-opacity">
               <p className="text-xs text-gray-400">總損益</p>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/>
                 <circle cx="12" cy="8" r="1" fill="#d1d5db" stroke="none"/>
               </svg>
-            </div>
+            </button>
             <p className={`text-lg font-bold leading-tight tabular-nums ${
               totalPL === 0 ? 'text-gray-700' : totalPL > 0 ? 'text-red-500' : 'text-emerald-600'
             }`}>
@@ -129,13 +131,13 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
 
           {/* 累積報酬率 */}
           <div className="px-4 border-l border-gray-100">
-            <div className="flex items-center gap-1 mb-2">
+            <button onClick={() => setShowReturnInfo(true)} className="flex items-center gap-1 mb-2 active:opacity-60 transition-opacity">
               <p className="text-xs text-gray-400">累積報酬率</p>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/>
                 <circle cx="12" cy="8" r="1" fill="#d1d5db" stroke="none"/>
               </svg>
-            </div>
+            </button>
             <p className={`text-lg font-bold leading-tight ${
               cumulativeReturn === 0 ? 'text-gray-700' : cumulativeReturn > 0 ? 'text-red-500' : 'text-emerald-600'
             }`}>
@@ -331,6 +333,118 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
           </button>
         </div>
       </Section>
+
+      {/* ── 總損益 info modal ─────────────────────────────────────────────── */}
+      {showPLInfo && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+          onClick={() => setShowPLInfo(false)}
+        >
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+                  </svg>
+                </div>
+                <h3 className="text-base font-bold text-gray-800">總損益 說明</h3>
+              </div>
+              <button onClick={() => setShowPLInfo(false)} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 active:bg-gray-200">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-xs text-violet-500 font-medium mb-1.5">計算公式</p>
+              <p className="text-sm font-semibold text-violet-800 leading-relaxed">
+                總損益 ＝ 實際入帳(賣出淨額合計)<br />
+                　　　＋ 目前持倉市值<br />
+                　　　－ 總投入成本
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">實際入帳(賣出淨額合計)</p>
+                  <p className="text-xs text-gray-400 mt-0.5">所有已賣出股票扣除手續費與交易稅後的實際入帳金額</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-indigo-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">目前持倉市值</p>
+                  <p className="text-xs text-gray-400 mt-0.5">剩餘股數 × 目前股價，反映尚未賣出的部位當前價值</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-gray-300 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">總投入成本</p>
+                  <p className="text-xs text-gray-400 mt-0.5">所有買入金額含手續費，為計算損益的基準</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
+              此公式確保「已實現損益 ＋ 未實現損益 ＝ 總損益」恆成立
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── 累積報酬率 info modal ──────────────────────────────────────────── */}
+      {showReturnInfo && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+          onClick={() => setShowReturnInfo(false)}
+        >
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="1" x2="12" y2="23"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                  </svg>
+                </div>
+                <h3 className="text-base font-bold text-gray-800">累積報酬率 說明</h3>
+              </div>
+              <button onClick={() => setShowReturnInfo(false)} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 active:bg-gray-200">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-xs text-violet-500 font-medium mb-1.5">計算公式</p>
+              <p className="text-sm font-semibold text-violet-800 leading-relaxed">
+                累積報酬率 ＝ 總損益 ÷ 總投入成本 × 100%
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">總損益</p>
+                  <p className="text-xs text-gray-400 mt-0.5">包含已實現損益與未實現損益的完整投資成效</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-gray-300 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">總投入成本</p>
+                  <p className="text-xs text-gray-400 mt-0.5">所有買入金額含手續費的總和，作為計算基準</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
+              此為整體投資組合的績效指標，反映所有投資的整體報酬表現
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Clear confirm modal */}
       {showClearConfirm && (
