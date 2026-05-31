@@ -205,7 +205,7 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
           {/* Portfolio stats */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <StatCard label="已實現損益" value={`${totalRealized > 0 ? '+' : ''}${formatNTD(totalRealized)}`} sub="含手續費及稅" accent={totalRealized === 0 ? 'gray' : totalRealized > 0 ? 'red' : 'green'} />
-            <StatCard label="未實現損益" value={`${totalUnrealized > 0 ? '+' : ''}${formatNTD(totalUnrealized)}`} sub="按目前股價" accent={totalUnrealized === 0 ? 'gray' : totalUnrealized > 0 ? 'red' : 'green'} />
+            <StatCard label="未實現損益" value={`${totalUnrealized > 0 ? '+' : ''}${formatNTD(totalUnrealized)}`} sub="按目前股價（未含賣出費用）" accent={totalUnrealized === 0 ? 'gray' : totalUnrealized > 0 ? 'red' : 'green'} />
             <StatCard label="總回收金額" value={formatNTD(totalNetProceeds)} sub="實際入帳(賣出淨額合計)" accent={totalNetProceeds === 0 ? 'gray' : 'violet'} />
             <StatCard label="持倉市值" value={formatNTD(totalHoldingValue)} sub="按目前股價" accent="gray" />
             <StatCard label="總投入" value={formatNTD(totalInvested)} sub="含所有手續費" accent="gray" />
