@@ -194,9 +194,9 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
 
         {/* Bottom: 3-col stats */}
         <div>
-          <div className="grid grid-cols-3">
+          <div className="flex">
             {/* 已實現損益 */}
-            <div className="pt-3 pb-3.5 px-3">
+            <div className="flex-1 pt-3 pb-3.5 px-3">
               <button
                 onClick={() => setShowRealizedInfo(true)}
                 className="flex items-center gap-1 mb-1.5 active:opacity-70 transition-opacity"
@@ -212,8 +212,10 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
               </p>
             </div>
 
+            <div className="w-px bg-white/15 my-3 flex-shrink-0" />
+
             {/* 累積總損益 */}
-            <div className="pt-3 pb-3.5 px-3 border-l border-white/10">
+            <div className="flex-1 pt-3 pb-3.5 px-3">
               <button
                 onClick={() => setShowCumulativeInfo(true)}
                 className="flex items-center gap-1 mb-1.5 active:opacity-70 transition-opacity"
@@ -229,8 +231,10 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
               </p>
             </div>
 
+            <div className="w-px bg-white/15 my-3 flex-shrink-0" />
+
             {/* 總回收金額 */}
-            <div className="pt-3 pb-3.5 px-3 border-l border-white/10">
+            <div className="flex-1 pt-3 pb-3.5 px-3">
               <button
                 onClick={() => setShowProceedsInfo(true)}
                 className="flex items-center gap-1 mb-1.5 active:opacity-70 transition-opacity"
