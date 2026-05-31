@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Stock, BuyTransaction, SellTransaction, AppSettings } from '../types';
-import { calcAvgCost, calcFee, calcTax, formatNTD, formatNumber, isETFSymbol, ETF_TAX_RATE } from '../utils/calculations';
+import { calcAvgCost, calcFee, calcTax, calcRemainingShares, formatNTD, formatNumber, isETFSymbol, ETF_TAX_RATE } from '../utils/calculations';
 import { CloseIcon } from './icons/Icons';
 import twStocksRaw from '../data/twStocks.json';
 
@@ -79,6 +79,14 @@ export default function AddTransactionSheet({
   const stock = stocks.find((s) => s.id === stockId);
   const avgCost = stock ? calcAvgCost(stock.buys) : 0;
 
+  // Buying into a fully-closed stock → will create a new investment record
+  const isBuyingClosedStock =
+    txType === 'buy' &&
+    !isNewStock &&
+    stock != null &&
+    stock.buys.length > 0 &&
+    calcRemainingShares(stock.buys, stock.sells) === 0;
+
   // ETF auto-detection: symbols starting with 0 (e.g. 0050, 00878) → 0.1% tax
   const currentSymbol = isNewStock ? newSymbol : (stock?.symbol ?? '');
   const detectedETF = isETFSymbol(currentSymbol);
@@ -131,6 +139,22 @@ export default function AddTransactionSheet({
         const tx: SellTransaction = { id: `s${Date.now()}`, date, price: priceN, shares: sharesN, fee, tax, netProceeds: np, profit: np, brokerId };
         onAddStock({ id: newSymbol, name: newName, symbol: newSymbol, targetPrice: 0, currentPrice: priceN, buys: [], sells: [tx] });
       }
+      handleClose();
+      return;
+    }
+
+    // Buying into a closed stock → create a new independent investment record
+    if (isBuyingClosedStock && stock) {
+      const tx: BuyTransaction = { id: `b${Date.now()}`, date, price: priceN, shares: sharesN, fee, brokerId };
+      onAddStock({
+        id: `${stock.symbol}_${Date.now()}`,
+        name: stock.name,
+        symbol: stock.symbol,
+        targetPrice: stock.targetPrice,
+        currentPrice: priceN,
+        buys: [tx],
+        sells: [],
+      });
       handleClose();
       return;
     }
@@ -286,6 +310,23 @@ export default function AddTransactionSheet({
             )}
           </div>
 
+          {/* Closed-stock warning banner */}
+          {isBuyingClosedStock && (
+            <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-3.5 flex items-start gap-2.5">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-amber-700">此股票已清倉</p>
+                <p className="text-xs text-amber-600 mt-0.5">此筆買入將建立新的投資紀錄，不會累計在原本的交易紀錄上</p>
+              </div>
+            </div>
+          )}
+
           {/* Date */}
           <div className="mb-4">
             <label className="label">交易日期</label>
@@ -331,7 +372,7 @@ export default function AddTransactionSheet({
                     <PreviewRow label="買入金額" value={formatNTD(priceN * sharesN)} />
                     <PreviewRow label="手續費" value={`-${formatNTD(fee)}`} />
                     <PreviewRow label="總花費" value={formatNTD(priceN * sharesN + fee)} highlight />
-                    {stock && (
+                    {stock && !isBuyingClosedStock && (
                       <PreviewRow
                         label="新平均成本"
                         value={formatNumber(calcNewAvgCost(stock, priceN, sharesN, fee))}

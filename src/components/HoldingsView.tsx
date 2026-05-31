@@ -15,16 +15,15 @@ interface HoldingsViewProps {
   onStockClick: (id: string) => void;
 }
 
-type HoldingFilter = 'all' | 'holding' | 'closed';
+type HoldingFilter = 'holding' | 'closed';
 
 const TABS: { key: HoldingFilter; label: string }[] = [
-  { key: 'all',     label: '全部' },
   { key: 'holding', label: '持倉中' },
   { key: 'closed',  label: '已清倉' },
 ];
 
 export default function HoldingsView({ stocks, onStockClick }: HoldingsViewProps) {
-  const [filter, setFilter] = useState<HoldingFilter>('all');
+  const [filter, setFilter] = useState<HoldingFilter>('holding');
 
   const filtered = stocks.filter((s) => {
     const remaining = calcRemainingShares(s.buys, s.sells);
@@ -56,6 +55,10 @@ export default function HoldingsView({ stocks, onStockClick }: HoldingsViewProps
           </button>
         ))}
       </div>
+
+      {filter === 'closed' && (
+        <p className="text-xs text-gray-400 text-center -mt-1">已完成的投資紀錄</p>
+      )}
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-10 text-center bg-white rounded-2xl shadow-sm border border-gray-50">

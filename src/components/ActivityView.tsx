@@ -60,6 +60,11 @@ const PALETTE = ['#6C63FF', '#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6
 
 function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelectStock: (id: string) => void }) {
   const [txFilter, setTxFilter] = useState<'all' | 'buy' | 'sell'>('all');
+  const [portfolioView, setPortfolioView] = useState<'holding' | 'cumulative'>('holding');
+
+  const displayStocks = portfolioView === 'holding'
+    ? stocks.filter((s) => calcRemainingShares(s.buys, s.sells) > 0)
+    : stocks;
 
   if (stocks.length === 0) {
     return (
@@ -78,22 +83,22 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
     );
   }
 
-  // Portfolio-wide totals
-  const totalInvested = stocks.reduce((s, st) => s + calcTotalInvested(st.buys), 0);
-  const totalRealized = stocks.reduce((s, st) => s + calcTotalRealizedProfit(st.sells), 0);
-  const totalNetProceeds = stocks.reduce((s, st) => s + calcTotalNetProceeds(st.sells), 0);
-  const totalUnrealized = stocks.reduce((s, st) => {
+  // Portfolio-wide totals — scoped to displayStocks
+  const totalInvested = displayStocks.reduce((s, st) => s + calcTotalInvested(st.buys), 0);
+  const totalRealized = displayStocks.reduce((s, st) => s + calcTotalRealizedProfit(st.sells), 0);
+  const totalNetProceeds = displayStocks.reduce((s, st) => s + calcTotalNetProceeds(st.sells), 0);
+  const totalUnrealized = displayStocks.reduce((s, st) => {
     const rem = calcRemainingShares(st.buys, st.sells);
     return s + (rem > 0 ? (st.currentPrice - calcAvgCost(st.buys)) * rem : 0);
   }, 0);
-  const totalHoldingValue = stocks.reduce((s, st) => {
+  const totalHoldingValue = displayStocks.reduce((s, st) => {
     const rem = calcRemainingShares(st.buys, st.sells);
     return s + rem * st.currentPrice;
   }, 0);
   const totalPL = totalRealized + totalUnrealized;
 
   // Donut: allocation by current holding value + net proceeds per stock
-  const donutSegments = stocks
+  const donutSegments = displayStocks
     .map((st, i) => {
       const rem = calcRemainingShares(st.buys, st.sells);
       const val = rem * st.currentPrice + calcTotalNetProceeds(st.sells);
@@ -103,8 +108,8 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
 
   const centerValue = totalHoldingValue + totalNetProceeds;
 
-  // All transactions sorted newest first
-  const allTrades = stocks
+  // All transactions sorted newest first — scoped to displayStocks
+  const allTrades = displayStocks
     .flatMap((st) => [
       ...st.sells.map((tx) => ({ stockName: st.name, stockSymbol: st.symbol, type: 'sell' as const, date: tx.date, shares: tx.shares, price: tx.price, amount: tx.netProceeds, profit: tx.profit, id: tx.id })),
       ...st.buys.map((tx) => ({ stockName: st.name, stockSymbol: st.symbol, type: 'buy' as const, date: tx.date, shares: tx.shares, price: tx.price, amount: tx.price * tx.shares + tx.fee, profit: null, id: tx.id })),
@@ -116,7 +121,31 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
       <h2 className="text-xl font-bold text-gray-800">投資組合分析</h2>
 
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[360px_1fr] lg:gap-6 lg:items-start">
-        {/* Left: Summary card with donut */}
+        {/* Left: Tab + description + Summary card with donut */}
+        <div className="flex flex-col gap-3">
+
+        {/* Portfolio view tabs */}
+        <div className="flex gap-1 p-1 bg-gray-100 rounded-2xl">
+          {(['holding', 'cumulative'] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setPortfolioView(v)}
+              className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all leading-tight ${
+                portfolioView === v ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
+              }`}
+            >
+              {v === 'holding' ? '目前持倉' : '累積績效\n(含已清倉紀錄)'}
+            </button>
+          ))}
+        </div>
+
+        {/* Description */}
+        <p className="text-[11px] text-gray-400 text-center -mt-1 px-1">
+          {portfolioView === 'holding'
+            ? '僅包含目前持有中的投資部分'
+            : '僅包含持倉中與已清倉的所有投資'}
+        </p>
+
         <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-1">
             <p className="text-xs text-gray-400">總投入成本</p>
@@ -153,6 +182,7 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
             </>
           )}
         </div>
+        </div>{/* end left column */}
 
         {/* Right: stats + breakdown + history */}
         <div className="flex flex-col gap-5">
@@ -163,14 +193,14 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
             <StatCard label="總回收金額" value={formatNTD(totalNetProceeds)} sub="實際入帳(賣出淨額合計)" accent={totalNetProceeds === 0 ? 'gray' : 'violet'} />
             <StatCard label="持倉市值" value={formatNTD(totalHoldingValue)} sub="按目前股價" accent="gray" />
             <StatCard label="總投入" value={formatNTD(totalInvested)} sub="含所有手續費" accent="gray" />
-            <StatCard label="持股檔數" value={`${stocks.length} 檔`} sub={`${stocks.filter(s => calcRemainingShares(s.buys, s.sells) > 0).length} 檔持倉中`} accent="violet" />
+            <StatCard label="持股檔數" value={`${displayStocks.length} 檔`} sub={portfolioView === 'holding' ? '持倉中' : `${stocks.filter(s => calcRemainingShares(s.buys, s.sells) > 0).length} 檔持倉中`} accent="violet" />
           </div>
 
           {/* Per-stock breakdown */}
           <div>
             <h3 className="text-sm font-semibold text-gray-700 mb-3">個股明細</h3>
             <div className="flex flex-col gap-2">
-              {stocks.map((st, i) => (
+              {displayStocks.map((st, i) => (
                 <StockSummaryRow key={st.id} stock={st} color={PALETTE[i % PALETTE.length]} onClick={() => onSelectStock(st.id)} />
               ))}
             </div>
@@ -331,10 +361,21 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
 
   const avgCost = calcAvgCost(stock.buys);
   const remaining = calcRemainingShares(stock.buys, stock.sells);
+  const isClosed = remaining === 0 && stock.buys.length > 0;
   const totalInvested = calcTotalInvested(stock.buys);
   const realizedProfit = calcTotalRealizedProfit(stock.sells);
   const netProceeds = calcTotalNetProceeds(stock.sells);
   const currentHoldingValue = remaining * stock.currentPrice;
+
+  // 持有天數 (first buy → last sell), only meaningful when closed
+  let holdingDays = 0;
+  if (isClosed && stock.sells.length > 0) {
+    const firstBuy = stock.buys.map((b) => b.date).sort()[0];
+    const lastSell = stock.sells.map((s) => s.date).sort().reverse()[0];
+    holdingDays = Math.max(0, Math.round(
+      (new Date(lastSell).getTime() - new Date(firstBuy).getTime()) / 86400000
+    ));
+  }
   // Ground-truth P&L: total receipts + current holding value − total paid
   // This is always accurate regardless of when buys/sells were recorded.
   const totalPL = netProceeds + currentHoldingValue - totalInvested;
@@ -397,7 +438,14 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                 {plPct > 0 ? '+' : ''}{plPct.toFixed(2)}%
               </p>
               <div className="mt-3 inline-flex items-center gap-1.5 bg-white rounded-full px-3 py-1.5">
-                {totalPL === 0 ? (
+                {isClosed ? (
+                  <>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <span className="text-sm font-semibold text-gray-500">已清倉</span>
+                  </>
+                ) : totalPL === 0 ? (
                   <span className="text-sm font-semibold text-gray-500">持平</span>
                 ) : isProfit ? (
                   <>
@@ -440,20 +488,34 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                 {realizedProfit > 0 ? '+' : ''}{formatNTD(realizedProfit)}
               </p>
             </div>
-            <div className="pt-[9px] pb-1.5 px-4">
-              <p className="text-[11px] text-white/60 mb-0.5">未實現損益</p>
-              <p className={`text-lg font-bold ${unrealizedPL === 0 ? 'text-white/80' : unrealizedPL > 0 ? 'text-orange-300' : 'text-emerald-300'}`}>
-                {unrealizedPL > 0 ? '+' : ''}{formatNTD(unrealizedPL)}
-              </p>
-            </div>
+            {isClosed ? (
+              <div className="pt-[9px] pb-1.5 px-4">
+                <p className="text-[11px] text-white/60 mb-0.5">持有天數</p>
+                <p className="text-lg font-bold text-white">{holdingDays} 天</p>
+              </div>
+            ) : (
+              <div className="pt-[9px] pb-1.5 px-4">
+                <p className="text-[11px] text-white/60 mb-0.5">未實現損益</p>
+                <p className={`text-lg font-bold ${unrealizedPL === 0 ? 'text-white/80' : unrealizedPL > 0 ? 'text-orange-300' : 'text-emerald-300'}`}>
+                  {unrealizedPL > 0 ? '+' : ''}{formatNTD(unrealizedPL)}
+                </p>
+              </div>
+            )}
             <div className="pt-1.5 pb-[9px] px-4">
               <p className="text-[11px] text-white/60 mb-0.5">總投入成本(含手續費)</p>
               <p className="text-base font-bold text-white">{formatNTD(totalInvested)}</p>
             </div>
-            <div className="pt-1.5 pb-[9px] px-4">
-              <p className="text-[11px] text-white/60 mb-0.5">目前市值</p>
-              <p className="text-base font-bold text-white">{formatNTD(currentHoldingValue)}</p>
-            </div>
+            {isClosed ? (
+              <div className="pt-1.5 pb-[9px] px-4">
+                <p className="text-[11px] text-white/60 mb-0.5">總回收金額</p>
+                <p className="text-base font-bold text-white">{formatNTD(netProceeds)}</p>
+              </div>
+            ) : (
+              <div className="pt-1.5 pb-[9px] px-4">
+                <p className="text-[11px] text-white/60 mb-0.5">目前市值</p>
+                <p className="text-base font-bold text-white">{formatNTD(currentHoldingValue)}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
