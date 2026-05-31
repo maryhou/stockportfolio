@@ -450,7 +450,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                   <circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.45)" stroke="none" />
                 </svg>
               </button>
-              <p className="text-4xl font-bold text-white tracking-tight leading-none">
+              <p className={`text-4xl font-bold tracking-tight leading-none ${heroDisplayPL === 0 ? 'text-white' : isProfit ? 'text-red-400' : 'text-emerald-300'}`}>
                 {heroDisplayPL > 0 ? '+' : ''}{formatNTD(heroDisplayPL)}
               </p>
               <p className={`text-xl font-semibold mt-2 ${heroDisplayPL === 0 ? 'text-white/60' : isProfit ? 'text-red-400' : 'text-emerald-300'}`}>

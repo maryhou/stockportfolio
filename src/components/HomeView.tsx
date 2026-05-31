@@ -205,7 +205,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
                 <p className="text-[10px] text-white/60 leading-none">已實現損益</p>
                 <HeroInfoIcon />
               </button>
-              <p className={`text-sm font-bold leading-none ${realizedProfit === 0 ? 'text-white/80' : realizedProfit > 0 ? 'text-orange-300' : 'text-emerald-300'}`}>
+              <p className={`text-sm font-bold leading-none ${realizedProfit === 0 ? 'text-white/80' : realizedProfit > 0 ? 'text-red-400' : 'text-emerald-300'}`}>
                 {realizedProfit > 0 ? '+' : ''}{formatNTD(realizedProfit)}
               </p>
               <p className="text-[10px] text-white/50 mt-1 leading-none">
@@ -224,7 +224,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
                 <p className="text-[10px] text-white/60 leading-none">累積總損益</p>
                 <HeroInfoIcon />
               </button>
-              <p className={`text-sm font-bold leading-none ${cumulativePL === 0 ? 'text-white/80' : cumulativePL > 0 ? 'text-orange-300' : 'text-emerald-300'}`}>
+              <p className={`text-sm font-bold leading-none ${cumulativePL === 0 ? 'text-white/80' : cumulativePL > 0 ? 'text-red-400' : 'text-emerald-300'}`}>
                 {cumulativePL > 0 ? '+' : ''}{formatNTD(cumulativePL)}
               </p>
               <p className="text-[10px] text-white/50 mt-1 leading-none">
