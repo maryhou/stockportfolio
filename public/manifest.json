@@ -1,6 +1,6 @@
 {
-  "name": "股票追蹤",
-  "short_name": "股票追蹤",
+  "name": "投資日誌",
+  "short_name": "投資日誌",
   "description": "Taiwan stock portfolio tracker",
   "start_url": "/",
   "display": "standalone",

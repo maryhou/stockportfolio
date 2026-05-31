@@ -44,7 +44,7 @@ export const INITIAL_NOTIFICATIONS: AppNotification[] = [
     id: 'n5',
     type: 'system',
     title: '系統更新公告',
-    description: '股票追蹤已更新，新增 ETF 搜尋支援及交易記錄編輯功能，提升使用體驗',
+    description: '投資日誌已更新，新增 ETF 搜尋支援及交易記錄編輯功能，提升使用體驗',
     time: '昨天 18:00',
     read: true,
   },

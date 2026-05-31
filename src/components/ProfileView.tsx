@@ -105,7 +105,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
         </div>
         <div className="text-center">
           <h2 className="text-xl font-bold text-gray-800">{settings.userName}</h2>
-          <p className="text-sm text-gray-400">股票投資追蹤</p>
+          <p className="text-sm text-gray-400">投資日誌</p>
         </div>
       </div>
 

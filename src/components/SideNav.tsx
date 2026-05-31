@@ -36,7 +36,7 @@ export default function SideNav({ active, onNavigate, onAddClick, hasUnread }: S
             <span className="text-white text-sm font-bold">S</span>
           </div>
           <div>
-            <p className="text-sm font-bold text-gray-800">股票追蹤</p>
+            <p className="text-sm font-bold text-gray-800">投資日誌</p>
             <p className="text-[10px] text-gray-400">Stock Portfolio</p>
           </div>
         </div>
