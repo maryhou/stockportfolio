@@ -71,6 +71,17 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
     return pts;
   })();
 
+  // ── Stock tab ──────────────────────────────────────────────────────────────
+  const [stockTab, setStockTab] = useState<'holding' | 'closed'>('holding');
+  const STOCK_TABS = [
+    { key: 'holding' as const, label: '我的持股' },
+    { key: 'closed'  as const, label: '已完成投資' },
+  ];
+  const stockTabIdx     = STOCK_TABS.findIndex((t) => t.key === stockTab);
+  const holdingStocks   = stocks.filter((s) => calcRemainingShares(s.buys, s.sells) > 0);
+  const closedStocks    = stocks.filter((s) => calcRemainingShares(s.buys, s.sells) === 0 && s.buys.length > 0);
+  const displayedStocks = stockTab === 'holding' ? holdingStocks : closedStocks;
+
   // ── Visibility tracking ─────────────────────────────────────────────────────
   // Observe each stock card with IntersectionObserver so the poller only
   // fetches prices for cards that are actually in the viewport.
@@ -109,7 +120,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
       observer.disconnect();
       visibleRef.current.clear();
     };
-  }, [stocks, onVisibleStocksChange]);
+  }, [stocks, onVisibleStocksChange, stockTab]);
 
   const allTrades = stocks.flatMap((stock) => [
     ...stock.sells.map((tx) => ({
@@ -240,11 +251,12 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
 
       {/* Holdings + Recent: side-by-side on desktop */}
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
-        {/* Stock Holdings */}
+        {/* 我的投資 */}
         <div>
+          {/* Header */}
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-gray-800">我的持股</h2>
-            {stocks.length > 0 && (
+            <h2 className="text-base font-semibold text-gray-800">我的投資</h2>
+            {displayedStocks.length > 0 && (
               <button
                 onClick={onViewAllHoldings}
                 className="text-xs text-violet-600 font-medium hover:text-violet-800 transition-colors"
@@ -253,28 +265,61 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
               </button>
             )}
           </div>
+
+          {/* Sliding tabs */}
+          <div className="relative flex p-1 bg-gray-100 rounded-2xl mb-3">
+            <div
+              className="absolute top-1 bottom-1 bg-white rounded-xl shadow-sm transition-transform duration-300 ease-in-out"
+              style={{
+                width: `calc((100% - 8px) / ${STOCK_TABS.length})`,
+                transform: `translateX(calc(${stockTabIdx} * 100%))`,
+                left: '4px',
+              }}
+            />
+            {STOCK_TABS.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setStockTab(t.key)}
+                className={`relative z-10 flex-1 py-2 rounded-xl text-sm font-semibold transition-colors duration-200 ${
+                  stockTab === t.key ? 'text-gray-800' : 'text-gray-400'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Content */}
           {stocks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center bg-white rounded-2xl shadow-sm border border-gray-50">
               <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center mb-3">
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="7" width="20" height="14" rx="2" />
                   <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-                  <line x1="12" y1="12" x2="12" y2="16" />
-                  <line x1="10" y1="14" x2="14" y2="14" />
+                  <line x1="12" y1="12" x2="12" y2="16" /><line x1="10" y1="14" x2="14" y2="14" />
                 </svg>
               </div>
               <p className="text-sm font-semibold text-gray-700">尚未建立投資組合</p>
             </div>
+          ) : displayedStocks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center bg-white rounded-2xl shadow-sm border border-gray-50">
+              <p className="text-sm font-semibold text-gray-700 mb-1">
+                {stockTab === 'holding' ? '目前無持倉中股票' : '尚無已清倉的投資'}
+              </p>
+              <p className="text-xs text-gray-400">
+                {stockTab === 'holding' ? '新增買入交易以開始追蹤' : '完成賣出後將顯示於此'}
+              </p>
+            </div>
           ) : (
             <div
               ref={containerRef}
-              className={stocks.length > 2
+              className={displayedStocks.length > 2
                 ? 'flex gap-3 overflow-x-auto scrollbar-hide pb-1 lg:grid lg:grid-cols-2 lg:overflow-visible'
                 : 'grid grid-cols-2 gap-3'
               }
             >
-              {stocks.map((stock) => (
-                <StockCard key={stock.id} stock={stock} onClick={() => onStockClick(stock.id)} carousel={stocks.length > 2} marketHistory={priceHistory[stock.symbol]} />
+              {displayedStocks.map((stock) => (
+                <StockCard key={stock.id} stock={stock} onClick={() => onStockClick(stock.id)} carousel={displayedStocks.length > 2} marketHistory={priceHistory[stock.symbol]} />
               ))}
             </div>
           )}
@@ -505,14 +550,16 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
 }
 
 function StockCard({ stock, onClick, carousel = false, marketHistory }: { stock: Stock; onClick: () => void; carousel?: boolean; marketHistory?: number[] }) {
-  const avgCost    = calcAvgCost(stock.buys);
-  const remaining  = calcRemainingShares(stock.buys, stock.sells);
-  const invested   = calcTotalInvested(stock.buys);
-  const holdingVal = remaining * stock.currentPrice;
-  const totalPL    = calcTotalNetProceeds(stock.sells) + holdingVal - invested;
-  const isUp       = totalPL > 0;
-  const isZero     = totalPL === 0;
-  const plPct      = invested > 0 ? (totalPL / invested) * 100 : 0;
+  const avgCost        = calcAvgCost(stock.buys);
+  const remaining      = calcRemainingShares(stock.buys, stock.sells);
+  const invested       = calcTotalInvested(stock.buys);
+  const netProceeds    = calcTotalNetProceeds(stock.sells);
+  const realizedProfit = calcTotalRealizedProfit(stock.sells);
+  const holdingVal     = remaining * stock.currentPrice;
+  const totalPL        = netProceeds + holdingVal - invested;
+  const isUp           = totalPL > 0;
+  const isZero         = totalPL === 0;
+  const plPct          = invested > 0 ? (totalPL / invested) * 100 : 0;
 
   // Sparkline: prefer real market history (+ live price as final point),
   // fall back to transaction prices while history is loading.
@@ -565,22 +612,47 @@ function StockCard({ stock, onClick, carousel = false, marketHistory }: { stock:
 
       {/* Info grid */}
       <div className="mt-3 pt-3 border-t border-gray-50 grid grid-cols-2 gap-y-2">
-        <div>
-          <p className="text-[10px] text-gray-400">成本</p>
-          <p className="text-xs font-semibold text-gray-700">{formatPrice(avgCost)}</p>
-        </div>
-        <div>
-          <p className="text-[10px] text-gray-400">現價</p>
-          <p className="text-xs font-semibold text-gray-700">{formatPrice(stock.currentPrice)}</p>
-        </div>
-        <div>
-          <p className="text-[10px] text-gray-400">股數</p>
-          <p className="text-xs font-semibold text-gray-700">{remaining} 股</p>
-        </div>
-        <div>
-          <p className="text-[10px] text-gray-400">持有市值</p>
-          <p className="text-xs font-semibold text-gray-700">{formatNTD(holdingVal)}</p>
-        </div>
+        {remaining === 0 ? (
+          <>
+            <div>
+              <p className="text-[10px] text-gray-400">已實現損益</p>
+              <p className={`text-xs font-semibold ${realizedProfit > 0 ? 'text-red-500' : realizedProfit < 0 ? 'text-emerald-600' : 'text-gray-700'}`}>
+                {realizedProfit > 0 ? '+' : ''}{formatNTD(realizedProfit)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400">總投入</p>
+              <p className="text-xs font-semibold text-gray-700">{formatNTD(invested)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400">總回收</p>
+              <p className="text-xs font-semibold text-gray-700">{formatNTD(netProceeds)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400">狀態</p>
+              <span className="inline-block text-[10px] font-semibold bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded-full">已清倉</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <p className="text-[10px] text-gray-400">成本</p>
+              <p className="text-xs font-semibold text-gray-700">{formatPrice(avgCost)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400">現價</p>
+              <p className="text-xs font-semibold text-gray-700">{formatPrice(stock.currentPrice)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400">股數</p>
+              <p className="text-xs font-semibold text-gray-700">{remaining} 股</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400">持有市值</p>
+              <p className="text-xs font-semibold text-gray-700">{formatNTD(holdingVal)}</p>
+            </div>
+          </>
+        )}
       </div>
     </button>
   );
