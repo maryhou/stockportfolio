@@ -793,8 +793,8 @@ function RecentItem({ symbol, name, type, date, shares, amount, profit }: {
         <p className="text-xs text-gray-400">{date} · {shares} 股</p>
       </div>
       <div className="text-right">
-        <p className={`text-sm font-semibold ${type === 'sell' ? 'text-emerald-600' : 'text-gray-700'}`}>
-          {type === 'sell' ? '+' : '-'}{formatNTD(amount)}
+        <p className="text-sm font-semibold text-gray-700">
+          {type === 'sell' ? '' : '-'}{formatNTD(amount)}
         </p>
         {profit !== null && (
           <p className={`text-xs font-medium ${profit >= 0 ? 'text-red-500' : 'text-emerald-500'}`}>

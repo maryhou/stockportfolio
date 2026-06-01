@@ -329,8 +329,8 @@ function TradeTileRow({ stockName, stockSymbol, type, date, shares, price, amoun
         <p className="text-xs text-gray-400">{date} · {formatNumber(price)} × {shares} 股</p>
       </div>
       <div className="text-right">
-        <p className={`text-sm font-semibold ${type === 'sell' ? 'text-emerald-600' : 'text-gray-700'}`}>
-          {type === 'sell' ? '+' : '-'}{formatNTD(amount)}
+        <p className="text-sm font-semibold text-gray-700">
+          {type === 'sell' ? '' : '-'}{formatNTD(amount)}
         </p>
         {profit !== null && (
           <p className={`text-xs font-medium ${profit >= 0 ? 'text-red-500' : 'text-emerald-500'}`}>
@@ -723,7 +723,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                   <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-3 gap-2 text-center">
                     <MiniStat label="手續費" value={`-${formatNTD((tx as SellTransaction).fee)}`} />
                     <MiniStat label="交易稅" value={`-${formatNTD((tx as SellTransaction).tax)}`} />
-                    <MiniStat label="可取得" value={formatNTD((tx as SellTransaction).netProceeds)} highlight />
+                    <MiniStat label="可取得" value={formatNTD((tx as SellTransaction).netProceeds)} />
                   </div>
                 </button>
               ) : (
