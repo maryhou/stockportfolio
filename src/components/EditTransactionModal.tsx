@@ -153,11 +153,11 @@ export default function EditTransactionModal({
             </span>
           </div>
 
-          {/* Broker (hidden for imported, only when multiple brokers exist) */}
-          {settings.brokers.length > 1 && !isImportedTx && (
+          {/* Broker (shown whenever multiple brokers exist) */}
+          {settings.brokers.length > 1 && (
             <div className="mb-4">
               <label className="label">券商</label>
-              <select value={brokerId} onChange={(e) => { setBrokerId(e.target.value); setFeeOverride(''); }} className="input">
+              <select value={brokerId} onChange={(e) => { setBrokerId(e.target.value); if (!isImportedTx) setFeeOverride(''); }} className="input">
                 {settings.brokers.map((b) => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
