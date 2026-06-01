@@ -196,15 +196,24 @@ export default function AddTransactionSheet({
           </div>
 
           {/* Buy / Sell toggle */}
-          <div className="flex gap-2 mb-4 p-1 bg-gray-100 rounded-2xl">
+          <div className="relative flex mb-4 p-1 bg-gray-100 rounded-2xl">
+            {/* sliding pill */}
+            <div
+              className={`absolute top-1 bottom-1 rounded-xl shadow-sm transition-all duration-300 ease-in-out ${
+                txType === 'buy' ? 'bg-violet-600' : 'bg-emerald-500'
+              }`}
+              style={{
+                width: 'calc((100% - 8px) / 2)',
+                transform: `translateX(calc(${txType === 'sell' ? 1 : 0} * 100%))`,
+                left: '4px',
+              }}
+            />
             {(['buy', 'sell'] as TxType[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTxType(t)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                  txType === t
-                    ? t === 'buy' ? 'bg-violet-600 text-white shadow-sm' : 'bg-emerald-500 text-white shadow-sm'
-                    : 'text-gray-400'
+                className={`relative z-10 flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200 ${
+                  txType === t ? 'text-white' : 'text-gray-400'
                 }`}
               >
                 {t === 'buy' ? '買入' : '賣出'}
