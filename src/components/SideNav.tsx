@@ -6,6 +6,7 @@ interface SideNavProps {
   onNavigate: (v: ViewName) => void;
   onAddClick: () => void;
   hasUnread?: boolean;
+  userName?: string;
 }
 
 function BriefcaseIcon({ size = 22, className = '' }: { size?: number; className?: string }) {
@@ -19,7 +20,8 @@ function BriefcaseIcon({ size = 22, className = '' }: { size?: number; className
   );
 }
 
-export default function SideNav({ active, onNavigate, onAddClick, hasUnread }: SideNavProps) {
+export default function SideNav({ active, onNavigate, onAddClick, hasUnread, userName = '' }: SideNavProps) {
+  const avatarLetter = userName.charAt(0).toUpperCase() || 'W';
   const items: { view: ViewName; Icon: React.ComponentType<{ size?: number; className?: string }>; label: string }[] = [
     { view: 'home',     Icon: HomeIcon,       label: '首頁' },
     { view: 'activity', Icon: ChartIcon,      label: '分析' },
@@ -33,7 +35,7 @@ export default function SideNav({ active, onNavigate, onAddClick, hasUnread }: S
       <div className="px-6 py-6 border-b border-gray-100">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-violet-600 flex items-center justify-center">
-            <span className="text-white text-sm font-bold">S</span>
+            <span className="text-white text-sm font-bold">{avatarLetter}</span>
           </div>
           <div>
             <p className="text-sm font-bold text-gray-800">投資日誌</p>

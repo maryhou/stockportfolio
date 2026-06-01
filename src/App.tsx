@@ -305,7 +305,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <SideNav active={view} onNavigate={handleNavigate} onAddClick={() => setShowAdd(true)} hasUnread={hasUnread} />
+      <SideNav active={view} onNavigate={handleNavigate} onAddClick={() => setShowAdd(true)} hasUnread={hasUnread} userName={settings.userName} />
 
       <div className="flex-1 lg:ml-64 flex flex-col min-h-screen min-w-0 overflow-x-hidden">
         <div className="mx-auto w-full max-w-[430px] md:max-w-full min-h-screen relative">
