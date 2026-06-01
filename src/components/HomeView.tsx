@@ -31,6 +31,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
   const [showRealizedInfo,   setShowRealizedInfo]   = useState(false);
   const [showCumulativeInfo, setShowCumulativeInfo] = useState(false);
   const [showProceedsInfo,   setShowProceedsInfo]   = useState(false);
+  const [isAmountHidden,     setIsAmountHidden]     = useState(false);
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
 
   // ── Portfolio calculations ──────────────────────────────────────────────────
@@ -183,13 +184,42 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
             </button>
           </div>
 
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-4xl font-bold text-white tracking-tight leading-none">
-              {formatNTD(totalCurrentValue)}
-            </p>
-            {portfolioSparkline.length > 1 && (
-              <PortfolioSparkline prices={portfolioSparkline} isUp={cumulativePL >= 0} />
-            )}
+          <div className="flex items-center gap-3">
+            {/* Left 65%: value + eye toggle */}
+            <div className="flex items-center gap-2 min-w-0" style={{ flex: '0 0 65%' }}>
+              <p
+                className="font-bold text-white tracking-tight leading-none"
+                style={{ fontSize: 'clamp(1.5rem, 8vw, 2.25rem)' }}
+              >
+                {isAmountHidden ? '$ • • • • • •' : formatNTD(totalCurrentValue)}
+              </p>
+              <button
+                onClick={() => setIsAmountHidden(!isAmountHidden)}
+                className="flex-shrink-0 opacity-50 hover:opacity-90 active:opacity-90 transition-opacity"
+                aria-label={isAmountHidden ? '顯示金額' : '隱藏金額'}
+              >
+                {isAmountHidden ? (
+                  // Eye-off
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                ) : (
+                  // Eye
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                )}
+              </button>
+            </div>
+            {/* Right 35%: sparkline */}
+            <div style={{ flex: '0 0 35%' }}>
+              {portfolioSparkline.length > 1 && (
+                <PortfolioSparkline prices={portfolioSparkline} isUp={cumulativePL >= 0} />
+              )}
+            </div>
           </div>
         </div>
 

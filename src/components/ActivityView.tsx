@@ -438,29 +438,41 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[360px_1fr] lg:gap-6 lg:items-start">
       {/* Hero card — gradient */}
       <div className="rounded-3xl overflow-hidden shadow-lg" style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' }}>
-        {/* Top: P&L + sparkline */}
+        {/* Top: P&L */}
         <div className="p-5">
-          <div className="flex items-start justify-between gap-3">
-            {/* Left: P&L */}
-            <div className="flex-1 min-w-0">
-              <button
-                onClick={() => setShowPLInfo(true)}
-                className="flex items-center gap-1.5 mb-2 active:opacity-70 transition-opacity"
-              >
-                <p className="text-sm text-white/70 font-medium">{isClosed ? '已實現損益' : '總損益'}</p>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="rgba(255,255,255,0.45)">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="16" x2="12" y2="12" />
-                  <circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.45)" stroke="none" />
-                </svg>
-              </button>
-              <p className={`text-4xl font-bold tracking-tight leading-none ${heroDisplayPL === 0 ? 'text-white' : isProfit ? 'text-red-400' : 'text-emerald-300'}`}>
-                {heroDisplayPL > 0 ? '+' : ''}{formatNTD(heroDisplayPL)}
-              </p>
-              <p className={`text-xl font-semibold mt-2 ${heroDisplayPL === 0 ? 'text-white/60' : isProfit ? 'text-red-400' : 'text-emerald-300'}`}>
+          {/* Row 1: label + today badge */}
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <button
+              onClick={() => setShowPLInfo(true)}
+              className="flex items-center gap-1.5 active:opacity-70 transition-opacity"
+            >
+              <p className="text-sm text-white/70 font-medium">{isClosed ? '已實現損益' : '總損益'}</p>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="rgba(255,255,255,0.45)">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.45)" stroke="none" />
+              </svg>
+            </button>
+            {todayChangeTotal !== null && todayChangePct !== null && (
+              <div className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-white/20 text-white whitespace-nowrap">
+                今日 {todayChangeTotal >= 0 ? '+' : ''}{formatNTD(todayChangeTotal)} ({todayChangePct >= 0 ? '+' : ''}{todayChangePct.toFixed(2)}%)
+              </div>
+            )}
+          </div>
+
+          {/* Row 2: P&L number — full width, responsive font size */}
+          <p className={`font-bold tracking-tight leading-none ${heroDisplayPL === 0 ? 'text-white' : isProfit ? 'text-red-400' : 'text-emerald-300'}`}
+            style={{ fontSize: 'clamp(1.75rem, 9vw, 2.25rem)' }}>
+            {heroDisplayPL > 0 ? '+' : ''}{formatNTD(heroDisplayPL)}
+          </p>
+
+          {/* Row 3: [percentage + pill] left, sparkline right */}
+          <div className="flex items-start justify-between mt-1">
+            <div>
+              <p className={`text-xl font-semibold ${heroDisplayPL === 0 ? 'text-white/60' : isProfit ? 'text-red-400' : 'text-emerald-300'}`}>
                 {heroDisplayPct > 0 ? '+' : ''}{heroDisplayPct.toFixed(2)}%
               </p>
-              <div className="mt-3 inline-flex items-center gap-1.5 bg-white rounded-full px-3 py-1.5">
+              <div className="mt-2 inline-flex items-center gap-1.5 bg-white rounded-full px-3 py-1.5">
                 {isClosed ? (
                   <>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -487,18 +499,9 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                 )}
               </div>
             </div>
-
-            {/* Right: today badge + sparkline */}
-            <div className="flex flex-col items-end gap-2 flex-shrink-0">
-              {todayChangeTotal !== null && todayChangePct !== null && (
-                <div className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-white/20 text-white whitespace-nowrap">
-                  今日 {todayChangeTotal >= 0 ? '+' : ''}{formatNTD(todayChangeTotal)} ({todayChangePct >= 0 ? '+' : ''}{todayChangePct.toFixed(2)}%)
-                </div>
-              )}
-              {sparklinePrices && sparklinePrices.length > 1 && (
-                <HeroSparkline prices={sparklinePrices} />
-              )}
-            </div>
+            {sparklinePrices && sparklinePrices.length > 1 && (
+              <HeroSparkline prices={sparklinePrices} />
+            )}
           </div>
         </div>
 
