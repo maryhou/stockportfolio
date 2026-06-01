@@ -47,6 +47,8 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
     .filter((s) => s.profit > 0)
     .sort((a, b) => b.profit - a.profit)[0] ?? null;
 
+  const hasSells = stocks.some((s) => s.sells.length > 0);
+
   // Investment stats
   const totalTrades  = stocks.reduce((s, st) => s + st.buys.length + st.sells.length, 0);
   const holdingCount = stocks.filter((s) => calcRemainingShares(s.buys, s.sells) > 0).length;
@@ -181,7 +183,9 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
                   </div>
                 </>
               ) : (
-                <p className="text-sm text-gray-300">尚無賣出記錄</p>
+                <p className="text-sm text-gray-300">
+                  {hasSells ? '尚未有獲利已實現，持續投資，期待首筆獲利！' : '尚無賣出記錄'}
+                </p>
               )}
             </div>
           </div>
