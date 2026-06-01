@@ -562,7 +562,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
         <StatCard label="平均成本" value={formatPrice(avgCost)} sub="NT$/股" accent="violet" />
         <StatCard label="剩餘股數" value={`${remaining} 股`} sub={remaining > 0 ? '持有中' : '已清倉'} accent={remaining > 0 ? 'violet' : 'gray'} />
         <StatCard label="已實現損益" value={`${realizedProfit > 0 ? '+' : ''}${formatNTD(realizedProfit)}`} sub="含手續費及稅" accent={realizedProfit === 0 ? 'gray' : realizedProfit > 0 ? 'red' : 'green'} />
-        <StatCard label="總回收金額" value={formatNTD(netProceeds)} sub="實際入帳(賣出淨額)" accent={netProceeds === 0 ? 'gray' : 'green'} />
+        <StatCard label="總回收金額" value={formatNTD(netProceeds)} sub="實際入帳(賣出淨額)" accent={netProceeds === 0 ? 'gray' : 'violet'} />
         {remaining > 0 && (
           <StatCard label="未實現損益" value={`${unrealizedPL > 0 ? '+' : ''}${formatNTD(unrealizedPL)}`} sub={`持有 ${remaining} 股`} accent={unrealizedPL === 0 ? 'gray' : unrealizedPL > 0 ? 'red' : 'green'} />
         )}
