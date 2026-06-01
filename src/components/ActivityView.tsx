@@ -4,8 +4,8 @@ import {
   calcAvgCost,
   calcRemainingShares,
   calcTotalInvested,
-  calcTotalRealizedProfit,
   calcTotalNetProceeds,
+  calcExactRealizedProfit,
   formatNTD,
   formatNumber,
   formatPrice,
@@ -91,7 +91,7 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
 
   // Portfolio-wide totals — scoped to displayStocks
   const totalInvested = displayStocks.reduce((s, st) => s + calcTotalInvested(st.buys), 0);
-  const totalRealized = displayStocks.reduce((s, st) => s + calcTotalRealizedProfit(st.sells), 0);
+  const totalRealized = displayStocks.reduce((s, st) => s + calcExactRealizedProfit(st.buys, st.sells), 0);
   const totalNetProceeds = displayStocks.reduce((s, st) => s + calcTotalNetProceeds(st.sells), 0);
   const totalUnrealized = displayStocks.reduce((s, st) => {
     const rem = calcRemainingShares(st.buys, st.sells);
@@ -263,8 +263,8 @@ function StockSummaryRow({ stock, color, onClick }: { stock: Stock; color: strin
   const remaining = calcRemainingShares(stock.buys, stock.sells);
   const invested = calcTotalInvested(stock.buys);
   const totalPL = calcTotalNetProceeds(stock.sells) + remaining * stock.currentPrice - invested;
-  const realizedProfit = calcTotalRealizedProfit(stock.sells);
   const isClosed = remaining === 0;
+  const realizedProfit = calcExactRealizedProfit(stock.buys, stock.sells);
   // 已清倉顯示已實現損益＋已實現報酬率，持倉中顯示總損益
   const displayPL  = isClosed ? realizedProfit : totalPL;
   const plPct = invested > 0 ? (displayPL / invested) * 100 : 0;
@@ -382,7 +382,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
   const remaining = calcRemainingShares(stock.buys, stock.sells);
   const isClosed = remaining === 0 && stock.buys.length > 0;
   const totalInvested = calcTotalInvested(stock.buys);
-  const realizedProfit = calcTotalRealizedProfit(stock.sells);
+  const realizedProfit = calcExactRealizedProfit(stock.buys, stock.sells);
   const netProceeds = calcTotalNetProceeds(stock.sells);
   const currentHoldingValue = remaining * stock.currentPrice;
 

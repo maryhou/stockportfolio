@@ -29,6 +29,19 @@ export function calcTotalRealizedProfit(sells: SellTransaction[]): number {
   return sells.reduce((s, b) => s + b.profit, 0);
 }
 
+/**
+ * Exact realized profit using integer math.
+ * For fully closed positions: netProceeds - totalInvested (no float rounding).
+ * For partially closed positions: falls back to sum of stored profits (proportional).
+ */
+export function calcExactRealizedProfit(buys: BuyTransaction[], sells: SellTransaction[]): number {
+  const remaining = calcRemainingShares(buys, sells);
+  if (remaining === 0 && buys.length > 0) {
+    return calcTotalNetProceeds(sells) - calcTotalInvested(buys);
+  }
+  return calcTotalRealizedProfit(sells);
+}
+
 export function calcTotalNetProceeds(sells: SellTransaction[]): number {
   return sells.reduce((s, b) => s + b.netProceeds, 0);
 }

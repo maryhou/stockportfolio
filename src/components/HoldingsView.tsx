@@ -4,7 +4,7 @@ import {
   calcAvgCost,
   calcRemainingShares,
   calcTotalNetProceeds,
-  calcTotalRealizedProfit,
+  calcExactRealizedProfit,
   calcTotalInvested,
   formatNTD,
   formatNumber,
@@ -118,9 +118,9 @@ function HoldingCard({ stock, onClick }: { stock: Stock; onClick: () => void }) 
   const netProceeds = calcTotalNetProceeds(stock.sells);
   const currentHoldingValue = remaining * stock.currentPrice;
   const totalInvested = calcTotalInvested(stock.buys);
-  const realizedProfit = calcTotalRealizedProfit(stock.sells);
-  const totalPL = netProceeds + currentHoldingValue - totalInvested;
   const isClosed = remaining === 0;
+  const realizedProfit = calcExactRealizedProfit(stock.buys, stock.sells);
+  const totalPL = netProceeds + currentHoldingValue - totalInvested;
   // 已清倉時顯示「已實現損益」，持倉中顯示「總損益」
   const displayPL  = isClosed ? realizedProfit : totalPL;
   const displayPct = totalInvested > 0 ? (displayPL / totalInvested) * 100 : 0;

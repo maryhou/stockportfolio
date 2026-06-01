@@ -3,7 +3,7 @@ import type { Stock, AppSettings } from '../types';
 import {
   calcAvgCost,
   calcRemainingShares,
-  calcTotalRealizedProfit,
+  calcExactRealizedProfit,
   calcTotalNetProceeds,
   calcTotalInvested,
   formatNTD,
@@ -35,7 +35,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
 
   // ── Portfolio calculations ──────────────────────────────────────────────────
   const totalInvested    = stocks.reduce((s, st) => s + calcTotalInvested(st.buys), 0);
-  const realizedProfit   = stocks.reduce((s, st) => s + calcTotalRealizedProfit(st.sells), 0);
+  const realizedProfit   = stocks.reduce((s, st) => s + calcExactRealizedProfit(st.buys, st.sells), 0);
   const totalProceeds    = stocks.reduce((s, st) => s + calcTotalNetProceeds(st.sells), 0);
   const totalCurrentValue = stocks.reduce((acc, st) => {
     const rem = calcRemainingShares(st.buys, st.sells);
@@ -586,7 +586,7 @@ function StockCard({ stock, onClick, carousel = false, marketHistory }: { stock:
   const remaining      = calcRemainingShares(stock.buys, stock.sells);
   const invested       = calcTotalInvested(stock.buys);
   const netProceeds    = calcTotalNetProceeds(stock.sells);
-  const realizedProfit = calcTotalRealizedProfit(stock.sells);
+  const realizedProfit = calcExactRealizedProfit(stock.buys, stock.sells);
   const holdingVal     = remaining * stock.currentPrice;
   const totalPL        = netProceeds + holdingVal - invested;
   const isClosed       = remaining === 0;
@@ -697,7 +697,7 @@ function StockListRow({ stock, onClick }: { stock: Stock; onClick: () => void })
   const remaining      = calcRemainingShares(stock.buys, stock.sells);
   const invested       = calcTotalInvested(stock.buys);
   const netProceeds    = calcTotalNetProceeds(stock.sells);
-  const realizedProfit = calcTotalRealizedProfit(stock.sells);
+  const realizedProfit = calcExactRealizedProfit(stock.buys, stock.sells);
   const holdingVal     = remaining * stock.currentPrice;
   const totalPL        = netProceeds + holdingVal - invested;
   const isClosed       = remaining === 0;
