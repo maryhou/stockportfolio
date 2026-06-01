@@ -303,7 +303,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [stocks.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const ptrEnabled = view === 'home' || view === 'holdings' || view === 'profile';
+  const ptrEnabled = view === 'home' || view === 'activity' || view === 'holdings' || view === 'profile';
   const ptrState = usePullToRefresh(scrollRef, handleRefreshAll, ptrEnabled);
 
   function handleUpdateTarget(stockId: string, price: number) {
