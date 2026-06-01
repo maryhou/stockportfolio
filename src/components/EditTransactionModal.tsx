@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Stock, BuyTransaction, SellTransaction, AppSettings } from '../types';
-import { calcFee, calcTax, formatNTD, isETFSymbol, ETF_TAX_RATE } from '../utils/calculations';
+import { calcFee, calcTax, formatNTD, formatPrice, isETFSymbol, ETF_TAX_RATE } from '../utils/calculations';
 import { CloseIcon } from './icons/Icons';
 
 interface EditTransactionModalProps {
@@ -30,6 +30,9 @@ export default function EditTransactionModal({
     setTimeout(onClose, 280);
   }
 
+  // Detect imported transaction (匯入初始持倉 — fee already baked into price)
+  const isImportedTx = txType === 'buy' && !!(transaction as BuyTransaction).imported;
+
   // Broker — default to transaction's brokerId, or first broker
   const [brokerId, setBrokerId] = useState(transaction.brokerId ?? settings.brokers[0]?.id ?? '');
   const selectedBroker = settings.brokers.find((b) => b.id === brokerId) ?? settings.brokers[0];
@@ -43,15 +46,32 @@ export default function EditTransactionModal({
   );
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const priceN = parseFloat(price) || 0;
+  // For imported transactions: edit via total cost rather than ugly decimal price
+  const importedTotalCost = isImportedTx
+    ? Math.round(transaction.price * transaction.shares)
+    : 0;
+  const [totalCostEdit, setTotalCostEdit] = useState(
+    isImportedTx ? String(importedTotalCost) : ''
+  );
+
   const sharesN = parseInt(shares) || 0;
-  const autoFee = priceN > 0 && sharesN > 0 && selectedBroker
+
+  // Effective price: for imported, derive from total cost / shares
+  const priceN = (() => {
+    if (isImportedTx) {
+      const tc = parseFloat(totalCostEdit) || 0;
+      return tc > 0 && sharesN > 0 ? tc / sharesN : 0;
+    }
+    return parseFloat(price) || 0;
+  })();
+
+  const autoFee = priceN > 0 && sharesN > 0 && selectedBroker && !isImportedTx
     ? calcFee(priceN, sharesN, selectedBroker.feeRate, selectedBroker.feeDiscount)
     : 0;
   const detectedETF = isETFSymbol(stock.symbol);
   const effectiveTaxRate = detectedETF ? ETF_TAX_RATE : settings.taxRate;
   const autoTax = priceN > 0 && sharesN > 0 ? calcTax(priceN, sharesN, effectiveTaxRate) : 0;
-  const fee = feeOverride !== '' ? (parseInt(feeOverride) || 0) : autoFee;
+  const fee = isImportedTx ? 0 : (feeOverride !== '' ? (parseInt(feeOverride) || 0) : autoFee);
   const tax = txType === 'sell'
     ? (taxOverride !== '' ? (parseInt(taxOverride) || 0) : autoTax)
     : 0;
@@ -59,7 +79,11 @@ export default function EditTransactionModal({
   const netProceeds = txType === 'sell' ? priceN * sharesN - fee - tax : 0;
   const profit = txType === 'sell' ? netProceeds - avgCost * sharesN : 0;
 
+  // Skip first render so stored fee=0 isn't overwritten by auto-calc on mount
+  const isFirstRender = useRef(true);
   useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (isImportedTx) return;
     setFeeOverride(String(autoFee));
     if (txType === 'sell') setTaxOverride(String(autoTax));
   }, [price, shares]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -67,7 +91,9 @@ export default function EditTransactionModal({
   function handleSave() {
     if (!priceN || !sharesN || !date) return;
     if (txType === 'buy') {
-      onSave({ id: transaction.id, date, price: priceN, shares: sharesN, fee, brokerId } as BuyTransaction);
+      const saved: BuyTransaction = { id: transaction.id, date, price: priceN, shares: sharesN, fee, brokerId };
+      if (isImportedTx) saved.imported = true;
+      onSave(saved);
     } else {
       onSave({ id: transaction.id, date, price: priceN, shares: sharesN, fee, tax, netProceeds, profit, brokerId } as SellTransaction);
     }
@@ -117,14 +143,18 @@ export default function EditTransactionModal({
               <p className="text-xs text-gray-400">{stock.symbol}</p>
             </div>
             <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-              isBuy ? 'bg-violet-100 text-violet-700' : 'bg-emerald-100 text-emerald-700'
+              isImportedTx
+                ? 'bg-blue-100 text-blue-700'
+                : isBuy
+                ? 'bg-violet-100 text-violet-700'
+                : 'bg-emerald-100 text-emerald-700'
             }`}>
-              {isBuy ? '買入' : '賣出'}
+              {isImportedTx ? '匯入持倉' : isBuy ? '買入' : '賣出'}
             </span>
           </div>
 
-          {/* Broker (only when multiple brokers exist) */}
-          {settings.brokers.length > 1 && (
+          {/* Broker (hidden for imported, only when multiple brokers exist) */}
+          {settings.brokers.length > 1 && !isImportedTx && (
             <div className="mb-4">
               <label className="label">券商</label>
               <select value={brokerId} onChange={(e) => { setBrokerId(e.target.value); setFeeOverride(''); }} className="input">
@@ -137,27 +167,54 @@ export default function EditTransactionModal({
 
           {/* Date */}
           <div className="mb-4">
-            <label className="label">交易日期</label>
+            <label className="label">{isImportedTx ? '追蹤起始日期' : '交易日期'}</label>
             <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
 
-          {/* Price & Shares */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div>
-              <label className="label">{isBuy ? '買入股價' : '賣出股價'} (NT$)</label>
-              <input type="number" className="input" value={price} onChange={(e) => setPrice(e.target.value)} />
+          {/* Imported: total cost + shares; Normal: price + shares */}
+          {isImportedTx ? (
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <label className="label">匯入總成本 (NT$)</label>
+                <input
+                  type="number" className="input"
+                  value={totalCostEdit}
+                  onChange={(e) => setTotalCostEdit(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">持有股數</label>
+                <input type="number" className="input" value={shares} onChange={(e) => setShares(e.target.value)} />
+              </div>
             </div>
-            <div>
-              <label className="label">股數</label>
-              <input type="number" className="input" value={shares} onChange={(e) => setShares(e.target.value)} />
+          ) : (
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <label className="label">{isBuy ? '買入股價' : '賣出股價'} (NT$)</label>
+                <input type="number" className="input" value={price} onChange={(e) => setPrice(e.target.value)} />
+              </div>
+              <div>
+                <label className="label">股數</label>
+                <input type="number" className="input" value={shares} onChange={(e) => setShares(e.target.value)} />
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Fee */}
-          <div className="mb-4">
-            <label className="label">手續費</label>
-            <input type="number" className="input" value={feeOverride} onChange={(e) => setFeeOverride(e.target.value)} />
-          </div>
+          {/* Fee — locked for imported; editable for normal */}
+          {isImportedTx ? (
+            <div className="mb-4">
+              <label className="label">手續費</label>
+              <div className="relative">
+                <input type="text" className="input bg-gray-50 text-gray-400 cursor-default" value="0" readOnly />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-blue-400">已含在均價中</span>
+              </div>
+            </div>
+          ) : (
+            <div className="mb-4">
+              <label className="label">手續費</label>
+              <input type="number" className="input" value={feeOverride} onChange={(e) => setFeeOverride(e.target.value)} />
+            </div>
+          )}
 
           {/* Tax (sell only) */}
           {!isBuy && (
@@ -169,14 +226,27 @@ export default function EditTransactionModal({
 
           {/* Preview */}
           {priceN > 0 && sharesN > 0 && (
-            <div className={`rounded-2xl p-4 mb-5 ${isBuy ? 'bg-violet-50' : 'bg-emerald-50'}`}>
+            <div className={`rounded-2xl p-4 mb-5 ${isImportedTx ? 'bg-blue-50' : isBuy ? 'bg-violet-50' : 'bg-emerald-50'}`}>
               <p className="text-xs font-semibold text-gray-500 mb-2">計算預覽</p>
               <div className="flex flex-col gap-1.5">
-                {isBuy ? (
+                {isImportedTx ? (
+                  <>
+                    <PreviewRow label="買入均價/股（含費用）" value={formatPrice(priceN)} />
+                    <PreviewRow label="目前持有股數" value={`${sharesN} 股`} />
+                    <PreviewRow
+                      label="買入成本金額"
+                      value={formatNTD(parseFloat(totalCostEdit) || priceN * sharesN)}
+                      highlight
+                    />
+                    <div className="mt-1 pt-1 border-t border-blue-100">
+                      <p className="text-[10px] text-blue-400">後續新增的買賣交易將以此成本為基礎計算損益</p>
+                    </div>
+                  </>
+                ) : isBuy ? (
                   <>
                     <PreviewRow label="買入金額" value={formatNTD(priceN * sharesN)} />
                     <PreviewRow label="手續費" value={`-${formatNTD(fee)}`} />
-                    <PreviewRow label="總花費" value={formatNTD(priceN * sharesN + fee)} highlight />
+                    {fee > 0 && <PreviewRow label="總花費" value={formatNTD(priceN * sharesN + fee)} highlight />}
                   </>
                 ) : (
                   <>
@@ -204,7 +274,9 @@ export default function EditTransactionModal({
             onClick={handleSave}
             disabled={!priceN || !sharesN || !date}
             className={`w-full py-4 rounded-2xl font-semibold text-white transition-all mb-3 ${
-              isBuy
+              isImportedTx
+                ? 'bg-blue-500 active:bg-blue-600 disabled:bg-blue-200'
+                : isBuy
                 ? 'bg-violet-600 active:bg-violet-700 disabled:bg-violet-200'
                 : 'bg-emerald-500 active:bg-emerald-600 disabled:bg-emerald-200'
             } disabled:cursor-not-allowed`}

@@ -12,6 +12,7 @@ export interface BuyTransaction {
   shares: number;
   fee: number;
   brokerId?: string;    // which broker executed this trade
+  imported?: boolean;   // true for 匯入初始持倉 (fee already included in price)
 }
 
 export interface SellTransaction {

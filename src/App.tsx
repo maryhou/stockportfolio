@@ -121,9 +121,9 @@ export default function App() {
   }, [stocks]);
 
   // Tracks which stock cards are currently in the viewport (reported by HomeView)
-  const [visibleStockIds, setVisibleStockIds] = useState<Set<string>>(new Set());
-  const handleVisibleStocksChange = useCallback((ids: Set<string>) => {
-    setVisibleStockIds(ids);
+  // Still used to seed the initial visible set; poller now fetches all stocks.
+  const handleVisibleStocksChange = useCallback((_ids: Set<string>) => {
+    // no-op: poller no longer depends on visible subset
   }, []);
 
   const hasUnread = notifications.some((n) => !n.read);
@@ -242,8 +242,8 @@ export default function App() {
     }
   }
 
-  // Auto-polling: refresh prices for visible cards every 15 s
-  useStockPoller(stocks, visibleStockIds, handleUpdatePrice);
+  // Auto-polling: refresh prices for ALL stocks every 15 s (desktop + mobile safe)
+  useStockPoller(stocks, handleUpdatePrice);
 
   // Shared refresh — called by pull-to-refresh gesture AND tap buttons
   async function handleRefreshAll() {
@@ -251,11 +251,11 @@ export default function App() {
     isRefreshingRef.current = true;
     setIsRefreshing(true);
     try {
-      const symbols = stocks.map((s) => s.id);
-      const prices = await fetchStockPrices(symbols); // throws on network/API error
+      const symbols = stocks.map((s) => s.symbol); // use symbol, not id
+      const prices = await fetchStockPrices(symbols);
       setStocks((prev) => {
         const next = prev.map((s) => {
-          const p = prices[s.id];
+          const p = prices[s.symbol]; // look up by symbol
           return p !== undefined && p !== s.currentPrice ? { ...s, currentPrice: p } : s;
         });
         saveStocks(next);
@@ -267,6 +267,15 @@ export default function App() {
       setIsRefreshing(false);
     }
   }
+
+  // Initial price fetch — run once after mount so prices aren't stale on first load
+  const initialFetchDone = useRef(false);
+  useEffect(() => {
+    if (initialFetchDone.current || stocks.length === 0) return;
+    initialFetchDone.current = true;
+    const timer = setTimeout(() => { handleRefreshAll(); }, 1_500);
+    return () => clearTimeout(timer);
+  }, [stocks.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const ptrEnabled = view === 'home' || view === 'holdings' || view === 'profile';
   const ptrState = usePullToRefresh(scrollRef, handleRefreshAll, ptrEnabled);
@@ -285,12 +294,22 @@ export default function App() {
   }
 
   function handleDeleteTx(stockId: string, type: 'buy' | 'sell', txId: string) {
-    update(stocks.map((s) => {
+    const updated = stocks.map((s) => {
       if (s.id !== stockId) return s;
       if (type === 'buy') return { ...s, buys: s.buys.filter((b) => b.id !== txId) };
       return { ...s, sells: s.sells.filter((sv) => sv.id !== txId) };
-    }));
-    showToast('交易記錄已刪除');
+    });
+
+    // If the stock is now completely empty, remove it and navigate back
+    const target = updated.find((s) => s.id === stockId);
+    if (target && target.buys.length === 0 && target.sells.length === 0) {
+      update(updated.filter((s) => s.id !== stockId));
+      setSelectedStockId(null);
+      showToast('最後一筆交易刪除，個股紀錄已移除');
+    } else {
+      update(updated);
+      showToast('交易記錄已刪除');
+    }
   }
 
   function handleStockClick(id: string) {

@@ -11,7 +11,7 @@ import {
   formatPrice,
 } from '../utils/calculations';
 import DonutChart from './DonutChart';
-import { TargetIcon, TrendUpIcon, TrendDownIcon, RefreshIcon } from './icons/Icons';
+import { TargetIcon, TrendUpIcon, TrendDownIcon, RefreshIcon, EditIcon } from './icons/Icons';
 import EditTransactionModal from './EditTransactionModal';
 
 interface ActivityViewProps {
@@ -613,27 +613,29 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
               <div className="flex gap-1">
                 <input autoFocus type="number" value={targetInput} onChange={(e) => setTargetInput(e.target.value)}
                   className="w-full text-sm border border-violet-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-violet-200"
-                  placeholder={String(stock.targetPrice)} />
+                  placeholder="輸入目標價" />
                 <button onClick={() => { const v = parseFloat(targetInput); if (!isNaN(v) && v > 0) onUpdateTarget(stock.id, v); setEditingTarget(false); }}
                   className="text-xs bg-violet-600 text-white px-2 py-1 rounded-lg">OK</button>
               </div>
             ) : (
-              <button onClick={() => { setTargetInput(String(stock.targetPrice)); setEditingTarget(true); }}
-                className="flex items-center gap-1 text-base font-bold text-violet-600 hover:text-violet-800 transition-colors">
-                {formatNumber(stock.targetPrice)}
-                <span className="text-[10px] text-gray-400 font-normal">點擊更新</span>
+              <button onClick={() => { setTargetInput(stock.targetPrice > 0 ? String(stock.targetPrice) : ''); setEditingTarget(true); }}
+                className="flex items-center gap-1.5 text-base font-bold text-violet-600 hover:text-violet-700 transition-colors">
+                {stock.targetPrice > 0 ? formatNumber(stock.targetPrice) : <span className="text-base font-bold text-violet-600">0</span>}
+                <EditIcon size={13} className="text-violet-500" />
               </button>
             )}
           </div>
         </div>
-        {stock.currentPrice >= stock.targetPrice ? (
-          <div className="mt-3 text-xs bg-emerald-50 text-emerald-700 rounded-lg px-3 py-2 flex items-center gap-1.5">
-            <TrendUpIcon size={12} /> 目前股價已達目標！
-          </div>
-        ) : (
-          <div className="mt-3 text-xs bg-violet-50 text-violet-700 rounded-lg px-3 py-2">
-            距離目標還差 <strong>{formatNumber(stock.targetPrice - stock.currentPrice)}</strong> 元（{(((stock.targetPrice - stock.currentPrice) / stock.currentPrice) * 100).toFixed(1)}%）
-          </div>
+        {stock.targetPrice > 0 && (
+          stock.currentPrice >= stock.targetPrice ? (
+            <div className="mt-3 text-xs bg-emerald-50 text-emerald-700 rounded-lg px-3 py-2 flex items-center gap-1.5">
+              <TrendUpIcon size={12} /> 目前股價已達目標！
+            </div>
+          ) : (
+            <div className="mt-3 text-xs bg-violet-50 text-violet-700 rounded-lg px-3 py-2">
+              距離目標還差 <strong>{formatNumber(stock.targetPrice - stock.currentPrice)}</strong> 元（{(((stock.targetPrice - stock.currentPrice) / stock.currentPrice) * 100).toFixed(1)}%）
+            </div>
+          )
         )}
       </div>
 
@@ -727,36 +729,53 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                     <MiniStat label="可取得" value={formatNTD((tx as SellTransaction).netProceeds)} />
                   </div>
                 </button>
-              ) : (
-                <button
-                  key={tx.id}
-                  onClick={() => setEditTx({ type: 'buy', tx })}
-                  className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left w-full active:scale-[0.99] transition-transform"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center">
-                        <span className="text-xs font-bold text-violet-600">買</span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-800">{(tx as BuyTransaction).date}</p>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-xs text-gray-400">{formatNumber((tx as BuyTransaction).price)} × {(tx as BuyTransaction).shares} 股</p>
-                          <BrokerTag brokerId={(tx as BuyTransaction).brokerId} brokers={settings.brokers} />
+              ) : (() => {
+                const buyTx = tx as BuyTransaction;
+                const isImported = !!buyTx.imported;
+                const totalCost = isImported
+                  ? Math.round(buyTx.price * buyTx.shares)
+                  : buyTx.price * buyTx.shares + buyTx.fee;
+                return (
+                  <button
+                    key={tx.id}
+                    onClick={() => setEditTx({ type: 'buy', tx })}
+                    className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left w-full active:scale-[0.99] transition-transform"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isImported ? 'bg-blue-100' : 'bg-violet-100'}`}>
+                          <span className={`text-xs font-bold ${isImported ? 'text-blue-600' : 'text-violet-600'}`}>{isImported ? '匯' : '買'}</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">{buyTx.date}</p>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-xs text-gray-400">
+                              {isImported ? `均價 ${formatNumber(buyTx.price)} × ${buyTx.shares} 股` : `${formatNumber(buyTx.price)} × ${buyTx.shares} 股`}
+                            </p>
+                            {!isImported && <BrokerTag brokerId={buyTx.brokerId} brokers={settings.brokers} />}
+                          </div>
                         </div>
                       </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-gray-700">-{formatNTD(totalCost)}</p>
+                        <p className="text-xs text-gray-400">{isImported ? '已含費用' : '含手續費'}</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-gray-700">-{formatNTD((tx as BuyTransaction).price * (tx as BuyTransaction).shares + (tx as BuyTransaction).fee)}</p>
-                      <p className="text-xs text-gray-400">含手續費</p>
-                    </div>
-                  </div>
-                  <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-2 gap-2 text-center">
-                    <MiniStat label="手續費" value={`-${formatNTD((tx as BuyTransaction).fee)}`} />
-                    <MiniStat label="買入金額" value={formatNTD((tx as BuyTransaction).price * (tx as BuyTransaction).shares)} />
-                  </div>
-                </button>
-              )
+                    {isImported ? (
+                      <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-3 gap-2 text-center">
+                        <MiniStat label="買入均價/股" value={formatNumber(buyTx.price)} />
+                        <MiniStat label="持有股數" value={`${buyTx.shares} 股`} />
+                        <MiniStat label="買入成本金額" value={formatNTD(totalCost)} />
+                      </div>
+                    ) : (
+                      <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-2 gap-2 text-center">
+                        <MiniStat label="手續費" value={`-${formatNTD(buyTx.fee)}`} />
+                        <MiniStat label="買入金額" value={formatNTD(buyTx.price * buyTx.shares)} />
+                      </div>
+                    )}
+                  </button>
+                );
+              })()
             )}
         </div>
       </div>

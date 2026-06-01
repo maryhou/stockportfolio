@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Stock, BuyTransaction, SellTransaction, AppSettings } from '../types';
-import { calcAvgCost, calcFee, calcTax, calcRemainingShares, formatNTD, formatNumber, isETFSymbol, ETF_TAX_RATE } from '../utils/calculations';
+import { calcAvgCost, calcFee, calcTax, calcRemainingShares, formatNTD, formatNumber, formatPrice, isETFSymbol, ETF_TAX_RATE } from '../utils/calculations';
 import { CloseIcon } from './icons/Icons';
 import twStocksRaw from '../data/twStocks.json';
 
@@ -24,7 +24,13 @@ interface AddTransactionSheetProps {
   onAddStock: (stock: Stock) => void;
 }
 
-type TxType = 'buy' | 'sell';
+type TxType = 'buy' | 'sell' | 'import';
+
+const TABS: { key: TxType; label: string; activeColor: string }[] = [
+  { key: 'buy',    label: '買入',    activeColor: 'bg-violet-600' },
+  { key: 'sell',   label: '賣出',    activeColor: 'bg-emerald-500' },
+  { key: 'import', label: '匯入持倉', activeColor: 'bg-blue-500' },
+];
 
 export default function AddTransactionSheet({
   stocks,
@@ -48,6 +54,7 @@ export default function AddTransactionSheet({
   }
 
   const [txType, setTxType] = useState<TxType>('buy');
+  const activeTabIdx = TABS.findIndex((t) => t.key === txType);
   const [stockId, setStockId] = useState(stocks[0]?.id ?? '');
   const [isNewStock, setIsNewStock] = useState(false);
 
@@ -56,7 +63,7 @@ export default function AddTransactionSheet({
   const [newName, setNewName] = useState('');
   const [suggestions, setSuggestions] = useState<TwStock[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [nameLocked, setNameLocked] = useState(false); // true once auto-filled
+  const [nameLocked, setNameLocked] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
   // Broker selection — defaults to first broker
@@ -68,13 +75,20 @@ export default function AddTransactionSheet({
   const [price, setPrice] = useState('');
   const [shares, setShares] = useState('');
   const [feeOverride, setFeeOverride] = useState('');
+  // 匯入持倉專用：直接輸入總成本（優先於均價×股數）
+  const [totalCostInput, setTotalCostInput] = useState('');
 
-  const priceN = parseFloat(price) || 0;
   const sharesN = parseInt(shares) || 0;
-  const autoFee = priceN > 0 && sharesN > 0 && selectedBroker
+  const totalCostN = parseFloat(totalCostInput) || 0;
+  // 匯入模式：若填了總成本，反推均價（精確到小數）；否則用均價欄位
+  const priceN = (() => {
+    if (txType === 'import' && totalCostN > 0 && sharesN > 0) return totalCostN / sharesN;
+    return parseFloat(price) || 0;
+  })();
+  const autoFee = priceN > 0 && sharesN > 0 && selectedBroker && txType !== 'import'
     ? calcFee(priceN, sharesN, selectedBroker.feeRate, selectedBroker.feeDiscount)
     : 0;
-  const fee = feeOverride !== '' ? parseInt(feeOverride) : autoFee;
+  const fee = txType === 'import' ? 0 : (feeOverride !== '' ? parseInt(feeOverride) : autoFee);
 
   const stock = stocks.find((s) => s.id === stockId);
   const avgCost = stock ? calcAvgCost(stock.buys) : 0;
@@ -87,7 +101,7 @@ export default function AddTransactionSheet({
     stock.buys.length > 0 &&
     calcRemainingShares(stock.buys, stock.sells) === 0;
 
-  // ETF auto-detection: symbols starting with 0 (e.g. 0050, 00878) → 0.1% tax
+  // ETF auto-detection
   const currentSymbol = isNewStock ? newSymbol : (stock?.symbol ?? '');
   const detectedETF = isETFSymbol(currentSymbol);
   const effectiveTaxRate = detectedETF ? ETF_TAX_RATE : settings.taxRate;
@@ -111,7 +125,7 @@ export default function AddTransactionSheet({
 
   function handleSymbolChange(val: string) {
     setNewSymbol(val);
-    if (!nameLocked) setNewName(''); // clear name when symbol changes unless locked
+    if (!nameLocked) setNewName('');
     setNameLocked(false);
     const results = searchTwStocks(val);
     setSuggestions(results);
@@ -128,6 +142,20 @@ export default function AddTransactionSheet({
 
   function handleSubmit() {
     if (!priceN || !sharesN || !date) return;
+
+    // ── 匯入初始持倉 ──────────────────────────────────────────────────────────
+    if (txType === 'import') {
+      // fee = 0：費用已內含在券商均價中
+      const tx: BuyTransaction = { id: `b${Date.now()}`, date, price: priceN, shares: sharesN, fee: 0, imported: true };
+      if (isNewStock) {
+        if (!newName || !newSymbol) return;
+        onAddStock({ id: newSymbol, name: newName, symbol: newSymbol, targetPrice: 0, currentPrice: priceN, buys: [tx], sells: [] });
+      } else if (stock) {
+        onAddBuy(stockId, tx);
+      }
+      handleClose();
+      return;
+    }
 
     if (isNewStock) {
       if (!newName || !newSymbol) return;
@@ -170,15 +198,17 @@ export default function AddTransactionSheet({
     handleClose();
   }
 
+  const isImport = txType === 'import';
+
   return (
     <>
-      {/* Backdrop — fades in/out */}
+      {/* Backdrop */}
       <div
         onClick={handleClose}
         className={`fixed inset-0 bg-black/30 z-40 backdrop-blur-sm transition-opacity duration-300 ${show ? 'opacity-100' : 'opacity-0'}`}
       />
 
-      {/* Sheet — slides up/down */}
+      {/* Sheet */}
       <div
         className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] lg:max-w-lg bg-white rounded-t-3xl z-50 shadow-2xl transition-transform duration-300 ease-out ${show ? 'translate-y-0' : 'translate-y-full'}`}
         style={{ maxHeight: '92vh', overflowY: 'auto' }}
@@ -195,34 +225,48 @@ export default function AddTransactionSheet({
             </button>
           </div>
 
-          {/* Buy / Sell toggle */}
+          {/* 3-tab toggle: 買入 / 賣出 / 匯入持倉 */}
           <div className="relative flex mb-4 p-1 bg-gray-100 rounded-2xl">
-            {/* sliding pill */}
             <div
-              className={`absolute top-1 bottom-1 rounded-xl shadow-sm transition-all duration-300 ease-in-out ${
-                txType === 'buy' ? 'bg-violet-600' : 'bg-emerald-500'
-              }`}
+              className={`absolute top-1 bottom-1 rounded-xl shadow-sm transition-all duration-300 ease-in-out ${TABS[activeTabIdx].activeColor}`}
               style={{
-                width: 'calc((100% - 8px) / 2)',
-                transform: `translateX(calc(${txType === 'sell' ? 1 : 0} * 100%))`,
+                width: `calc((100% - 8px) / ${TABS.length})`,
+                transform: `translateX(calc(${activeTabIdx} * 100%))`,
                 left: '4px',
               }}
             />
-            {(['buy', 'sell'] as TxType[]).map((t) => (
+            {TABS.map((t) => (
               <button
-                key={t}
-                onClick={() => setTxType(t)}
+                key={t.key}
+                onClick={() => setTxType(t.key)}
                 className={`relative z-10 flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200 ${
-                  txType === t ? 'text-white' : 'text-gray-400'
+                  txType === t.key ? 'text-white' : 'text-gray-400'
                 }`}
               >
-                {t === 'buy' ? '買入' : '賣出'}
+                {t.label}
               </button>
             ))}
           </div>
 
-          {/* Broker selector (only shown when multiple brokers exist) */}
-          {settings.brokers.length > 1 && (
+          {/* 匯入持倉 說明 banner */}
+          {isImport && (
+            <div className="mb-4 bg-blue-50 border border-blue-100 rounded-2xl p-3.5 flex items-start gap-2.5">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/>
+                <circle cx="12" cy="8" r="1" fill="#3b82f6" stroke="none"/>
+              </svg>
+              <div>
+                <p className="text-xs font-semibold text-blue-700">適用情境</p>
+                <p className="text-xs text-blue-600 mt-0.5 leading-relaxed">
+                  中途開始記帳時，直接填入券商顯示的<span className="font-semibold">平均成本/股</span>與目前持有股數。
+                  手續費已內含在均價中，不另外計算。
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Broker selector (hidden for import) */}
+          {settings.brokers.length > 1 && !isImport && (
             <div className="mb-4">
               <label className="label">券商</label>
               <select value={brokerId} onChange={(e) => { setBrokerId(e.target.value); setFeeOverride(''); }} className="input">
@@ -252,7 +296,6 @@ export default function AddTransactionSheet({
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                {/* Symbol search input with autocomplete */}
                 <div className="relative" ref={suggestionsRef}>
                   <div className="flex gap-2 items-start">
                     <div className="relative flex-1">
@@ -264,7 +307,6 @@ export default function AddTransactionSheet({
                         onChange={(e) => handleSymbolChange(e.target.value)}
                         onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                       />
-                      {/* Auto-filled name badge */}
                       {nameLocked && newName && (
                         <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] bg-violet-100 text-violet-700 font-semibold px-2 py-0.5 rounded-full">
                           {newName}
@@ -278,8 +320,6 @@ export default function AddTransactionSheet({
                       ← 返回
                     </button>
                   </div>
-
-                  {/* Suggestions dropdown */}
                   {showSuggestions && suggestions.length > 0 && (
                     <div className="absolute top-full left-0 right-10 mt-1 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden">
                       {suggestions.map((s) => (
@@ -295,8 +335,6 @@ export default function AddTransactionSheet({
                     </div>
                   )}
                 </div>
-
-                {/* Manual name override (shown when not auto-locked or when user clears) */}
                 {!nameLocked && newSymbol && (
                   <input
                     className="input"
@@ -305,13 +343,8 @@ export default function AddTransactionSheet({
                     onChange={(e) => setNewName(e.target.value)}
                   />
                 )}
-
-                {/* Locked name — tap to unlock for manual edit */}
                 {nameLocked && (
-                  <button
-                    className="text-left text-xs text-gray-400 pl-1"
-                    onClick={() => setNameLocked(false)}
-                  >
+                  <button className="text-left text-xs text-gray-400 pl-1" onClick={() => setNameLocked(false)}>
                     股票名稱：{newName}　<span className="underline">手動修改</span>
                   </button>
                 )}
@@ -319,7 +352,7 @@ export default function AddTransactionSheet({
             )}
           </div>
 
-          {/* Closed-stock warning banner */}
+          {/* Closed-stock warning (buy only) */}
           {isBuyingClosedStock && (
             <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-3.5 flex items-start gap-2.5">
               <div className="flex-shrink-0 mt-0.5">
@@ -338,55 +371,88 @@ export default function AddTransactionSheet({
 
           {/* Date */}
           <div className="mb-4">
-            <label className="label">交易日期</label>
+            <label className="label">{isImport ? '追蹤起始日期' : '交易日期'}</label>
             <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
 
           {/* Price & Shares */}
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div>
-              <label className="label">{txType === 'buy' ? '買入股價' : '賣出股價'} (NT$)</label>
-              <input type="number" className="input" placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} />
+              <label className="label">
+                {isImport ? '均價/股 (NT$)' : txType === 'buy' ? '買入股價 (NT$)' : '賣出股價 (NT$)'}
+              </label>
+              <input
+                type="number" className="input" placeholder="0"
+                value={isImport && totalCostN > 0 && sharesN > 0 ? (totalCostN / sharesN).toFixed(4) : price}
+                onChange={(e) => { setPrice(e.target.value); if (isImport) setTotalCostInput(''); }}
+                readOnly={isImport && totalCostN > 0}
+              />
             </div>
             <div>
-              <label className="label">股數</label>
+              <label className="label">{isImport ? '目前持有股數' : '股數'}</label>
               <input type="number" className="input" placeholder="0" value={shares} onChange={(e) => setShares(e.target.value)} />
             </div>
           </div>
 
-          {/* Fee */}
-          <div className="mb-4">
-            <label className="label">手續費 <span className="text-gray-400 font-normal">（自動計算）</span></label>
-            <div className="relative">
+          {/* 匯入模式：總成本欄位 */}
+          {isImport && (
+            <div className="mb-4">
+              <label className="label">
+                總成本 (NT$)
+                <span className="text-gray-400 font-normal ml-1">（填券商顯示的總成本，自動反推均價）</span>
+              </label>
               <input
-                type="number"
-                className="input"
-                placeholder={autoFee > 0 ? String(autoFee) : '0'}
-                value={feeOverride}
-                onChange={(e) => setFeeOverride(e.target.value)}
+                type="number" className="input" placeholder="如：383,519"
+                value={totalCostInput}
+                onChange={(e) => { setTotalCostInput(e.target.value); setPrice(''); }}
               />
-              {feeOverride === '' && autoFee > 0 && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">自動：{autoFee}</span>
-              )}
             </div>
-          </div>
+          )}
+
+          {/* Fee (hidden for import) */}
+          {!isImport && (
+            <div className="mb-4">
+              <label className="label">手續費 <span className="text-gray-400 font-normal">（自動計算）</span></label>
+              <div className="relative">
+                <input
+                  type="number"
+                  className="input"
+                  placeholder={autoFee > 0 ? String(autoFee) : '0'}
+                  value={feeOverride}
+                  onChange={(e) => setFeeOverride(e.target.value)}
+                />
+                {feeOverride === '' && autoFee > 0 && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">自動：{autoFee}</span>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Calculation preview */}
           {priceN > 0 && sharesN > 0 && (
-            <div className={`rounded-2xl p-4 mb-5 ${txType === 'sell' ? 'bg-emerald-50' : 'bg-violet-50'}`}>
+            <div className={`rounded-2xl p-4 mb-5 ${isImport ? 'bg-blue-50' : txType === 'sell' ? 'bg-emerald-50' : 'bg-violet-50'}`}>
               <p className="text-xs font-semibold text-gray-500 mb-2">計算預覽</p>
               <div className="flex flex-col gap-1.5">
-                {txType === 'buy' ? (
+                {isImport ? (
+                  <>
+                    <PreviewRow label="持有股數" value={`${sharesN} 股`} />
+                    <PreviewRow label="均價/股（含費用）" value={formatPrice(priceN)} />
+                    <PreviewRow
+                      label="匯入總成本"
+                      value={formatNTD(totalCostN > 0 ? totalCostN : priceN * sharesN)}
+                      highlight
+                    />
+                    <div className="mt-1 pt-1 border-t border-blue-100">
+                      <p className="text-[10px] text-blue-400">後續新增的買賣交易將以此成本為基礎計算損益</p>
+                    </div>
+                  </>
+                ) : txType === 'buy' ? (
                   <>
                     <PreviewRow label="買入金額" value={formatNTD(priceN * sharesN)} />
                     <PreviewRow label="手續費" value={`-${formatNTD(fee)}`} />
                     <PreviewRow label="總花費" value={formatNTD(priceN * sharesN + fee)} highlight />
                     {stock && !isBuyingClosedStock && (
-                      <PreviewRow
-                        label="新平均成本"
-                        value={formatNumber(calcNewAvgCost(stock, priceN, sharesN, fee))}
-                        highlight
-                      />
+                      <PreviewRow label="新平均成本" value={formatNumber(calcNewAvgCost(stock, priceN, sharesN, fee))} highlight />
                     )}
                   </>
                 ) : (
@@ -415,12 +481,14 @@ export default function AddTransactionSheet({
             onClick={handleSubmit}
             disabled={!priceN || !sharesN || (isNewStock && (!newSymbol || !newName))}
             className={`w-full py-4 rounded-2xl font-semibold text-white transition-all ${
-              txType === 'buy'
+              isImport
+                ? 'bg-blue-500 active:bg-blue-600 disabled:bg-blue-200'
+                : txType === 'buy'
                 ? 'bg-violet-600 active:bg-violet-700 disabled:bg-violet-200'
                 : 'bg-emerald-500 active:bg-emerald-600 disabled:bg-emerald-200'
             } disabled:cursor-not-allowed`}
           >
-            確認{txType === 'buy' ? '買入' : '賣出'}
+            {isImport ? '確認匯入持倉' : `確認${txType === 'buy' ? '買入' : '賣出'}`}
           </button>
         </div>
       </div>

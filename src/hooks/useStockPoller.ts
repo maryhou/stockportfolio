@@ -5,7 +5,7 @@ import { fetchStockPrices } from '../utils/fetchPrices';
 const POLL_MS = 15_000;
 
 /**
- * Polls Yahoo Finance every 15 s for the currently-visible stocks.
+ * Polls TWSE every 15 s for all stocks in the portfolio.
  *
  * - Uses a single setInterval; guards against duplicates.
  * - Pauses automatically when the document tab is hidden.
@@ -13,18 +13,18 @@ const POLL_MS = 15_000;
  * - Calls onPriceUpdate only when a price actually changed.
  * - All mutable state is kept in refs so the interval callback is
  *   never stale without needing to be recreated.
+ *
+ * Note: fetches ALL stocks (not just visible ones) so prices stay
+ * fresh across all views (Home, Holdings, Activity, Profile).
  */
 export function useStockPoller(
   stocks: Stock[],
-  visibleIds: ReadonlySet<string>,
   onPriceUpdate: (stockId: string, price: number) => void,
 ): void {
   // Refs — updated every render, read inside the interval callback
   const stocksRef   = useRef(stocks);
-  const visibleRef  = useRef(visibleIds);
   const onUpdateRef = useRef(onPriceUpdate);
   stocksRef.current   = stocks;
-  visibleRef.current  = visibleIds;
   onUpdateRef.current = onPriceUpdate;
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -33,10 +33,7 @@ export function useStockPoller(
   const runPoll = useCallback(async () => {
     if (document.hidden) return;
 
-    const toFetch = stocksRef.current
-      .filter((s) => visibleRef.current.has(s.id))
-      .map((s) => s.symbol);
-
+    const toFetch = stocksRef.current.map((s) => s.symbol);
     if (toFetch.length === 0) return;
 
     try {
