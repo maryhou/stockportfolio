@@ -26,16 +26,10 @@ const SETTINGS_KEY = 'stock-tracker-settings';
 /** System announcements injected once per ID — add new entries here for future updates. */
 const SYSTEM_ANNOUNCEMENTS: import('./types').AppNotification[] = [
   {
-    id: 'sys-v2-import-edit',
+    id: 'sys-v2-import-edit-b',
     type: 'system',
-    title: '✨ 功能更新：匯入持倉編輯優化',
-    description:
-      '「匯入初始持倉」的交易紀錄現在可以正確編輯了！\n\n' +
-      '• 點擊匯入持倉的交易紀錄，會顯示「匯入持倉」藍色標籤\n' +
-      '• 編輯畫面直接填寫「匯入總成本」，不再出現奇怪的長小數均價\n' +
-      '• 手續費欄位鎖定為 0（費用已含在均價中），不會被自動計算覆蓋\n' +
-      '• 計算預覽同步顯示買入均價/股、持有股數與買入成本金額\n\n' +
-      '同步修正：刪除最後一筆交易時，個股紀錄會自動一併移除，不留空殼。',
+    title: '功能更新：匯入持倉編輯優化',
+    description: '匯入持倉的交易紀錄現在可以正確編輯了。',
     time: '系統公告',
     read: false,
   },
