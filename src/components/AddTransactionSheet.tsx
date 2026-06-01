@@ -146,7 +146,7 @@ export default function AddTransactionSheet({
     // ── 匯入初始持倉 ──────────────────────────────────────────────────────────
     if (txType === 'import') {
       // fee = 0：費用已內含在券商均價中
-      const tx: BuyTransaction = { id: `b${Date.now()}`, date, price: priceN, shares: sharesN, fee: 0, imported: true };
+      const tx: BuyTransaction = { id: `b${Date.now()}`, date, price: priceN, shares: sharesN, fee: 0, imported: true, brokerId };
       if (isNewStock) {
         if (!newName || !newSymbol) return;
         onAddStock({ id: newSymbol, name: newName, symbol: newSymbol, targetPrice: 0, currentPrice: priceN, buys: [tx], sells: [] });
@@ -265,8 +265,8 @@ export default function AddTransactionSheet({
             </div>
           )}
 
-          {/* Broker selector (hidden for import) */}
-          {settings.brokers.length > 1 && !isImport && (
+          {/* Broker selector */}
+          {settings.brokers.length > 1 && (
             <div className="mb-4">
               <label className="label">券商</label>
               <select value={brokerId} onChange={(e) => { setBrokerId(e.target.value); setFeeOverride(''); }} className="input">
