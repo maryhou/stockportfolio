@@ -21,12 +21,10 @@ interface HomeViewProps {
   onBellClick: () => void;
   onVisibleStocksChange: (ids: Set<string>) => void;
   hasUnread: boolean;
-  onRefresh: () => Promise<void>;
-  isRefreshing: boolean;
   priceHistory: Record<string, number[]>;
 }
 
-export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onVisibleStocksChange, hasUnread, onAddClick, onRefresh, isRefreshing, priceHistory }: HomeViewProps) {
+export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onVisibleStocksChange, hasUnread, onAddClick, priceHistory }: HomeViewProps) {
   const [showPortfolioInfo,  setShowPortfolioInfo]  = useState(false);
   const [showRealizedInfo,   setShowRealizedInfo]   = useState(false);
   const [showCumulativeInfo, setShowCumulativeInfo] = useState(false);
@@ -826,14 +824,6 @@ function RecentItem({ symbol, name, type, date, shares, amount, profit, onClick 
 
 // ─── Hero card helpers ────────────────────────────────────────────────────────
 
-function HeroInfoIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/>
-      <circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.4)" stroke="none"/>
-    </svg>
-  );
-}
 
 function ModalCloseBtn({ onClose }: { onClose: () => void }) {
   return (

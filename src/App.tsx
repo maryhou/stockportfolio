@@ -367,8 +367,6 @@ export default function App() {
                 onBellClick={() => handleNavigate('notifications')}
                 onVisibleStocksChange={handleVisibleStocksChange}
                 hasUnread={hasUnread}
-                onRefresh={handleRefreshAll}
-                isRefreshing={isRefreshing}
                 priceHistory={priceHistory}
               />
             )}
