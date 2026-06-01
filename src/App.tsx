@@ -159,6 +159,10 @@ export default function App() {
     saveNotifications(notifications.map((n) => ({ ...n, read: true })));
   }
 
+  function handleDeleteNotification(id: string) {
+    saveNotifications(notifications.filter((n) => n.id !== id));
+  }
+
   function handleNotificationClick(n: AppNotification) {
     if (n.actionType === 'stock' && n.actionStockId) {
       setSelectedStockId(n.actionStockId);
@@ -373,6 +377,7 @@ export default function App() {
                 notifications={notifications}
                 onMarkAllRead={handleMarkAllRead}
                 onNotificationClick={handleNotificationClick}
+                onDeleteNotification={handleDeleteNotification}
               />
             )}
             {view === 'activity' && (
