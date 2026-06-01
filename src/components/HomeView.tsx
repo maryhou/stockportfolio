@@ -871,7 +871,7 @@ function PortfolioSparkline({ prices, isUp }: { prices: number[]; isUp: boolean 
   const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
   const fill = `${line} L${pts[pts.length - 1].x},${h} L${pts[0].x},${h} Z`;
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="flex-shrink-0">
+    <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid meet">
       <defs>
         <linearGradient id="pgGrad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.35"/>
