@@ -2,9 +2,9 @@ import { useState, useRef } from 'react';
 import type { Stock, AppSettings } from '../types';
 import {
   calcRemainingShares,
-  calcTotalRealizedProfit,
   calcTotalNetProceeds,
   calcTotalInvested,
+  calcExactRealizedProfit,
   formatNTD,
 } from '../utils/calculations';
 import { SettingsIcon } from './icons/Icons';
@@ -41,7 +41,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
     .map((s) => ({
       name:     s.name,
       symbol:   s.symbol,
-      profit:   calcTotalRealizedProfit(s.sells),
+      profit:   calcExactRealizedProfit(s.buys, s.sells),
       isClosed: calcRemainingShares(s.buys, s.sells) === 0,
     }))
     .sort((a, b) => b.profit - a.profit)[0] ?? null;
