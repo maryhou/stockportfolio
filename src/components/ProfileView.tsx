@@ -35,7 +35,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
   const totalPL = totalNetProceeds + totalCurrentValue - totalInvested;
   const cumulativeReturn = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
 
-  // Best trade by highest realized profit amount
+  // Best trade: only consider stocks with positive realized profit
   const bestTrade = stocks
     .filter((s) => s.sells.length > 0)
     .map((s) => ({
@@ -44,6 +44,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
       profit:   calcExactRealizedProfit(s.buys, s.sells),
       isClosed: calcRemainingShares(s.buys, s.sells) === 0,
     }))
+    .filter((s) => s.profit > 0)
     .sort((a, b) => b.profit - a.profit)[0] ?? null;
 
   // Investment stats
