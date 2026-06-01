@@ -126,12 +126,12 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
   const allTrades = stocks.flatMap((stock) => [
     ...stock.sells.map((tx) => ({
       key: `sell-${tx.id}`,
-      symbol: stock.symbol, name: stock.name, type: 'sell' as const,
+      stockId: stock.id, symbol: stock.symbol, name: stock.name, type: 'sell' as const,
       date: tx.date, shares: tx.shares, amount: tx.netProceeds, profit: tx.profit,
     })),
     ...stock.buys.map((tx) => ({
       key: `buy-${tx.id}`,
-      symbol: stock.symbol, name: stock.name, type: 'buy' as const,
+      stockId: stock.id, symbol: stock.symbol, name: stock.name, type: 'buy' as const,
       date: tx.date, shares: tx.shares, amount: tx.price * tx.shares + tx.fee, profit: null,
     })),
   ]).sort((a, b) => b.date.localeCompare(a.date) || b.key.localeCompare(a.key)).slice(0, 10);
@@ -391,9 +391,9 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              {allTrades.map(({ key, ...tx }, idx) => (
+              {allTrades.map(({ key, stockId, ...tx }, idx) => (
                 <div key={key} className={idx >= 5 ? 'hidden lg:block' : undefined}>
-                  <RecentItem {...tx} />
+                  <RecentItem {...tx} onClick={() => onStockClick(stockId)} />
                 </div>
               ))}
             </div>
@@ -774,12 +774,13 @@ function MiniChart({ prices, isUp }: { prices: number[]; isUp: boolean }) {
   );
 }
 
-function RecentItem({ symbol, name, type, date, shares, amount, profit }: {
+function RecentItem({ symbol, name, type, date, shares, amount, profit, onClick }: {
   symbol: string; name: string; type: 'buy' | 'sell';
   date: string; shares: number; amount: number; profit: number | null;
+  onClick: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50">
+    <button onClick={onClick} className="w-full flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left active:scale-[0.98] transition-transform">
       <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
         type === 'buy' ? 'bg-violet-100' : 'bg-emerald-50'
       }`}>
@@ -802,7 +803,7 @@ function RecentItem({ symbol, name, type, date, shares, amount, profit }: {
           </p>
         )}
       </div>
-    </div>
+    </button>
   );
 }
 

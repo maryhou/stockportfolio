@@ -119,8 +119,8 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
   // All transactions sorted newest first — scoped to displayStocks
   const allTrades = displayStocks
     .flatMap((st) => [
-      ...st.sells.map((tx) => ({ stockName: st.name, stockSymbol: st.symbol, type: 'sell' as const, date: tx.date, shares: tx.shares, price: tx.price, amount: tx.netProceeds, profit: tx.profit, id: tx.id })),
-      ...st.buys.map((tx) => ({ stockName: st.name, stockSymbol: st.symbol, type: 'buy' as const, date: tx.date, shares: tx.shares, price: tx.price, amount: tx.price * tx.shares + tx.fee, profit: null, id: tx.id })),
+      ...st.sells.map((tx) => ({ stockId: st.id, stockName: st.name, stockSymbol: st.symbol, type: 'sell' as const, date: tx.date, shares: tx.shares, price: tx.price, amount: tx.netProceeds, profit: tx.profit, id: tx.id })),
+      ...st.buys.map((tx) => ({ stockId: st.id, stockName: st.name, stockSymbol: st.symbol, type: 'buy' as const, date: tx.date, shares: tx.shares, price: tx.price, amount: tx.price * tx.shares + tx.fee, profit: null, id: tx.id })),
     ])
     .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
 
@@ -247,7 +247,7 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
                 {allTrades
                   .filter((tx) => txFilter === 'all' || tx.type === txFilter)
                   .map((tx) => (
-                    <TradeTileRow key={`${tx.type}-${tx.id}`} {...tx} />
+                    <TradeTileRow key={`${tx.type}-${tx.id}`} {...tx} onClick={() => onSelectStock(tx.stockId)} />
                   ))}
               </div>
             )}
@@ -312,12 +312,13 @@ function StockSummaryRow({ stock, color, onClick }: { stock: Stock; color: strin
   );
 }
 
-function TradeTileRow({ stockName, stockSymbol, type, date, shares, price, amount, profit }: {
+function TradeTileRow({ stockName, stockSymbol, type, date, shares, price, amount, profit, onClick }: {
   stockName: string; stockSymbol: string; type: 'buy' | 'sell';
   date: string; shares: number; price: number; amount: number; profit: number | null;
+  onClick: () => void;
 }) {
   return (
-    <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 flex items-center gap-3">
+    <button onClick={onClick} className="w-full bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 flex items-center gap-3 text-left active:scale-[0.98] transition-transform">
       <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${type === 'buy' ? 'bg-violet-100' : 'bg-emerald-50'}`}>
         <span className={`text-xs font-bold ${type === 'buy' ? 'text-violet-600' : 'text-emerald-600'}`}>{type === 'buy' ? '買' : '賣'}</span>
       </div>
@@ -338,7 +339,7 @@ function TradeTileRow({ stockName, stockSymbol, type, date, shares, price, amoun
           </p>
         )}
       </div>
-    </div>
+    </button>
   );
 }
 
