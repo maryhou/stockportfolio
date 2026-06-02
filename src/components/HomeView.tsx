@@ -149,7 +149,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
           </button>
           <button onClick={onBellClick} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 relative">
             <BellIcon size={18} />
-            {hasUnread && <span className="absolute top-2 right-2 w-2 h-2 bg-violet-500 rounded-full" />}
+            {hasUnread && <span className="absolute top-2 right-2 w-2 h-2 bg-primary-500 rounded-full" />}
           </button>
         </div>
       </div>
@@ -157,7 +157,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
       {/* Portfolio Hero Card */}
       <div
         className="rounded-3xl overflow-hidden shadow-lg"
-        style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' }}
+        style={{ background: 'linear-gradient(135deg, var(--hero-from) 0%, var(--hero-to) 100%)' }}
       >
         {/* Top: label + value + sparkline */}
         <div className="p-5 pb-4">
@@ -278,7 +278,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
               <div className="flex bg-gray-100 rounded-lg p-0.5 gap-0.5">
                 <button
                   onClick={() => setViewMode('card')}
-                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'card' ? 'bg-white shadow-sm text-violet-600' : 'text-gray-400'}`}
+                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'card' ? 'bg-white shadow-sm text-primary-600' : 'text-gray-400'}`}
                   aria-label="卡片檢視"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -288,7 +288,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-violet-600' : 'text-gray-400'}`}
+                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-primary-600' : 'text-gray-400'}`}
                   aria-label="列表檢視"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -302,7 +302,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
               {displayedStocks.length > 0 && (
                 <button
                   onClick={onViewAllHoldings}
-                  className="text-xs text-violet-600 font-medium hover:text-violet-800 transition-colors"
+                  className="text-xs text-primary-600 font-medium hover:text-primary-800 transition-colors"
                 >
                   查看全部
                 </button>
@@ -379,7 +379,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
             {allTrades.length > 0 && (
               <button
                 onClick={onViewAllActivity}
-                className="text-xs text-violet-600 font-medium hover:text-violet-800 transition-colors"
+                className="text-xs text-primary-600 font-medium hover:text-primary-800 transition-colors"
               >
                 查看全部
               </button>
@@ -399,7 +399,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
               <p className="text-xs text-gray-400 mb-4">新增交易後，最近交易會顯示在這裡</p>
               <button
                 onClick={onAddClick}
-                className="px-5 py-2 bg-violet-600 text-white text-sm font-semibold rounded-xl active:bg-violet-700 transition-colors"
+                className="px-5 py-2 bg-primary-600 text-white text-sm font-semibold rounded-xl active:bg-primary-700 transition-colors"
               >
                 新增交易
               </button>
@@ -421,7 +421,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to))' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
                   </svg>
@@ -430,16 +430,16 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
               </div>
               <ModalCloseBtn onClose={() => setShowPortfolioInfo(false)} />
             </div>
-            <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
-              <p className="text-xs text-violet-500 font-medium mb-1.5">計算方式</p>
-              <p className="text-sm font-semibold text-violet-800 leading-relaxed">
+            <div className="bg-primary-50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-xs text-primary-500 font-medium mb-1.5">計算方式</p>
+              <p className="text-sm font-semibold text-primary-800 leading-relaxed">
                 持有股數 × 目前股價<br />
                 （依各持倉股票加總）
               </p>
             </div>
             <div className="flex flex-col gap-3 mb-4">
               <div className="flex gap-3">
-                <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div className="w-1.5 rounded-full bg-primary-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
                 <div>
                   <p className="text-xs font-semibold text-gray-700">目前持倉市值</p>
                   <p className="text-xs text-gray-400 mt-0.5">每支持倉股票的剩餘股數乘以目前股價，加總得出整體投資組合市值</p>
@@ -468,7 +468,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to))' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
@@ -477,16 +477,16 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
               </div>
               <ModalCloseBtn onClose={() => setShowRealizedInfo(false)} />
             </div>
-            <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
-              <p className="text-xs text-violet-500 font-medium mb-1.5">定義</p>
-              <p className="text-sm font-semibold text-violet-800 leading-relaxed">
+            <div className="bg-primary-50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-xs text-primary-500 font-medium mb-1.5">定義</p>
+              <p className="text-sm font-semibold text-primary-800 leading-relaxed">
                 已完成賣出交易所產生的<br />
                 獲利或虧損總和
               </p>
             </div>
             <div className="flex flex-col gap-3">
               <div className="flex gap-3">
-                <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div className="w-1.5 rounded-full bg-primary-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
                 <div>
                   <p className="text-xs font-semibold text-gray-700">計算基準</p>
                   <p className="text-xs text-gray-400 mt-0.5">賣出淨額 − (賣出股數 × 平均成本)</p>
@@ -511,7 +511,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to))' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
                   </svg>
@@ -520,23 +520,23 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
               </div>
               <ModalCloseBtn onClose={() => setShowCumulativeInfo(false)} />
             </div>
-            <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
-              <p className="text-xs text-violet-500 font-medium mb-1.5">計算公式</p>
-              <p className="text-sm font-semibold text-violet-800 leading-relaxed">
+            <div className="bg-primary-50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-xs text-primary-500 font-medium mb-1.5">計算公式</p>
+              <p className="text-sm font-semibold text-primary-800 leading-relaxed">
                 累積總損益 ＝ 已實現損益<br />
                 　　　　　＋ 未實現損益
               </p>
             </div>
             <div className="flex flex-col gap-3">
               <div className="flex gap-3">
-                <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div className="w-1.5 rounded-full bg-primary-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
                 <div>
                   <p className="text-xs font-semibold text-gray-700">已實現損益</p>
                   <p className="text-xs text-gray-400 mt-0.5">已完成賣出交易的實際損益，扣除手續費與稅</p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <div className="w-1.5 rounded-full bg-indigo-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div className="w-1.5 rounded-full bg-primary-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
                 <div>
                   <p className="text-xs font-semibold text-gray-700">未實現損益</p>
                   <p className="text-xs text-gray-400 mt-0.5">目前持倉的帳面損益，依即時股價計算</p>
@@ -554,7 +554,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to))' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                   </svg>
@@ -563,15 +563,15 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
               </div>
               <ModalCloseBtn onClose={() => setShowProceedsInfo(false)} />
             </div>
-            <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
-              <p className="text-xs text-violet-500 font-medium mb-1.5">定義</p>
-              <p className="text-sm font-semibold text-violet-800 leading-relaxed">
+            <div className="bg-primary-50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-xs text-primary-500 font-medium mb-1.5">定義</p>
+              <p className="text-sm font-semibold text-primary-800 leading-relaxed">
                 所有賣出交易的賣出淨額總和
               </p>
             </div>
             <div className="flex flex-col gap-3">
               <div className="flex gap-3">
-                <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div className="w-1.5 rounded-full bg-primary-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
                 <div>
                   <p className="text-xs font-semibold text-gray-700">計算方式</p>
                   <p className="text-xs text-gray-400 mt-0.5">賣出金額扣除手續費與交易稅後實際入帳的金額，加總所有賣出交易</p>
@@ -642,7 +642,7 @@ function StockCard({ stock, onClick, carousel = false, marketHistory }: { stock:
       }`}
     >
       {/* Code badge */}
-      <span className="inline-flex items-center bg-violet-100 text-violet-600 text-[11px] font-bold rounded-full px-2.5 py-0.5 mb-2">
+      <span className="inline-flex items-center bg-primary-100 text-primary-600 text-[11px] font-bold rounded-full px-2.5 py-0.5 mb-2">
         {stock.symbol}
       </span>
 
@@ -728,8 +728,8 @@ function StockListRow({ stock, onClick }: { stock: Stock; onClick: () => void })
       onClick={onClick}
       className="w-full flex items-center gap-3 px-4 py-3 text-left border-b border-gray-50 last:border-b-0 active:bg-gray-50 transition-colors"
     >
-      <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-        <span className="text-[9px] font-bold text-violet-600 leading-tight text-center px-0.5">{stock.symbol}</span>
+      <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+        <span className="text-[9px] font-bold text-primary-600 leading-tight text-center px-0.5">{stock.symbol}</span>
       </div>
 
       <div className="flex-1 min-w-0">
@@ -797,9 +797,9 @@ function RecentItem({ symbol, name, type, date, shares, amount, profit, onClick 
   return (
     <button onClick={onClick} className="w-full flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left active:scale-[0.98] transition-transform">
       <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-        type === 'buy' ? 'bg-violet-100' : 'bg-emerald-50'
+        type === 'buy' ? 'bg-primary-100' : 'bg-emerald-50'
       }`}>
-        <span className={`text-sm font-bold ${type === 'buy' ? 'text-violet-600' : 'text-emerald-600'}`}>
+        <span className={`text-sm font-bold ${type === 'buy' ? 'text-primary-600' : 'text-emerald-600'}`}>
           {type === 'buy' ? '買' : '賣'}
         </span>
       </div>

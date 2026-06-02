@@ -134,15 +134,15 @@ function HoldingCard({ stock, onClick }: { stock: Stock; onClick: () => void }) 
       {/* Header row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-            <span className="text-[11px] font-bold text-violet-600 leading-tight text-center">
+          <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+            <span className="text-[11px] font-bold text-primary-600 leading-tight text-center">
               {stock.symbol}
             </span>
           </div>
           <div>
             <p className="text-sm font-semibold text-gray-800">{stock.name}</p>
             <span className={`inline-block text-[9px] font-medium px-1.5 py-0.5 rounded-full mt-0.5 ${
-              isClosed ? 'bg-gray-100 text-gray-400' : 'bg-violet-100 text-violet-600'
+              isClosed ? 'bg-gray-100 text-gray-400' : 'bg-primary-100 text-primary-600'
             }`}>
               {isClosed ? '已清倉' : '持倉中'}
             </span>
@@ -168,7 +168,7 @@ function HoldingCard({ stock, onClick }: { stock: Stock; onClick: () => void }) 
 
         <div>
           <p className="text-[10px] text-gray-400">剩餘股數</p>
-          <p className={`text-base font-bold leading-tight ${isClosed ? 'text-gray-400' : 'text-violet-600'}`}>
+          <p className={`text-base font-bold leading-tight ${isClosed ? 'text-gray-400' : 'text-primary-600'}`}>
             {remaining}
           </p>
         </div>

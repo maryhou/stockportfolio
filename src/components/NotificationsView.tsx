@@ -150,7 +150,7 @@ function SwipeableItem({
           touchAction: 'pan-y', // allow vertical scroll; capture horizontal swipe
         }}
         className={`relative flex items-start gap-3 px-4 py-3.5 rounded-2xl border select-none ${
-          n.read ? 'bg-white border-gray-100' : 'bg-gray-50 border-gray-200'
+          n.read ? 'bg-white border-gray-100' : 'bg-gray-100 border-gray-200'
         } ${isClickable ? 'cursor-pointer' : 'cursor-default'}`}
       >
         {/* Type icon */}

@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useStockPoller } from './hooks/useStockPoller';
 import { usePullToRefresh } from './hooks/usePullToRefresh';
 import { subscribeToAuth, loadCloudData, saveCloudData, signInWithGoogle, signOutUser, type User } from './lib/firebase';
-import type { Stock, ViewName, BuyTransaction, SellTransaction, AppNotification, AppSettings } from './types';
+import type { Stock, ViewName, BuyTransaction, SellTransaction, AppNotification, AppSettings, AppTheme } from './types';
 import { DEFAULT_SETTINGS, DEFAULT_BROKER } from './types';
 import { INITIAL_STOCKS } from './data/initialData';
 import { INITIAL_NOTIFICATIONS } from './data/initialNotifications';
@@ -122,6 +122,7 @@ export default function App() {
   const [view, setView] = useState<ViewName>('home');
   const [showAdd, setShowAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [previewTheme, setPreviewTheme] = useState<AppTheme | null>(null);
   const [selectedStockId, setSelectedStockId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const toastId = useRef(0);
@@ -274,6 +275,7 @@ export default function App() {
 
   function handleSaveSettings(s: AppSettings) {
     setSettings(s);
+    setPreviewTheme(null);  // clear preview; settings.theme now drives the real value
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
     queueCloudSave({ settings: s });
     showToast('設定已儲存');
@@ -433,7 +435,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex" data-theme={(previewTheme ?? settings.theme) ?? 'default'}>
       <SideNav active={view} onNavigate={handleNavigate} onAddClick={() => setShowAdd(true)} hasUnread={hasUnread} userName={settings.userName} />
 
       <div className="flex-1 lg:ml-64 flex flex-col min-h-screen min-w-0 overflow-x-hidden">
@@ -523,6 +525,7 @@ export default function App() {
             <SettingsSheet
               settings={settings}
               onSave={handleSaveSettings}
+              onThemePreview={setPreviewTheme}
               onClose={() => setShowSettings(false)}
             />
           )}

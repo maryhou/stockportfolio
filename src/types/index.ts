@@ -39,10 +39,13 @@ export interface Stock {
 
 export type ViewName = 'home' | 'activity' | 'holdings' | 'profile' | 'notifications';
 
+export type AppTheme = 'default' | 'neutral' | 'dark';
+
 export interface AppSettings {
   userName: string;
   brokers: Broker[];    // replaces old brokerName / feeRate / feeDiscount
   taxRate: number;      // universal across brokers, e.g. 0.003 (= 0.3%)
+  theme?: AppTheme;
 }
 
 export const DEFAULT_BROKER: Broker = {
