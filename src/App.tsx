@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useStockPoller } from './hooks/useStockPoller';
 import { usePullToRefresh } from './hooks/usePullToRefresh';
+import { subscribeToAuth, loadCloudData, saveCloudData, signInWithGoogle, signOutUser, type User } from './lib/firebase';
 import type { Stock, ViewName, BuyTransaction, SellTransaction, AppNotification, AppSettings } from './types';
 import { DEFAULT_SETTINGS, DEFAULT_BROKER } from './types';
 import { INITIAL_STOCKS } from './data/initialData';
@@ -117,6 +118,77 @@ export default function App() {
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const toastId = useRef(0);
 
+  // ── Cloud sync ────────────────────────────────────────────────────────────
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [cloudSyncing, setCloudSyncing] = useState(false);
+  const currentUserRef = useRef<User | null>(null);
+  const cloudSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Pending partial data to batch-write after debounce
+  const pendingCloudData = useRef<{ stocks?: Stock[]; settings?: AppSettings; notifications?: AppNotification[] }>({});
+
+  function queueCloudSave(partial: { stocks?: Stock[]; settings?: AppSettings; notifications?: AppNotification[] }) {
+    const uid = currentUserRef.current?.uid;
+    if (!uid) return;
+    pendingCloudData.current = { ...pendingCloudData.current, ...partial };
+    if (cloudSaveTimer.current) clearTimeout(cloudSaveTimer.current);
+    cloudSaveTimer.current = setTimeout(() => {
+      const data = pendingCloudData.current;
+      pendingCloudData.current = {};
+      saveCloudData(uid, data);
+    }, 1500);
+  }
+
+  // Listen to Firebase auth state
+  useEffect(() => {
+    const unsub = subscribeToAuth(async (user) => {
+      setCurrentUser(user);
+      currentUserRef.current = user;
+      if (!user) return;
+
+      setCloudSyncing(true);
+      try {
+        const cloudData = await loadCloudData(user.uid);
+        if (cloudData) {
+          // Use cloud data as source of truth
+          const normalizedStocks = normalizeDates(cloudData.stocks ?? []);
+          setStocks(normalizedStocks);
+          saveStocks(normalizedStocks);
+          setSettings({ ...cloudData.settings });
+          localStorage.setItem(SETTINGS_KEY, JSON.stringify(cloudData.settings));
+          setNotifications(cloudData.notifications ?? []);
+          localStorage.setItem(NOTIF_KEY, JSON.stringify(cloudData.notifications ?? []));
+        } else {
+          // First login — migrate localStorage → Firestore
+          const localStocks = loadStocks();
+          const localSettings = loadSettings();
+          const localNotifications = loadNotifications();
+          await saveCloudData(user.uid, {
+            stocks: localStocks,
+            settings: localSettings,
+            notifications: localNotifications,
+          });
+        }
+      } finally {
+        setCloudSyncing(false);
+      }
+    });
+    return unsub;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleSignIn() {
+    try {
+      await signInWithGoogle();
+    } catch (e) {
+      console.error('Sign-in error:', e);
+    }
+  }
+
+  async function handleSignOut() {
+    await signOutUser();
+    setCurrentUser(null);
+    currentUserRef.current = null;
+  }
+
   // Shared refresh state — used by both button taps and pull-to-refresh
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -153,6 +225,7 @@ export default function App() {
   function saveNotifications(next: AppNotification[]) {
     setNotifications(next);
     localStorage.setItem(NOTIF_KEY, JSON.stringify(next));
+    queueCloudSave({ notifications: next });
   }
 
   function handleMarkAllRead() {
@@ -180,6 +253,7 @@ export default function App() {
     setNotifications((prev) => {
       const next = [entry, ...prev];
       localStorage.setItem(NOTIF_KEY, JSON.stringify(next));
+      queueCloudSave({ notifications: next });
       return next;
     });
   }
@@ -193,12 +267,14 @@ export default function App() {
   function handleSaveSettings(s: AppSettings) {
     setSettings(s);
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+    queueCloudSave({ settings: s });
     showToast('設定已儲存');
   }
 
   function update(next: Stock[]) {
     setStocks(next);
     saveStocks(next);
+    queueCloudSave({ stocks: next });
   }
 
   const ntd = (n: number) => `NT$${Math.round(n).toLocaleString()}`;
@@ -414,6 +490,10 @@ export default function App() {
                   saveNotifications(notifications.filter((n) => n.type === 'system'));
                   showToast('所有交易資料已清空');
                 }}
+                currentUser={currentUser}
+                cloudSyncing={cloudSyncing}
+                onSignIn={handleSignIn}
+                onSignOut={handleSignOut}
               />
             )}
           </div>
