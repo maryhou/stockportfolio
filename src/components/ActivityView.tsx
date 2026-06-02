@@ -297,7 +297,7 @@ function StockSummaryRow({ stock, color, onClick }: { stock: Stock; color: strin
           </div>
           <div>
             <p className="text-[10px] text-gray-400">剩餘股數</p>
-            <p className={`text-xs font-semibold ${isClosed ? 'text-gray-400' : 'text-violet-600'}`}>
+            <p className={`text-xs font-semibold ${isClosed ? 'text-gray-400' : 'text-primary-600'}`}>
               {isClosed ? '已清倉' : `${remaining} 股`}
             </p>
           </div>
@@ -319,8 +319,8 @@ function TradeTileRow({ stockName, stockSymbol, type, date, shares, price, amoun
 }) {
   return (
     <button onClick={onClick} className="w-full bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 flex items-center gap-3 text-left active:scale-[0.98] transition-transform">
-      <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${type === 'buy' ? 'bg-violet-100' : 'bg-emerald-50'}`}>
-        <span className={`text-xs font-bold ${type === 'buy' ? 'text-violet-600' : 'text-emerald-600'}`}>{type === 'buy' ? '買' : '賣'}</span>
+      <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${type === 'buy' ? 'bg-primary-100' : 'bg-emerald-50'}`}>
+        <span className={`text-xs font-bold ${type === 'buy' ? 'text-primary-600' : 'text-emerald-600'}`}>{type === 'buy' ? '買' : '賣'}</span>
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
@@ -429,7 +429,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
         </button>
         <div>
           <h2 className="text-xl font-bold text-gray-800">{stock.name}</h2>
-          <span className="inline-flex items-center bg-violet-100 text-violet-600 text-[11px] font-bold rounded-full px-2.5 py-0.5 mt-1">
+          <span className="inline-flex items-center bg-primary-100 text-primary-600 text-[11px] font-bold rounded-full px-2.5 py-0.5 mt-1">
             {stock.symbol}
           </span>
         </div>
@@ -437,7 +437,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
 
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[360px_1fr] lg:gap-6 lg:items-start">
       {/* Hero card — gradient */}
-      <div className="rounded-3xl overflow-hidden shadow-lg" style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' }}>
+      <div className="rounded-3xl overflow-hidden shadow-lg" style={{ background: 'linear-gradient(135deg, var(--hero-from) 0%, var(--hero-to) 100%)' }}>
         {/* Top: P&L */}
         <div className="p-5">
           {/* Row 1: label + today badge */}
@@ -577,7 +577,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
-            <TargetIcon size={15} className="text-violet-500" /> 價格設定
+            <TargetIcon size={15} className="text-primary-500" /> 價格設定
           </h3>
           <button
             onClick={onRefresh}
@@ -597,14 +597,14 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
             {editingPrice ? (
               <div className="flex gap-1">
                 <input autoFocus type="number" value={priceInput} onChange={(e) => setPriceInput(e.target.value)}
-                  className="w-full text-sm border border-violet-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-violet-200"
+                  className="w-full text-sm border border-primary-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-primary-200"
                   placeholder={String(stock.currentPrice)} />
                 <button onClick={() => { const v = parseFloat(priceInput); if (!isNaN(v) && v > 0) onUpdatePrice(stock.id, v); setEditingPrice(false); }}
-                  className="text-xs bg-violet-600 text-white px-2 py-1 rounded-lg">OK</button>
+                  className="text-xs bg-primary-600 text-white px-2 py-1 rounded-lg">OK</button>
               </div>
             ) : (
               <button onClick={() => { setPriceInput(String(stock.currentPrice)); setEditingPrice(true); }}
-                className="flex items-center gap-1 text-base font-bold text-gray-800 hover:text-violet-600 transition-colors">
+                className="flex items-center gap-1 text-base font-bold text-gray-800 hover:text-primary-600 transition-colors">
                 {formatPrice(stock.currentPrice)}
                 <span className="text-[10px] text-gray-400 font-normal">點擊更新</span>
               </button>
@@ -615,16 +615,16 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
             {editingTarget ? (
               <div className="flex gap-1">
                 <input autoFocus type="number" value={targetInput} onChange={(e) => setTargetInput(e.target.value)}
-                  className="w-full text-sm border border-violet-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-violet-200"
+                  className="w-full text-sm border border-primary-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-primary-200"
                   placeholder="輸入目標價" />
                 <button onClick={() => { const v = parseFloat(targetInput); if (!isNaN(v) && v > 0) onUpdateTarget(stock.id, v); setEditingTarget(false); }}
-                  className="text-xs bg-violet-600 text-white px-2 py-1 rounded-lg">OK</button>
+                  className="text-xs bg-primary-600 text-white px-2 py-1 rounded-lg">OK</button>
               </div>
             ) : (
               <button onClick={() => { setTargetInput(stock.targetPrice > 0 ? String(stock.targetPrice) : ''); setEditingTarget(true); }}
-                className="flex items-center gap-1.5 text-base font-bold text-violet-600 hover:text-violet-700 transition-colors">
-                {stock.targetPrice > 0 ? formatNumber(stock.targetPrice) : <span className="text-base font-bold text-violet-600">0</span>}
-                <EditIcon size={13} className="text-violet-500" />
+                className="flex items-center gap-1.5 text-base font-bold text-primary-600 hover:text-primary-700 transition-colors">
+                {stock.targetPrice > 0 ? formatNumber(stock.targetPrice) : <span className="text-base font-bold text-primary-600">0</span>}
+                <EditIcon size={13} className="text-primary-500" />
               </button>
             )}
           </div>
@@ -635,7 +635,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
               <TrendUpIcon size={12} /> 目前股價已達目標！
             </div>
           ) : (
-            <div className="mt-3 text-xs bg-violet-50 text-violet-700 rounded-lg px-3 py-2">
+            <div className="mt-3 text-xs bg-primary-50 text-primary-700 rounded-lg px-3 py-2">
               距離目標還差 <strong>{formatNumber(stock.targetPrice - stock.currentPrice)}</strong> 元（{(((stock.targetPrice - stock.currentPrice) / stock.currentPrice) * 100).toFixed(1)}%）
             </div>
           )
@@ -670,7 +670,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
               onClick={() => setBrokerFilter('all')}
               className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
                 brokerFilter === 'all'
-                  ? 'bg-violet-100 text-violet-700'
+                  ? 'bg-primary-100 text-primary-700'
                   : 'bg-gray-100 text-gray-500'
               }`}
             >
@@ -682,7 +682,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                 onClick={() => setBrokerFilter(b.id)}
                 className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
                   brokerFilter === b.id
-                    ? 'bg-violet-100 text-violet-700'
+                    ? 'bg-primary-100 text-primary-700'
                     : 'bg-gray-100 text-gray-500'
                 }`}
               >
@@ -746,8 +746,8 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isImported ? 'bg-blue-100' : 'bg-violet-100'}`}>
-                          <span className={`text-xs font-bold ${isImported ? 'text-blue-600' : 'text-violet-600'}`}>{isImported ? '匯' : '買'}</span>
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isImported ? 'bg-blue-100' : 'bg-primary-100'}`}>
+                          <span className={`text-xs font-bold ${isImported ? 'text-blue-600' : 'text-primary-600'}`}>{isImported ? '匯' : '買'}</span>
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-gray-800">{buyTx.date}</p>
@@ -813,7 +813,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to))' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
                     <polyline points="17 6 23 6 23 12" />
@@ -833,16 +833,16 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
 
             {isClosed ? (
               <>
-                <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
-                  <p className="text-xs text-violet-500 font-medium mb-1.5">計算公式</p>
-                  <p className="text-sm font-semibold text-violet-800 leading-relaxed">
+                <div className="bg-primary-50 rounded-2xl px-4 py-3 mb-4">
+                  <p className="text-xs text-primary-500 font-medium mb-1.5">計算公式</p>
+                  <p className="text-sm font-semibold text-primary-800 leading-relaxed">
                     已實現損益 ＝ 賣出淨額合計<br />
                     　　　　　－ 已賣出持股成本
                   </p>
                 </div>
                 <div className="flex flex-col gap-3">
                   <div className="flex gap-3">
-                    <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                    <div className="w-1.5 rounded-full bg-primary-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
                     <div>
                       <p className="text-xs font-semibold text-gray-700">賣出淨額合計</p>
                       <p className="text-xs text-gray-400 mt-0.5">賣出金額扣除手續費與交易稅後實際入帳金額</p>
@@ -862,9 +862,9 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
               </>
             ) : (
               <>
-                <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
-                  <p className="text-xs text-violet-500 font-medium mb-1.5">計算公式</p>
-                  <p className="text-sm font-semibold text-violet-800 leading-relaxed">
+                <div className="bg-primary-50 rounded-2xl px-4 py-3 mb-4">
+                  <p className="text-xs text-primary-500 font-medium mb-1.5">計算公式</p>
+                  <p className="text-sm font-semibold text-primary-800 leading-relaxed">
                     總損益 ＝ 實際入帳(賣出淨額合計)<br />
                     　　　＋ 目前持倉市值<br />
                     　　　－ 總投入成本
@@ -872,14 +872,14 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                 </div>
                 <div className="flex flex-col gap-3">
                   <div className="flex gap-3">
-                    <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                    <div className="w-1.5 rounded-full bg-primary-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
                     <div>
                       <p className="text-xs font-semibold text-gray-700">實際入帳(賣出淨額合計)</p>
                       <p className="text-xs text-gray-400 mt-0.5">所有已賣出股票扣除手續費與交易稅後的實際入帳金額</p>
                     </div>
                   </div>
                   <div className="flex gap-3">
-                    <div className="w-1.5 rounded-full bg-indigo-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                    <div className="w-1.5 rounded-full bg-primary-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
                     <div>
                       <p className="text-xs font-semibold text-gray-700">目前持倉市值</p>
                       <p className="text-xs text-gray-400 mt-0.5">剩餘股數 × 目前股價，反映尚未賣出的部位當前價值</p>
@@ -951,7 +951,7 @@ function HeroSparkline({ prices }: { prices: number[] }) {
 
 function StatCard({ label, value, sub, accent }: { label: string; value: string; sub: string; accent: string }) {
   const accentClass: Record<string, string> = {
-    violet: 'text-violet-600', green: 'text-emerald-600', red: 'text-red-500', gray: 'text-gray-700',
+    violet: 'text-primary-600', green: 'text-emerald-600', red: 'text-red-500', gray: 'text-gray-700',
   };
   return (
     <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
@@ -976,7 +976,7 @@ function BrokerTag({ brokerId, brokers }: { brokerId?: string; brokers: Broker[]
   const name = brokers.find((b) => b.id === brokerId)?.name;
   if (!name) return null;
   return (
-    <span className="text-[10px] font-medium text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded-full leading-none">
+    <span className="text-[10px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full leading-none">
       {name}
     </span>
   );

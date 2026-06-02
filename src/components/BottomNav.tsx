@@ -27,13 +27,13 @@ export default function BottomNav({ active, onNavigate, onAddClick }: BottomNavP
     <button
       onClick={() => onNavigate(view)}
       className={`relative flex flex-col items-center gap-0.5 px-4 py-2 transition-colors ${
-        active === view ? 'text-violet-600' : 'text-gray-400'
+        active === view ? 'text-primary-600' : 'text-gray-400'
       }`}
     >
       <Icon size={22} />
       <span className="text-[10px] font-medium">{label}</span>
       {active === view && (
-        <span className="absolute bottom-0 w-5 h-0.5 rounded-full bg-violet-600" />
+        <span className="absolute bottom-0 w-5 h-0.5 rounded-full bg-primary-600" />
       )}
     </button>
   );
@@ -49,7 +49,7 @@ export default function BottomNav({ active, onNavigate, onAddClick }: BottomNavP
       {/* Centre FAB */}
       <button
         onClick={onAddClick}
-        className="relative -top-5 w-14 h-14 rounded-full bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-400/40 active:scale-95 transition-transform"
+        className="relative -top-5 w-14 h-14 rounded-full bg-primary-600 flex items-center justify-center shadow-lg shadow-primary-400/40 active:scale-95 transition-transform"
       >
         <PlusIcon size={26} className="text-white" />
       </button>

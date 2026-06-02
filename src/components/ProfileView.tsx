@@ -108,7 +108,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
 
       {/* Avatar */}
       <div className="flex flex-col items-center gap-3 py-2">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-400 to-purple-600 flex items-center justify-center text-3xl font-bold text-white shadow-lg">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-3xl font-bold text-white shadow-lg">
           {avatarLetter}
         </div>
         <div className="text-center">
@@ -183,7 +183,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <span className="text-[10px] text-gray-400">{bestTrade.symbol}</span>
                     <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                      bestTrade.isClosed ? 'bg-gray-100 text-gray-400' : 'bg-violet-100 text-violet-600'
+                      bestTrade.isClosed ? 'bg-gray-100 text-gray-400' : 'bg-primary-100 text-primary-600'
                     }`}>{bestTrade.isClosed ? '已清倉' : '持倉中'}</span>
                   </div>
                 </>
@@ -217,7 +217,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
         <div className="grid grid-cols-3 gap-2">
           {/* 投資紀錄 */}
           <div className="flex flex-col items-center gap-1.5 text-center">
-            <div className="w-10 h-10 rounded-full bg-violet-50 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
                 <rect x="9" y="3" width="6" height="4" rx="1"/>
@@ -233,7 +233,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
 
           {/* 持有中 */}
           <div className="flex flex-col items-center gap-1.5 text-center">
-            <div className="w-10 h-10 rounded-full bg-violet-50 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
                 <path d="M22 12A10 10 0 0 0 12 2v10z"/>
@@ -248,7 +248,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
 
           {/* 已清倉 */}
           <div className="flex flex-col items-center gap-1.5 text-center">
-            <div className="w-10 h-10 rounded-full bg-violet-50 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="12 8 12 12 14 14"/>
                 <path d="M3.05 11a9 9 0 1 0 .5-4.5"/>
@@ -266,21 +266,21 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
       </div>
 
       {/* 費用計算說明 */}
-      <div className="bg-violet-50 rounded-2xl p-4">
-        <p className="text-xs font-semibold text-violet-700 mb-3">費用計算說明</p>
+      <div className="bg-primary-50 rounded-2xl p-4">
+        <p className="text-xs font-semibold text-primary-700 mb-3">費用計算說明</p>
         <div className="flex flex-col gap-2">
           {settings.brokers.map((broker) => {
             const eff  = (broker.feeRate * broker.feeDiscount * 100).toFixed(4);
             const rate = (broker.feeRate * 100).toFixed(4).replace(/\.?0+$/, '');
             const zhe  = (broker.feeDiscount * 10).toFixed(1);
             return (
-              <div key={broker.id} className="bg-violet-100/60 rounded-xl px-3 py-2">
-                <p className="text-xs font-semibold text-violet-700 mb-0.5">{broker.name}</p>
-                <p className="text-xs text-violet-600">手續費：{rate}% × {zhe}折 = 有效 {eff}%</p>
+              <div key={broker.id} className="bg-primary-100/60 rounded-xl px-3 py-2">
+                <p className="text-xs font-semibold text-primary-700 mb-0.5">{broker.name}</p>
+                <p className="text-xs text-primary-600">手續費：{rate}% × {zhe}折 = 有效 {eff}%</p>
               </div>
             );
           })}
-          <div className="text-xs text-violet-600 mt-1 flex flex-col gap-0.5">
+          <div className="text-xs text-primary-600 mt-1 flex flex-col gap-0.5">
             <p>· 交易稅：賣出金額 × {taxPct}%</p>
             <p>· 損益 = 總回收金額 − 平均成本 × 股數</p>
           </div>
@@ -298,7 +298,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
                   {currentUser.photoURL ? (
                     <img src={currentUser.photoURL} alt="avatar" className="w-9 h-9 rounded-full object-cover" />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-sm">
+                    <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold text-sm">
                       {currentUser.displayName?.charAt(0).toUpperCase() ?? 'U'}
                     </div>
                   )}
@@ -308,7 +308,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
                   </div>
                 </div>
                 {cloudSyncing ? (
-                  <div className="flex items-center gap-1.5 text-xs text-violet-500">
+                  <div className="flex items-center gap-1.5 text-xs text-primary-500">
                     <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                       <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
                     </svg>
@@ -365,7 +365,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
             className="w-full flex items-center justify-between px-4 py-4 active:bg-gray-50 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                   <polyline points="7 10 12 15 17 10"/>
@@ -446,7 +446,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to))' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
                   </svg>
@@ -459,9 +459,9 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
                 </svg>
               </button>
             </div>
-            <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
-              <p className="text-xs text-violet-500 font-medium mb-1.5">計算公式</p>
-              <p className="text-sm font-semibold text-violet-800 leading-relaxed">
+            <div className="bg-primary-50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-xs text-primary-500 font-medium mb-1.5">計算公式</p>
+              <p className="text-sm font-semibold text-primary-800 leading-relaxed">
                 總損益 ＝ 實際入帳(賣出淨額合計)<br />
                 　　　＋ 目前持倉市值<br />
                 　　　－ 總投入成本
@@ -469,14 +469,14 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
             </div>
             <div className="flex flex-col gap-3">
               <div className="flex gap-3">
-                <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div className="w-1.5 rounded-full bg-primary-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
                 <div>
                   <p className="text-xs font-semibold text-gray-700">實際入帳(賣出淨額合計)</p>
                   <p className="text-xs text-gray-400 mt-0.5">所有已賣出股票扣除手續費與交易稅後的實際入帳金額</p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <div className="w-1.5 rounded-full bg-indigo-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div className="w-1.5 rounded-full bg-primary-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
                 <div>
                   <p className="text-xs font-semibold text-gray-700">目前持倉市值</p>
                   <p className="text-xs text-gray-400 mt-0.5">剩餘股數 × 目前股價，反映尚未賣出的部位當前價值</p>
@@ -506,7 +506,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to))' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="12" y1="1" x2="12" y2="23"/>
                     <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
@@ -520,15 +520,15 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
                 </svg>
               </button>
             </div>
-            <div className="bg-violet-50 rounded-2xl px-4 py-3 mb-4">
-              <p className="text-xs text-violet-500 font-medium mb-1.5">計算公式</p>
-              <p className="text-sm font-semibold text-violet-800 leading-relaxed">
+            <div className="bg-primary-50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-xs text-primary-500 font-medium mb-1.5">計算公式</p>
+              <p className="text-sm font-semibold text-primary-800 leading-relaxed">
                 累積報酬率 ＝ 總損益 ÷ 總投入成本 × 100%
               </p>
             </div>
             <div className="flex flex-col gap-3">
               <div className="flex gap-3">
-                <div className="w-1.5 rounded-full bg-violet-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
+                <div className="w-1.5 rounded-full bg-primary-400 flex-shrink-0 self-start mt-1" style={{ height: '14px' }} />
                 <div>
                   <p className="text-xs font-semibold text-gray-700">總損益</p>
                   <p className="text-xs text-gray-400 mt-0.5">包含已實現損益與未實現損益的完整投資成效</p>

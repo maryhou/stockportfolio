@@ -27,7 +27,7 @@ interface AddTransactionSheetProps {
 type TxType = 'buy' | 'sell' | 'import';
 
 const TABS: { key: TxType; label: string; activeColor: string }[] = [
-  { key: 'buy',    label: '買入',    activeColor: 'bg-violet-600' },
+  { key: 'buy',    label: '買入',    activeColor: 'bg-primary-600' },
   { key: 'sell',   label: '賣出',    activeColor: 'bg-emerald-500' },
   { key: 'import', label: '匯入持倉', activeColor: 'bg-blue-500' },
 ];
@@ -308,7 +308,7 @@ export default function AddTransactionSheet({
                         onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                       />
                       {nameLocked && newName && (
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] bg-violet-100 text-violet-700 font-semibold px-2 py-0.5 rounded-full">
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] bg-primary-100 text-primary-700 font-semibold px-2 py-0.5 rounded-full">
                           {newName}
                         </span>
                       )}
@@ -326,7 +326,7 @@ export default function AddTransactionSheet({
                         <button
                           key={s.code}
                           onMouseDown={(e) => { e.preventDefault(); selectSuggestion(s); }}
-                          className="w-full text-left px-4 py-2.5 hover:bg-violet-50 flex items-center justify-between transition-colors"
+                          className="w-full text-left px-4 py-2.5 hover:bg-primary-50 flex items-center justify-between transition-colors"
                         >
                           <span className="text-sm font-semibold text-gray-800">{s.name}</span>
                           <span className="text-xs text-gray-400 font-mono">{s.code}</span>
@@ -430,7 +430,7 @@ export default function AddTransactionSheet({
 
           {/* Calculation preview */}
           {priceN > 0 && sharesN > 0 && (
-            <div className={`rounded-2xl p-4 mb-5 ${isImport ? 'bg-blue-50' : txType === 'sell' ? 'bg-emerald-50' : 'bg-violet-50'}`}>
+            <div className={`rounded-2xl p-4 mb-5 ${isImport ? 'bg-blue-50' : txType === 'sell' ? 'bg-emerald-50' : 'bg-primary-50'}`}>
               <p className="text-xs font-semibold text-gray-500 mb-2">計算預覽</p>
               <div className="flex flex-col gap-1.5">
                 {isImport ? (
@@ -484,7 +484,7 @@ export default function AddTransactionSheet({
               isImport
                 ? 'bg-blue-500 active:bg-blue-600 disabled:bg-blue-200'
                 : txType === 'buy'
-                ? 'bg-violet-600 active:bg-violet-700 disabled:bg-violet-200'
+                ? 'bg-primary-600 active:bg-primary-700 disabled:bg-primary-200'
                 : 'bg-emerald-500 active:bg-emerald-600 disabled:bg-emerald-200'
             } disabled:cursor-not-allowed`}
           >

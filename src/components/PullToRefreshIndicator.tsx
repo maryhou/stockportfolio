@@ -52,7 +52,7 @@ export default function PullToRefreshIndicator({ state }: { state: PTRState }) {
 
           {/* ── Refreshing: spinner ── */}
           {status === 'refreshing' && (
-            <div className="w-6 h-6 rounded-full border-2 border-violet-200 border-t-violet-600 animate-spin" />
+            <div className="w-6 h-6 rounded-full border-2 border-primary-200 border-t-primary-600 animate-spin" />
           )}
 
           {/* ── Success ── */}

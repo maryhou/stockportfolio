@@ -135,8 +135,8 @@ export default function EditTransactionModal({
 
           {/* Read-only stock info */}
           <div className="flex items-center gap-3 mb-5 p-3 bg-gray-50 rounded-2xl">
-            <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-              <span className="text-[11px] font-bold text-violet-600">{stock.symbol}</span>
+            <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+              <span className="text-[11px] font-bold text-primary-600">{stock.symbol}</span>
             </div>
             <div className="flex-1">
               <p className="text-sm font-semibold text-gray-800">{stock.name}</p>
@@ -146,7 +146,7 @@ export default function EditTransactionModal({
               isImportedTx
                 ? 'bg-blue-100 text-blue-700'
                 : isBuy
-                ? 'bg-violet-100 text-violet-700'
+                ? 'bg-primary-100 text-primary-700'
                 : 'bg-emerald-100 text-emerald-700'
             }`}>
               {isImportedTx ? '匯入持倉' : isBuy ? '買入' : '賣出'}
@@ -226,7 +226,7 @@ export default function EditTransactionModal({
 
           {/* Preview */}
           {priceN > 0 && sharesN > 0 && (
-            <div className={`rounded-2xl p-4 mb-5 ${isImportedTx ? 'bg-blue-50' : isBuy ? 'bg-violet-50' : 'bg-emerald-50'}`}>
+            <div className={`rounded-2xl p-4 mb-5 ${isImportedTx ? 'bg-blue-50' : isBuy ? 'bg-primary-50' : 'bg-emerald-50'}`}>
               <p className="text-xs font-semibold text-gray-500 mb-2">計算預覽</p>
               <div className="flex flex-col gap-1.5">
                 {isImportedTx ? (
@@ -277,7 +277,7 @@ export default function EditTransactionModal({
               isImportedTx
                 ? 'bg-blue-500 active:bg-blue-600 disabled:bg-blue-200'
                 : isBuy
-                ? 'bg-violet-600 active:bg-violet-700 disabled:bg-violet-200'
+                ? 'bg-primary-600 active:bg-primary-700 disabled:bg-primary-200'
                 : 'bg-emerald-500 active:bg-emerald-600 disabled:bg-emerald-200'
             } disabled:cursor-not-allowed`}
           >

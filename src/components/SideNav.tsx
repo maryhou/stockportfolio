@@ -34,7 +34,7 @@ export default function SideNav({ active, onNavigate, onAddClick, hasUnread, use
       {/* Logo */}
       <div className="px-6 py-6 border-b border-gray-100">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-violet-600 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-primary-600 flex items-center justify-center">
             <span className="text-white text-sm font-bold">{avatarLetter}</span>
           </div>
           <div>
@@ -52,14 +52,14 @@ export default function SideNav({ active, onNavigate, onAddClick, hasUnread, use
             onClick={() => onNavigate(view)}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all w-full text-left ${
               active === view
-                ? 'bg-violet-50 text-violet-700'
+                ? 'bg-primary-50 text-primary-700'
                 : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
             }`}
           >
-            <Icon size={18} className={active === view ? 'text-violet-600' : ''} />
+            <Icon size={18} className={active === view ? 'text-primary-600' : ''} />
             {label}
             {active === view && (
-              <span className="ml-auto w-1.5 h-1.5 rounded-full bg-violet-500" />
+              <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-500" />
             )}
           </button>
         ))}
@@ -71,17 +71,17 @@ export default function SideNav({ active, onNavigate, onAddClick, hasUnread, use
           onClick={() => onNavigate('notifications')}
           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all w-full text-left ${
             active === 'notifications'
-              ? 'bg-violet-50 text-violet-700'
+              ? 'bg-primary-50 text-primary-700'
               : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
           }`}
         >
           <div className="relative">
-            <BellIcon size={18} className={active === 'notifications' ? 'text-violet-600' : ''} />
-            {hasUnread && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-violet-500 rounded-full" />}
+            <BellIcon size={18} className={active === 'notifications' ? 'text-primary-600' : ''} />
+            {hasUnread && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary-500 rounded-full" />}
           </div>
           通知中心
           {active === 'notifications' && (
-            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-violet-500" />
+            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-500" />
           )}
         </button>
       </div>
@@ -90,7 +90,7 @@ export default function SideNav({ active, onNavigate, onAddClick, hasUnread, use
       <div className="px-4 pb-6">
         <button
           onClick={onAddClick}
-          className="w-full py-3 bg-violet-600 text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 hover:bg-violet-700 active:bg-violet-800 transition-colors shadow-md shadow-violet-200"
+          className="w-full py-3 bg-primary-600 text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary-700 active:bg-primary-800 transition-colors shadow-md shadow-primary-200"
         >
           <PlusIcon size={16} />
           新增交易

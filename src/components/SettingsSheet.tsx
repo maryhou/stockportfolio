@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { AppSettings, Broker } from '../types';
+import type { AppSettings, Broker, AppTheme } from '../types';
 import { CloseIcon } from './icons/Icons';
 
 interface SettingsSheetProps {
@@ -19,6 +19,7 @@ export default function SettingsSheet({ settings, onSave, onClose }: SettingsShe
   const [taxRateInput, setTaxRateInput] = useState(String(+(settings.taxRate * 100).toPrecision(6)));
   const [brokers,      setBrokers]      = useState<Broker[]>([...settings.brokers]);
   const [editMode,     setEditMode]     = useState<EditMode>({ kind: 'none' });
+  const [theme,        setTheme]        = useState<AppTheme>(settings.theme ?? 'default');
 
   // Inline broker form fields
   const [formName,     setFormName]     = useState('');
@@ -66,6 +67,7 @@ export default function SettingsSheet({ settings, onSave, onClose }: SettingsShe
       userName: userName.trim() || settings.userName,
       brokers: brokers.length > 0 ? brokers : settings.brokers,
       taxRate: parseFloat(taxRateInput) / 100 || settings.taxRate,
+      theme,
     });
     onClose();
   }
@@ -120,7 +122,7 @@ export default function SettingsSheet({ settings, onSave, onClose }: SettingsShe
                     <div className="flex gap-2">
                       <button
                         onClick={() => isEditing ? cancelEdit() : openEdit(broker)}
-                        className="text-xs text-violet-600 font-semibold px-2.5 py-1 bg-violet-100 rounded-lg active:bg-violet-200"
+                        className="text-xs text-primary-600 font-semibold px-2.5 py-1 bg-primary-100 rounded-lg active:bg-primary-200"
                       >
                         {isEditing ? '取消' : '編輯'}
                       </button>
@@ -151,8 +153,8 @@ export default function SettingsSheet({ settings, onSave, onClose }: SettingsShe
 
             {/* New broker inline form */}
             {editMode.kind === 'new' && (
-              <div className="bg-violet-50 rounded-2xl overflow-hidden">
-                <p className="text-xs font-semibold text-violet-700 px-4 pt-3">新增券商</p>
+              <div className="bg-primary-50 rounded-2xl overflow-hidden">
+                <p className="text-xs font-semibold text-primary-700 px-4 pt-3">新增券商</p>
                 <BrokerForm
                   name={formName} onName={setFormName}
                   feeRate={formFeeRate} onFeeRate={setFormFeeRate}
@@ -167,11 +169,36 @@ export default function SettingsSheet({ settings, onSave, onClose }: SettingsShe
           {editMode.kind !== 'new' && (
             <button
               onClick={openNew}
-              className="w-full py-2.5 rounded-xl text-sm font-semibold text-violet-600 border border-violet-200 bg-violet-50 active:bg-violet-100 mb-5"
+              className="w-full py-2.5 rounded-xl text-sm font-semibold text-primary-600 border border-primary-200 bg-primary-50 active:bg-primary-100 mb-5"
             >
               + 新增券商
             </button>
           )}
+
+          {/* 介面主題 */}
+          <SectionLabel>介面主題</SectionLabel>
+          <div className="flex gap-3 mb-6">
+            {([
+              { value: 'default', label: '預設', desc: '紫色主調', dot: 'bg-primary-600' },
+              { value: 'neutral', label: '中性色', desc: '灰階主調', dot: 'bg-gray-500' },
+            ] as { value: AppTheme; label: string; desc: string; dot: string }[]).map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setTheme(opt.value)}
+                className={`flex-1 flex items-center gap-2.5 px-3 py-3 rounded-xl border-2 transition-all ${
+                  theme === opt.value
+                    ? 'border-primary-600 bg-primary-50'
+                    : 'border-gray-200 bg-white active:bg-gray-50'
+                }`}
+              >
+                <span className={`w-4 h-4 rounded-full flex-shrink-0 ${opt.dot}`} />
+                <div className="text-left">
+                  <p className={`text-sm font-semibold ${theme === opt.value ? 'text-primary-700' : 'text-gray-700'}`}>{opt.label}</p>
+                  <p className="text-[10px] text-gray-400">{opt.desc}</p>
+                </div>
+              </button>
+            ))}
+          </div>
 
           {/* 交易稅 */}
           <SectionLabel>交易稅（賣出適用）</SectionLabel>
@@ -189,7 +216,7 @@ export default function SettingsSheet({ settings, onSave, onClose }: SettingsShe
 
           <button
             onClick={handleSave}
-            className="w-full py-4 rounded-2xl font-semibold text-white bg-violet-600 active:bg-violet-700 transition-all"
+            className="w-full py-4 rounded-2xl font-semibold text-white bg-primary-600 active:bg-primary-700 transition-all"
           >
             儲存設定
           </button>
@@ -235,8 +262,8 @@ function BrokerForm({ name, onName, feeRate, onFeeRate, discount, onDiscount, ef
         </div>
       </div>
       <div className="bg-white rounded-xl px-3 py-2 flex items-center justify-between">
-        <p className="text-xs text-violet-700 font-medium">有效手續費率</p>
-        <p className="text-sm font-bold text-violet-700">{effective}%</p>
+        <p className="text-xs text-primary-700 font-medium">有效手續費率</p>
+        <p className="text-sm font-bold text-primary-700">{effective}%</p>
       </div>
       <div className="flex gap-2">
         <button onClick={onCancel}
@@ -244,7 +271,7 @@ function BrokerForm({ name, onName, feeRate, onFeeRate, discount, onDiscount, ef
           取消
         </button>
         <button onClick={onSave} disabled={!name.trim()}
-          className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-violet-600 active:bg-violet-700 disabled:bg-violet-200">
+          className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-600 active:bg-primary-700 disabled:bg-primary-200">
           儲存
         </button>
       </div>

@@ -5,16 +5,16 @@ export default {
     extend: {
       colors: {
         primary: {
-          50:  '#f3f0ff',
-          100: '#ebe5ff',
-          200: '#d9ceff',
-          300: '#bea6ff',
-          400: '#9f76ff',
-          500: '#8347ff',
-          600: '#7023f7',
-          700: '#6117e3',
-          800: '#5113bf',
-          900: '#43109c',
+          50:  'var(--primary-50)',
+          100: 'var(--primary-100)',
+          200: 'var(--primary-200)',
+          300: 'var(--primary-300)',
+          400: 'var(--primary-400)',
+          500: 'var(--primary-500)',
+          600: 'var(--primary-600)',
+          700: 'var(--primary-700)',
+          800: 'var(--primary-800)',
+          900: 'var(--primary-900)',
         },
       },
       fontFamily: {
