@@ -5,6 +5,7 @@ import { CloseIcon } from './icons/Icons';
 interface SettingsSheetProps {
   settings: AppSettings;
   onSave: (s: AppSettings) => void;
+  onThemePreview: (t: AppTheme) => void;
   onClose: () => void;
 }
 
@@ -14,7 +15,7 @@ function emptyBrokerForm() {
   return { name: '', feeRateInput: '0.1425', feeDiscountInput: '60' };
 }
 
-export default function SettingsSheet({ settings, onSave, onClose }: SettingsSheetProps) {
+export default function SettingsSheet({ settings, onSave, onThemePreview, onClose }: SettingsSheetProps) {
   const [userName,     setUserName]     = useState(settings.userName);
   const [taxRateInput, setTaxRateInput] = useState(String(+(settings.taxRate * 100).toPrecision(6)));
   const [brokers,      setBrokers]      = useState<Broker[]>([...settings.brokers]);
@@ -62,6 +63,12 @@ export default function SettingsSheet({ settings, onSave, onClose }: SettingsShe
     setBrokers((prev) => prev.filter((b) => b.id !== id));
   }
 
+  // Revert the live preview and close without saving
+  function handleClose() {
+    onThemePreview(settings.theme ?? 'default');
+    onClose();
+  }
+
   function handleSave() {
     onSave({
       userName: userName.trim() || settings.userName,
@@ -76,7 +83,7 @@ export default function SettingsSheet({ settings, onSave, onClose }: SettingsShe
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={handleClose} />
 
       <div
         className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] lg:max-w-lg bg-white rounded-t-3xl z-50 shadow-2xl"
@@ -89,7 +96,7 @@ export default function SettingsSheet({ settings, onSave, onClose }: SettingsShe
         <div className="px-5 pb-10">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-gray-800">偏好設定</h2>
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+            <button onClick={handleClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
               <CloseIcon size={16} className="text-gray-500" />
             </button>
           </div>
@@ -177,27 +184,57 @@ export default function SettingsSheet({ settings, onSave, onClose }: SettingsShe
 
           {/* 介面主題 */}
           <SectionLabel>介面主題</SectionLabel>
-          <div className="flex gap-3 mb-6">
-            {([
-              { value: 'default', label: '預設', desc: '紫色主調', dot: 'bg-primary-600' },
-              { value: 'neutral', label: '中性色', desc: '灰階主調', dot: 'bg-gray-500' },
-            ] as { value: AppTheme; label: string; desc: string; dot: string }[]).map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setTheme(opt.value)}
-                className={`flex-1 flex items-center gap-2.5 px-3 py-3 rounded-xl border-2 transition-all ${
-                  theme === opt.value
-                    ? 'border-primary-600 bg-primary-50'
-                    : 'border-gray-200 bg-white active:bg-gray-50'
-                }`}
-              >
-                <span className={`w-4 h-4 rounded-full flex-shrink-0 ${opt.dot}`} />
-                <div className="text-left">
-                  <p className={`text-sm font-semibold ${theme === opt.value ? 'text-primary-700' : 'text-gray-700'}`}>{opt.label}</p>
-                  <p className="text-[10px] text-gray-400">{opt.desc}</p>
-                </div>
-              </button>
-            ))}
+          <div className="flex gap-2 mb-6">
+
+            {/* ① 預設 — dot and selected state always fixed violet (never follows theme) */}
+            <button
+              onClick={() => { setTheme('default'); onThemePreview('default'); }}
+              className={`flex-1 flex items-center gap-2 px-2.5 py-3 rounded-xl border-2 transition-all ${
+                theme === 'default'
+                  ? 'border-violet-600 bg-violet-50'
+                  : 'border-gray-200 bg-white active:bg-gray-50'
+              }`}
+            >
+              <span className="w-3.5 h-3.5 rounded-full flex-shrink-0 bg-violet-600" />
+              <div className="text-left min-w-0">
+                <p className={`text-xs font-semibold truncate ${theme === 'default' ? 'text-violet-700' : 'text-gray-700'}`}>預設</p>
+                <p className="text-[10px] text-gray-400 truncate">紫色主調</p>
+              </div>
+            </button>
+
+            {/* ② 中性色 — follows theme when selected */}
+            <button
+              onClick={() => { setTheme('neutral'); onThemePreview('neutral'); }}
+              className={`flex-1 flex items-center gap-2 px-2.5 py-3 rounded-xl border-2 transition-all ${
+                theme === 'neutral'
+                  ? 'border-primary-600 bg-primary-50'
+                  : 'border-gray-200 bg-white active:bg-gray-50'
+              }`}
+            >
+              <span className="w-3.5 h-3.5 rounded-full flex-shrink-0 bg-gray-500" />
+              <div className="text-left min-w-0">
+                <p className={`text-xs font-semibold truncate ${theme === 'neutral' ? 'text-primary-700' : 'text-gray-700'}`}>中性色</p>
+                <p className="text-[10px] text-gray-400 truncate">灰階主調</p>
+              </div>
+            </button>
+
+            {/* ③ 暗色模式 — dot and selected state always use hardcoded slate (immune to CSS-var inversion)
+                  so the card itself always previews what dark mode looks like */}
+            <button
+              onClick={() => { setTheme('dark'); onThemePreview('dark'); }}
+              className={`flex-1 flex items-center gap-2 px-2.5 py-3 rounded-xl border-2 transition-all ${
+                theme === 'dark'
+                  ? 'border-slate-500 bg-slate-900'
+                  : 'border-gray-200 bg-white active:bg-gray-50'
+              }`}
+            >
+              <span className="w-3.5 h-3.5 rounded-full flex-shrink-0 bg-slate-800 ring-1 ring-slate-500" />
+              <div className="text-left min-w-0">
+                <p className={`text-xs font-semibold truncate ${theme === 'dark' ? 'text-slate-100' : 'text-gray-700'}`}>暗色模式</p>
+                <p className={`text-[10px] truncate ${theme === 'dark' ? 'text-slate-400' : 'text-gray-400'}`}>深色背景</p>
+              </div>
+            </button>
+
           </div>
 
           {/* 交易稅 */}

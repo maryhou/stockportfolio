@@ -39,7 +39,7 @@ export interface Stock {
 
 export type ViewName = 'home' | 'activity' | 'holdings' | 'profile' | 'notifications';
 
-export type AppTheme = 'default' | 'neutral';
+export type AppTheme = 'default' | 'neutral' | 'dark';
 
 export interface AppSettings {
   userName: string;

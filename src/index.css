@@ -2,8 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Gray scale (CSS variables — lets dark mode flip the whole scale) ─────── */
+/* Values are R G B channels (no #) for use with rgb(var(--x) / opacity)       */
+:root {
+  --gray-50:  249 250 251;
+  --gray-100: 243 244 246;
+  --gray-200: 229 231 235;
+  --gray-300: 209 213 219;
+  --gray-400: 156 163 175;
+  --gray-500: 107 114 128;
+  --gray-600: 75 85 99;
+  --gray-700: 55 65 81;
+  --gray-800: 31 41 55;
+  --gray-900: 17 24 39;
+}
+
 /* ── Theme: default (violet/purple) ─────────────────────────────────────── */
-/* Values are R G B channels (no #) for use with rgb(var(--x) / opacity)    */
 :root {
   --primary-50:  245 243 255;
   --primary-100: 237 233 254;
@@ -34,6 +48,85 @@
   --hero-from: #374151;
   --hero-to:   #111827;
 }
+
+/* ── Theme: dark ─────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Gray scale designed for dark surfaces — not a simple inversion.
+     Creates a clear hierarchy: page bg → surfaces → elevated surfaces → text */
+  --gray-50:  17 24 39;    /* page background (deep navy) */
+  --gray-100: 26 36 54;    /* subtle surfaces: tab containers, icon circles */
+  --gray-200: 44 57 76;    /* borders, input outlines */
+  --gray-300: 65 80 104;   /* stronger borders / dividers */
+  --gray-400: 100 116 140; /* muted icons, disabled */
+  --gray-500: 148 163 184; /* secondary text */
+  --gray-600: 200 212 228; /* medium-weight text */
+  --gray-700: 220 230 244; /* body text */
+  --gray-800: 236 242 252; /* headings */
+  --gray-900: 248 250 254; /* near-white (labels, strong text) */
+
+  /* Violet — shift toward brighter shades so accents stay vivid on dark bg */
+  --primary-50:  30 27 75;
+  --primary-100: 46 16 101;
+  --primary-200: 76 29 149;
+  --primary-300: 109 40 217;
+  --primary-400: 124 58 237;
+  --primary-500: 139 92 246;
+  --primary-600: 167 139 250;   /* violet-400 — main accent, bright on dark */
+  --primary-700: 196 181 253;   /* violet-300 */
+  --primary-800: 221 214 254;   /* violet-200 */
+  --primary-900: 237 233 254;   /* violet-100 */
+  --hero-from: #1e1b4b;         /* indigo-950 */
+  --hero-to:   #2e1065;         /* violet-950 */
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DARK MODE OVERRIDES for hardcoded Tailwind values (not CSS variables)
+   These rules sit outside @layer so they win the cascade via higher specificity.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Card / surface elevation ──────────────────────────────────────────────── */
+/* bg-white (hardcoded) → elevated surface, lighter than gray-100 containers  */
+/* This also lifts the tab-bar active pill above the bg-gray-100 container.   */
+[data-theme="dark"] .bg-white {
+  background-color: rgb(35 48 68);
+}
+
+/* Toast notification — bg-gray-900 inverts to near-white via CSS variable.  */
+/* Keep it dark so the toast text (text-white) remains readable.              */
+[data-theme="dark"] .bg-gray-900 {
+  background-color: rgb(15 22 38);
+}
+
+/* Semantic / status color backgrounds ───────────────────────────────────── */
+[data-theme="dark"] .bg-red-50     { background-color: rgb(55 14 18);  }
+[data-theme="dark"] .bg-red-100    { background-color: rgb(76 22 26);  }
+[data-theme="dark"] .bg-emerald-50 { background-color: rgb(8  44 28);  }
+[data-theme="dark"] .bg-emerald-100{ background-color: rgb(12 56 36);  }
+[data-theme="dark"] .bg-amber-50   { background-color: rgb(50 32  4);  }
+[data-theme="dark"] .bg-amber-100  { background-color: rgb(66 44  6);  }
+[data-theme="dark"] .bg-blue-50    { background-color: rgb(12 28 58);  }
+[data-theme="dark"] .bg-blue-100   { background-color: rgb(18 40 88);  }
+[data-theme="dark"] .bg-violet-50  { background-color: rgb(20 16 56);  }
+[data-theme="dark"] .bg-violet-100 { background-color: rgb(38 20 90);  }
+
+/* Semantic borders (prevent light-colored borders on dark semantic bgs) ─── */
+[data-theme="dark"] .border-red-100    { border-color: rgb(100 30  35); }
+[data-theme="dark"] .border-red-200    { border-color: rgb(120 40  45); }
+[data-theme="dark"] .border-blue-100   { border-color: rgb(30  60 130); }
+[data-theme="dark"] .border-amber-200  { border-color: rgb(110 70  15); }
+
+/* Semantic text — shift to brighter shades so they read on dark-colored bgs ─
+   e.g. text-emerald-700 on bg-emerald-100 (dark green on dark green = unreadable)  */
+[data-theme="dark"] .text-emerald-600 { color: rgb(52  211 153); } /* → emerald-400 */
+[data-theme="dark"] .text-emerald-700 { color: rgb(52  211 153); } /* → emerald-400 */
+[data-theme="dark"] .text-amber-600   { color: rgb(251 191 36);  } /* → amber-400   */
+[data-theme="dark"] .text-amber-700   { color: rgb(251 191 36);  } /* → amber-400   */
+[data-theme="dark"] .text-blue-600    { color: rgb(96  165 250); } /* → blue-400    */
+[data-theme="dark"] .text-blue-700    { color: rgb(96  165 250); } /* → blue-400    */
+[data-theme="dark"] .text-violet-600  { color: rgb(167 139 250); } /* → violet-400  */
+[data-theme="dark"] .text-violet-700  { color: rgb(196 181 253); } /* → violet-300  */
 
 @layer base {
   * {
