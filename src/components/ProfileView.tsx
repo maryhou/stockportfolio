@@ -217,8 +217,8 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
         <div className="grid grid-cols-3 gap-2">
           {/* 投資紀錄 */}
           <div className="flex flex-col items-center gap-1.5 text-center">
-            <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-primary-600">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
                 <rect x="9" y="3" width="6" height="4" rx="1"/>
                 <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/>
@@ -233,8 +233,8 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
 
           {/* 持有中 */}
           <div className="flex flex-col items-center gap-1.5 text-center">
-            <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-primary-600">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
                 <path d="M22 12A10 10 0 0 0 12 2v10z"/>
               </svg>
@@ -248,8 +248,8 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
 
           {/* 已清倉 */}
           <div className="flex flex-col items-center gap-1.5 text-center">
-            <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-primary-600">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="12 8 12 12 14 14"/>
                 <path d="M3.05 11a9 9 0 1 0 .5-4.5"/>
                 <polyline points="3 3 3 7 7 7"/>
@@ -366,7 +366,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
           >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                   <polyline points="7 10 12 15 17 10"/>
                   <line x1="12" y1="15" x2="12" y2="3"/>
