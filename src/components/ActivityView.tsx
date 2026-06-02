@@ -56,7 +56,7 @@ export default function ActivityView({ stocks, selectedStockId, settings, priceH
 
 // ─── Portfolio Overview ───────────────────────────────────────────────────────
 
-const PALETTE = ['#6C63FF', '#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#14b8a6', '#f97316'];
+const PALETTE = ['#0EA5E9', '#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#0891b2', '#14b8a6', '#f97316'];
 
 function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelectStock: (id: string) => void }) {
   const [txFilter, setTxFilter] = useState<'all' | 'buy' | 'sell'>('all');

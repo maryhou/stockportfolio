@@ -66,19 +66,20 @@
   --gray-800: 236 242 252; /* headings */
   --gray-900: 248 250 254; /* near-white (labels, strong text) */
 
-  /* Violet — shift toward brighter shades so accents stay vivid on dark bg */
-  --primary-50:  30 27 75;
-  --primary-100: 46 16 101;
-  --primary-200: 76 29 149;
-  --primary-300: 109 40 217;
-  --primary-400: 124 58 237;
-  --primary-500: 139 92 246;
-  --primary-600: 167 139 250;   /* violet-400 — main accent, bright on dark */
-  --primary-700: 196 181 253;   /* violet-300 */
-  --primary-800: 221 214 254;   /* violet-200 */
-  --primary-900: 237 233 254;   /* violet-100 */
-  --hero-from: #1e1b4b;         /* indigo-950 */
-  --hero-to:   #2e1065;         /* violet-950 */
+  /* Steel blue — de-saturated, refined, no purple tones.
+     Inspired by graphite / steel UI systems (not violet). */
+  --primary-50:  10 20 38;
+  --primary-100: 16 32 58;
+  --primary-200: 24 48 82;
+  --primary-300: 38 76 124;
+  --primary-400: 56 110 168;
+  --primary-500: 76 144 208;
+  --primary-600: 94 164 224;    /* main accent — clean steel blue */
+  --primary-700: 140 196 236;   /* hover / light accent */
+  --primary-800: 186 220 248;   /* pale steel */
+  --primary-900: 220 238 252;   /* near-white steel */
+  --hero-from: #0a1728;         /* near-black navy */
+  --hero-to:   #102040;         /* dark steel navy */
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -108,14 +109,21 @@
 [data-theme="dark"] .bg-amber-100  { background-color: rgb(66 44  6);  }
 [data-theme="dark"] .bg-blue-50    { background-color: rgb(12 28 58);  }
 [data-theme="dark"] .bg-blue-100   { background-color: rgb(18 40 88);  }
-[data-theme="dark"] .bg-violet-50  { background-color: rgb(20 16 56);  }
-[data-theme="dark"] .bg-violet-100 { background-color: rgb(38 20 90);  }
+[data-theme="dark"] .bg-violet-50  { background-color: rgb(10 20 38);  } /* → primary-50  */
+[data-theme="dark"] .bg-violet-100 { background-color: rgb(16 32 58);  } /* → primary-100 */
+[data-theme="dark"] .bg-violet-500 { background-color: rgb(76 144 208); } /* unread dot → steel */
 
 /* Semantic borders (prevent light-colored borders on dark semantic bgs) ─── */
 [data-theme="dark"] .border-red-100    { border-color: rgb(100 30  35); }
 [data-theme="dark"] .border-red-200    { border-color: rgb(120 40  45); }
 [data-theme="dark"] .border-blue-100   { border-color: rgb(30  60 130); }
 [data-theme="dark"] .border-amber-200  { border-color: rgb(110 70  15); }
+[data-theme="dark"] .border-violet-600 { border-color: rgb(56  110 168); } /* settings "預設" border → steel */
+
+/* Ring color for the unread notification dot (ring-violet-100) ─────────── */
+[data-theme="dark"] .ring-violet-100 {
+  --tw-ring-color: rgb(24 48 82 / var(--tw-ring-opacity, 1));
+}
 
 /* Semantic text — shift to brighter shades so they read on dark-colored bgs ─
    e.g. text-emerald-700 on bg-emerald-100 (dark green on dark green = unreadable)  */
@@ -125,8 +133,8 @@
 [data-theme="dark"] .text-amber-700   { color: rgb(251 191 36);  } /* → amber-400   */
 [data-theme="dark"] .text-blue-600    { color: rgb(96  165 250); } /* → blue-400    */
 [data-theme="dark"] .text-blue-700    { color: rgb(96  165 250); } /* → blue-400    */
-[data-theme="dark"] .text-violet-600  { color: rgb(167 139 250); } /* → violet-400  */
-[data-theme="dark"] .text-violet-700  { color: rgb(196 181 253); } /* → violet-300  */
+[data-theme="dark"] .text-violet-600  { color: rgb(94  164 224); } /* → steel-blue (primary-600) */
+[data-theme="dark"] .text-violet-700  { color: rgb(140 196 236); } /* → steel-blue (primary-700) */
 
 @layer base {
   * {
@@ -149,7 +157,7 @@
   }
   .input {
     @apply w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800
-           outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-400 transition-all;
+           outline-none focus:ring-2 focus:ring-primary-200 focus:border-primary-400 transition-all;
   }
 }
 
