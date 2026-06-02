@@ -27,6 +27,14 @@ const SETTINGS_KEY = 'stock-tracker-settings';
 /** System announcements injected once per ID — add new entries here for future updates. */
 const SYSTEM_ANNOUNCEMENTS: import('./types').AppNotification[] = [
   {
+    id: 'sys-v4-dark-mode',
+    type: 'system',
+    title: '外觀更新：新增暗色模式',
+    description: '介面現在支援三種主題：預設紫色、中性灰色、暗色模式。可至「我的」→「設定」→「介面主題」切換。',
+    time: '系統公告',
+    read: false,
+  },
+  {
     id: 'sys-v3-cloud-sync',
     type: 'system',
     title: '功能更新：跨裝置資料同步',
