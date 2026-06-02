@@ -27,6 +27,14 @@ const SETTINGS_KEY = 'stock-tracker-settings';
 /** System announcements injected once per ID — add new entries here for future updates. */
 const SYSTEM_ANNOUNCEMENTS: import('./types').AppNotification[] = [
   {
+    id: 'sys-v3-cloud-sync',
+    type: 'system',
+    title: '功能更新：跨裝置資料同步',
+    description: '前往「我的」頁面以 Google 帳號登入，即可在所有裝置上同步你的投資資料。',
+    time: '系統公告',
+    read: false,
+  },
+  {
     id: 'sys-v2-import-edit-b',
     type: 'system',
     title: '功能更新：匯入持倉編輯優化',
