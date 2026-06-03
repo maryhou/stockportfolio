@@ -61,6 +61,7 @@ const PALETTE = ['#0EA5E9', '#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#0891b2
 function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelectStock: (id: string) => void }) {
   const [txFilter, setTxFilter] = useState<'all' | 'buy' | 'sell'>('all');
   const [portfolioView, setPortfolioView] = useState<'holding' | 'cumulative'>('holding');
+  const [hideAmounts, setHideAmounts] = useState(false);
 
   const PORTFOLIO_TABS = [
     { key: 'holding'    as const, label: '目前持倉' },
@@ -164,22 +165,44 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
 
         <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-1">
-            <p className="text-xs text-gray-400">總投入成本</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-xs text-gray-400">總投入成本</p>
+              <button
+                onClick={() => setHideAmounts(v => !v)}
+                className="text-gray-300 hover:text-gray-400 active:text-gray-500 transition-colors"
+                aria-label={hideAmounts ? '顯示金額' : '隱藏金額'}
+              >
+                {hideAmounts ? (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                ) : (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                )}
+              </button>
+            </div>
             <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
               totalPL >= 0 ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-600'
             }`}>
               {totalPL >= 0 ? <TrendUpIcon size={11} /> : <TrendDownIcon size={11} />}
-              總損益 {totalPL > 0 ? '+' : ''}{formatNTD(totalPL)}
+              總損益 {hideAmounts ? '• • •' : `${totalPL > 0 ? '+' : ''}${formatNTD(totalPL)}`}
             </div>
           </div>
-          <p className="text-2xl font-bold text-gray-800">{formatNTD(totalInvested)}</p>
+          <p className="text-2xl font-bold text-gray-800">
+            {hideAmounts ? '$ • • • • • •' : formatNTD(totalInvested)}
+          </p>
 
           {donutSegments.length > 0 && (
             <>
               <div className="flex items-center justify-center mt-4">
                 <DonutChart
                   segments={donutSegments}
-                  centerLabel={formatNTD(centerValue)}
+                  centerLabel={hideAmounts ? '• • • • • •' : formatNTD(centerValue)}
                   centerSub="總收付"
                   centerSub2="持倉 + 收付"
                   centerOffsetY={24}
