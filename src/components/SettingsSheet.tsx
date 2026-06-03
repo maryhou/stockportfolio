@@ -182,6 +182,20 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
             </button>
           )}
 
+          {/* 交易稅 */}
+          <SectionLabel>交易稅（賣出適用）</SectionLabel>
+          <div className="mb-6">
+            <div className="relative">
+              <input
+                type="number" className="input pr-8"
+                value={taxRateInput} onChange={(e) => setTaxRateInput(e.target.value)}
+                step="0.01" min="0"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1 pl-1">一般股票 0.3%，ETF 0.1%</p>
+          </div>
+
           {/* 介面主題 */}
           <SectionLabel>介面主題</SectionLabel>
           <div className="flex gap-2 mb-6">
@@ -235,20 +249,6 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
               </div>
             </button>
 
-          </div>
-
-          {/* 交易稅 */}
-          <SectionLabel>交易稅（賣出適用）</SectionLabel>
-          <div className="mb-6">
-            <div className="relative">
-              <input
-                type="number" className="input pr-8"
-                value={taxRateInput} onChange={(e) => setTaxRateInput(e.target.value)}
-                step="0.01" min="0"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
-            </div>
-            <p className="text-[11px] text-gray-400 mt-1 pl-1">一般股票 0.3%，ETF 0.1%</p>
           </div>
 
           <button
