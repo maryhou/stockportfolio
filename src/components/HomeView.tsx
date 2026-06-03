@@ -50,6 +50,26 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
   const firstSell    = allSellDates[0] ?? null;
   const lastSell     = allSellDates[allSellDates.length - 1] ?? null;
 
+  // Today's portfolio change: Σ(remaining × currentPrice) − Σ(remaining × prevClose)
+  const { todayPortfolioChange, prevPortfolioValue } = (() => {
+    const hs = stocks.filter((s) => calcRemainingShares(s.buys, s.sells) > 0);
+    let prev = 0;
+    let hasHistory = false;
+    for (const s of hs) {
+      const h = priceHistory[s.symbol];
+      if (h && h.length > 0) {
+        prev += calcRemainingShares(s.buys, s.sells) * h[h.length - 1];
+        hasHistory = true;
+      }
+    }
+    return hasHistory
+      ? { todayPortfolioChange: totalCurrentValue - prev, prevPortfolioValue: prev }
+      : { todayPortfolioChange: null, prevPortfolioValue: null };
+  })();
+  const todayPortfolioPct = prevPortfolioValue !== null && prevPortfolioValue > 0
+    ? (todayPortfolioChange! / prevPortfolioValue) * 100
+    : null;
+
   // Portfolio aggregate sparkline (holding stocks only)
   const portfolioSparkline = (() => {
     const hs = stocks.filter((s) => calcRemainingShares(s.buys, s.sells) > 0);
@@ -193,7 +213,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Left 65%: value */}
+            {/* Left 65%: value + today pill */}
             <div className="min-w-0" style={{ flex: '0 0 65%' }}>
               <p
                 className="font-bold text-white tracking-tight leading-none"
@@ -201,6 +221,12 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
               >
                 {isAmountHidden ? '$ • • • • • •' : formatNTD(totalCurrentValue)}
               </p>
+              {todayPortfolioChange !== null && todayPortfolioPct !== null && (
+                <div className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full bg-white/20 text-white whitespace-nowrap">
+                  今日 {isAmountHidden ? '• • •' : `${todayPortfolioChange >= 0 ? '+' : ''}${formatNTD(todayPortfolioChange)}`}
+                  {' '}({todayPortfolioPct >= 0 ? '+' : ''}{todayPortfolioPct.toFixed(2)}%)
+                </div>
+              )}
             </div>
             {/* Right 35%: sparkline */}
             <div style={{ flex: '0 0 35%' }}>

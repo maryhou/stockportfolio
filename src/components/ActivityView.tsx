@@ -391,7 +391,11 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
   const [targetInput, setTargetInput] = useState('');
   const [editTx, setEditTx] = useState<{ type: 'buy' | 'sell'; tx: BuyTransaction | SellTransaction } | null>(null);
   const [txFilter,     setTxFilter]     = useState<'all' | 'buy' | 'sell'>('all');
-  const [showPLInfo,   setShowPLInfo]   = useState(false);
+  const [showPLInfo,        setShowPLInfo]        = useState(false);
+  const [showRealizedInfo,  setShowRealizedInfo]  = useState(false);
+  const [showUnrealizedInfo,setShowUnrealizedInfo]= useState(false);
+  const [showInvestedInfo,  setShowInvestedInfo]  = useState(false);
+  const [showMarketValInfo, setShowMarketValInfo] = useState(false);
   const [brokerFilter, setBrokerFilter] = useState<string>('all'); // 'all' or brokerId
 
   // Broker chips — only show when this stock has txs from >1 broker
@@ -539,7 +543,10 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
               </div>
             ) : (
               <div className="pt-[9px] pb-1.5 px-4">
-                <p className="text-[11px] text-white/60 mb-0.5">已實現損益</p>
+                <button onClick={() => setShowRealizedInfo(true)} className="flex items-center gap-1 active:opacity-70 transition-opacity mb-0.5">
+                  <span className="text-[11px] text-white/60">已實現損益</span>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="rgba(255,255,255,0.35)"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.35)" stroke="none" /></svg>
+                </button>
                 <p className={`text-lg font-bold ${realizedProfit === 0 ? 'text-white/80' : realizedProfit > 0 ? 'text-red-400' : 'text-emerald-300'}`}>
                   {realizedProfit > 0 ? '+' : ''}{formatNTD(realizedProfit)}
                 </p>
@@ -553,7 +560,10 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
               </div>
             ) : (
               <div className="pt-[9px] pb-1.5 px-4">
-                <p className="text-[11px] text-white/60 mb-0.5">未實現損益</p>
+                <button onClick={() => setShowUnrealizedInfo(true)} className="flex items-center gap-1 active:opacity-70 transition-opacity mb-0.5">
+                  <span className="text-[11px] text-white/60">未實現損益</span>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="rgba(255,255,255,0.35)"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.35)" stroke="none" /></svg>
+                </button>
                 <p className={`text-lg font-bold ${unrealizedPL === 0 ? 'text-white/80' : unrealizedPL > 0 ? 'text-red-400' : 'text-emerald-300'}`}>
                   {unrealizedPL > 0 ? '+' : ''}{formatNTD(unrealizedPL)}
                 </p>
@@ -561,7 +571,10 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
             )}
             {/* Bottom-left: 總投入成本（所有情況相同） */}
             <div className="pt-1.5 pb-[9px] px-4">
-              <p className="text-[11px] text-white/60 mb-0.5">總投入成本(含手續費)</p>
+              <button onClick={() => setShowInvestedInfo(true)} className="flex items-center gap-1 active:opacity-70 transition-opacity mb-0.5">
+                <span className="text-[11px] text-white/60">總投入成本(含手續費)</span>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="rgba(255,255,255,0.35)"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.35)" stroke="none" /></svg>
+              </button>
               <p className="text-base font-bold text-white">{formatNTD(totalInvested)}</p>
             </div>
             {/* Bottom-right: 已清倉→時間區間 / 持倉→目前市值 */}
@@ -574,7 +587,10 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
               </div>
             ) : (
               <div className="pt-1.5 pb-[9px] px-4">
-                <p className="text-[11px] text-white/60 mb-0.5">目前市值</p>
+                <button onClick={() => setShowMarketValInfo(true)} className="flex items-center gap-1 active:opacity-70 transition-opacity mb-0.5">
+                  <span className="text-[11px] text-white/60">目前市值</span>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="rgba(255,255,255,0.35)"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.35)" stroke="none" /></svg>
+                </button>
                 <p className="text-base font-bold text-white">{formatNTD(currentHoldingValue)}</p>
               </div>
             )}
@@ -821,6 +837,192 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
           onDelete={() => { onDeleteTx(editTx.type, editTx.tx.id); }}
           onClose={() => setEditTx(null)}
         />
+      )}
+
+      {/* 已實現損益 info modal */}
+      {showRealizedInfo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={() => setShowRealizedInfo(false)}>
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to))' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
+                  </svg>
+                </div>
+                <h3 className="text-base font-bold text-gray-800">已實現損益 說明</h3>
+              </div>
+              <button onClick={() => setShowRealizedInfo(false)} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+            <div className="bg-primary-50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-xs text-primary-500 font-medium mb-1.5">計算公式</p>
+              <p className="text-sm font-semibold text-primary-800 leading-relaxed">
+                已實現損益 ＝ 賣出淨額<br />
+                　　　　　－ 賣出部位的買入成本
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-primary-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">賣出淨額</p>
+                  <p className="text-xs text-gray-400 mt-0.5">賣出金額扣除手續費與交易稅後的實際入帳金額</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-gray-300 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">賣出部位的買入成本</p>
+                  <p className="text-xs text-gray-400 mt-0.5">每次賣出時，依當下平均買入成本計算該筆賣出部位的持倉成本</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
+              僅統計已完成賣出的交易，反映實際已鎖定的獲利或虧損，不含目前持倉的未實現部分
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 未實現損益 info modal */}
+      {showUnrealizedInfo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={() => setShowUnrealizedInfo(false)}>
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to))' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
+                  </svg>
+                </div>
+                <h3 className="text-base font-bold text-gray-800">未實現損益 說明</h3>
+              </div>
+              <button onClick={() => setShowUnrealizedInfo(false)} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+            <div className="bg-primary-50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-xs text-primary-500 font-medium mb-1.5">計算公式</p>
+              <p className="text-sm font-semibold text-primary-800 leading-relaxed">
+                未實現損益 ＝ 總損益 － 已實現損益
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-primary-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">目前持倉的浮動損益</p>
+                  <p className="text-xs text-gray-400 mt-0.5">以目前市值推算，尚未賣出即尚未鎖定的損益金額</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-amber-300 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">注意：未含賣出成本</p>
+                  <p className="text-xs text-gray-400 mt-0.5">實際賣出時須扣除手續費與交易稅，實際入帳會略低於此數字</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
+              確保「已實現損益 ＋ 未實現損益 ＝ 總損益」恆成立
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 總投入成本 info modal */}
+      {showInvestedInfo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={() => setShowInvestedInfo(false)}>
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to))' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg>
+                </div>
+                <h3 className="text-base font-bold text-gray-800">總投入成本 說明</h3>
+              </div>
+              <button onClick={() => setShowInvestedInfo(false)} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+            <div className="bg-primary-50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-xs text-primary-500 font-medium mb-1.5">計算公式</p>
+              <p className="text-sm font-semibold text-primary-800 leading-relaxed">
+                總投入成本 ＝ Σ（每筆買入金額<br />
+                　　　　　＋ 買入手續費）
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-primary-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">包含所有買入交易</p>
+                  <p className="text-xs text-gray-400 mt-0.5">不論已賣出或仍持有，所有買入紀錄的金額與手續費均計入</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-gray-300 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">損益計算基準</p>
+                  <p className="text-xs text-gray-400 mt-0.5">總損益以此為基準計算，反映你實際付出的總成本</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
+              含手續費確保損益計算準確，避免低估實際成本
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 目前市值 info modal */}
+      {showMarketValInfo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={() => setShowMarketValInfo(false)}>
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to))' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg>
+                </div>
+                <h3 className="text-base font-bold text-gray-800">目前市值 說明</h3>
+              </div>
+              <button onClick={() => setShowMarketValInfo(false)} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+            <div className="bg-primary-50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-xs text-primary-500 font-medium mb-1.5">計算公式</p>
+              <p className="text-sm font-semibold text-primary-800 leading-relaxed">
+                目前市值 ＝ 剩餘股數 × 目前股價
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-primary-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">剩餘股數</p>
+                  <p className="text-xs text-gray-400 mt-0.5">所有買入股數扣除已賣出股數後的目前持倉量</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-1.5 rounded-full bg-primary-400 flex-shrink-0 mt-1 self-start" style={{ height: '14px' }} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">目前股價</p>
+                  <p className="text-xs text-gray-400 mt-0.5">系統最後取得的股價，可手動更新或待自動刷新</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
+              反映目前持倉的即時估值，用於計算未實現損益與總損益
+            </p>
+          </div>
+        </div>
       )}
 
       {/* P&L info modal */}
