@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { Stock, BuyTransaction, SellTransaction, AppSettings, Broker } from '../types';
 import {
   calcAvgCost,
@@ -11,7 +11,7 @@ import {
   formatPrice,
 } from '../utils/calculations';
 import DonutChart from './DonutChart';
-import { TargetIcon, TrendUpIcon, TrendDownIcon, RefreshIcon, EditIcon } from './icons/Icons';
+import { TargetIcon, TrendUpIcon, TrendDownIcon, RefreshIcon, EditIcon, InfoCircleIcon } from './icons/Icons';
 import EditTransactionModal from './EditTransactionModal';
 
 interface ActivityViewProps {
@@ -205,7 +205,7 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
           {/* Portfolio stats */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <StatCard label="已實現損益" value={`${totalRealized > 0 ? '+' : ''}${formatNTD(totalRealized)}`} sub="含手續費及稅" accent={totalRealized === 0 ? 'gray' : totalRealized > 0 ? 'red' : 'green'} />
-            <StatCard label="未實現損益" value={`${totalUnrealized > 0 ? '+' : ''}${formatNTD(totalUnrealized)}`} sub="按目前股價（未含賣出費用）" accent={totalUnrealized === 0 ? 'gray' : totalUnrealized > 0 ? 'red' : 'green'} />
+            <StatCard label="未實現損益" value={`${totalUnrealized > 0 ? '+' : ''}${formatNTD(totalUnrealized)}`} sub="按目前股價（未含賣出費用）" accent={totalUnrealized === 0 ? 'gray' : totalUnrealized > 0 ? 'red' : 'green'} tooltip="未含賣出時的手續費及交易稅，實際出售所得會略低於此數字" />
             <StatCard label="總回收金額" value={formatNTD(totalNetProceeds)} sub="實際入帳(賣出淨額合計)" accent={totalNetProceeds === 0 ? 'gray' : 'violet'} />
             <StatCard label="持倉市值" value={formatNTD(totalHoldingValue)} sub="按目前股價" accent="gray" />
             <StatCard label="總投入" value={formatNTD(totalInvested)} sub="含所有手續費" accent="gray" />
@@ -568,7 +568,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
         <StatCard label="已實現損益" value={`${realizedProfit > 0 ? '+' : ''}${formatNTD(realizedProfit)}`} sub="含手續費及稅" accent={realizedProfit === 0 ? 'gray' : realizedProfit > 0 ? 'red' : 'green'} />
         <StatCard label="總回收金額" value={formatNTD(netProceeds)} sub="實際入帳(賣出淨額)" accent={netProceeds === 0 ? 'gray' : 'violet'} />
         {remaining > 0 && (
-          <StatCard label="未實現損益" value={`${unrealizedPL > 0 ? '+' : ''}${formatNTD(unrealizedPL)}`} sub={`持有 ${remaining} 股`} accent={unrealizedPL === 0 ? 'gray' : unrealizedPL > 0 ? 'red' : 'green'} />
+          <StatCard label="未實現損益" value={`${unrealizedPL > 0 ? '+' : ''}${formatNTD(unrealizedPL)}`} sub={`持有 ${remaining} 股`} accent={unrealizedPL === 0 ? 'gray' : unrealizedPL > 0 ? 'red' : 'green'} tooltip="未含賣出時的手續費及交易稅，實際出售所得會略低於此數字" />
         )}
         <StatCard label="總投入" value={formatNTD(totalInvested)} sub="含手續費" accent="gray" />
       </div>
@@ -949,13 +949,43 @@ function HeroSparkline({ prices }: { prices: number[] }) {
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
-function StatCard({ label, value, sub, accent }: { label: string; value: string; sub: string; accent: string }) {
+function StatCard({ label, value, sub, accent, tooltip }: { label: string; value: string; sub: string; accent: string; tooltip?: string }) {
+  const [showTip, setShowTip] = useState(false);
+  const tipRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showTip) return;
+    function handleOutside(e: MouseEvent) {
+      if (tipRef.current && !tipRef.current.contains(e.target as Node)) setShowTip(false);
+    }
+    document.addEventListener('click', handleOutside);
+    return () => document.removeEventListener('click', handleOutside);
+  }, [showTip]);
+
   const accentClass: Record<string, string> = {
     violet: 'text-primary-600', green: 'text-emerald-600', red: 'text-red-500', gray: 'text-gray-700',
   };
   return (
     <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-      <p className="text-xs text-gray-400 mb-1">{label}</p>
+      <div className="flex items-center gap-1 mb-1">
+        <p className="text-xs text-gray-400">{label}</p>
+        {tooltip && (
+          <div className="relative" ref={tipRef}>
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowTip(v => !v); }}
+              className="flex items-center text-gray-300 hover:text-gray-400 active:text-gray-500"
+            >
+              <InfoCircleIcon size={12} />
+            </button>
+            {showTip && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-gray-800 text-white text-xs leading-relaxed rounded-xl px-3 py-2.5 z-50 shadow-lg pointer-events-none">
+                {tooltip}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       <p className={`text-base font-bold ${accentClass[accent] ?? 'text-gray-700'}`}>{value}</p>
       <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>
     </div>
