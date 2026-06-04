@@ -22,9 +22,10 @@ interface HomeViewProps {
   onVisibleStocksChange: (ids: Set<string>) => void;
   hasUnread: boolean;
   priceHistory: Record<string, number[]>;
+  prevClosePrices: Record<string, number>;
 }
 
-export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onVisibleStocksChange, hasUnread, onAddClick, priceHistory }: HomeViewProps) {
+export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onVisibleStocksChange, hasUnread, onAddClick, priceHistory, prevClosePrices }: HomeViewProps) {
   const [showPortfolioInfo,  setShowPortfolioInfo]  = useState(false);
   const [showRealizedInfo,   setShowRealizedInfo]   = useState(false);
   const [showCumulativeInfo, setShowCumulativeInfo] = useState(false);
@@ -50,19 +51,19 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
   const firstSell    = allSellDates[0] ?? null;
   const lastSell     = allSellDates[allSellDates.length - 1] ?? null;
 
-  // Today's portfolio change: Σ(remaining × currentPrice) − Σ(remaining × prevClose)
+  // Today's portfolio change — based on yesterday's snapshot prices (reliable, self-contained)
   const { todayPortfolioChange, prevPortfolioValue } = (() => {
     const hs = stocks.filter((s) => calcRemainingShares(s.buys, s.sells) > 0);
     let prev = 0;
-    let hasHistory = false;
+    let hasRef = false;
     for (const s of hs) {
-      const h = priceHistory[s.symbol];
-      if (h && h.length > 0) {
-        prev += calcRemainingShares(s.buys, s.sells) * h[h.length - 1];
-        hasHistory = true;
+      const pc = prevClosePrices[s.symbol];
+      if (pc !== undefined) {
+        prev += calcRemainingShares(s.buys, s.sells) * pc;
+        hasRef = true;
       }
     }
-    return hasHistory
+    return hasRef
       ? { todayPortfolioChange: totalCurrentValue - prev, prevPortfolioValue: prev }
       : { todayPortfolioChange: null, prevPortfolioValue: null };
   })();

@@ -21,10 +21,21 @@ import ToastContainer, { type ToastData } from './components/Toast';
 import PullToRefreshIndicator from './components/PullToRefreshIndicator';
 import OnboardingModal from './components/OnboardingModal';
 
-const STORAGE_KEY = 'stock-tracker-data';
-const ONBOARD_KEY = 'stock-tracker-onboarded';
-const NOTIF_KEY = 'stock-tracker-notifications';
-const SETTINGS_KEY = 'stock-tracker-settings';
+const STORAGE_KEY    = 'stock-tracker-data';
+const ONBOARD_KEY    = 'stock-tracker-onboarded';
+const NOTIF_KEY      = 'stock-tracker-notifications';
+const SETTINGS_KEY   = 'stock-tracker-settings';
+const PREV_CLOSE_KEY = 'stock-tracker-prev-close';
+
+/** Daily price snapshot for today's-change pill.
+ *  prevDayPrices = prices at end of the *previous* session day
+ *  todayPrices   = prices at the *start* of today's first session
+ */
+interface PriceSnapshot {
+  date: string;
+  prevDayPrices: Record<string, number>;
+  todayPrices:   Record<string, number>;
+}
 
 /** System announcements injected once per ID — add new entries here for future updates. */
 const SYSTEM_ANNOUNCEMENTS: import('./types').AppNotification[] = [
@@ -148,6 +159,44 @@ export default function App() {
   const [selectedStockId, setSelectedStockId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const toastId = useRef(0);
+
+  // ── Daily price snapshot for "today's change" pill ────────────────────────
+  const [prevClosePrices, setPrevClosePrices] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const currentPrices: Record<string, number> = {};
+    stocks.forEach((s) => { currentPrices[s.symbol] = s.currentPrice; });
+
+    try {
+      const raw = localStorage.getItem(PREV_CLOSE_KEY);
+      if (raw) {
+        const snap = JSON.parse(raw) as PriceSnapshot;
+        if (snap.date < today) {
+          // New day: rotate — old todayPrices become prevDayPrices
+          const next: PriceSnapshot = {
+            date: today,
+            prevDayPrices: snap.todayPrices,
+            todayPrices:   currentPrices,
+          };
+          localStorage.setItem(PREV_CLOSE_KEY, JSON.stringify(next));
+          setPrevClosePrices(next.prevDayPrices);
+        } else {
+          // Same day: keep today's reference fixed; just expose prevDayPrices
+          setPrevClosePrices(snap.prevDayPrices);
+        }
+      } else {
+        // First time ever: save initial snapshot, no prev-day data yet
+        const init: PriceSnapshot = {
+          date: today,
+          prevDayPrices: {},
+          todayPrices:   currentPrices,
+        };
+        localStorage.setItem(PREV_CLOSE_KEY, JSON.stringify(init));
+        setPrevClosePrices({});
+      }
+    } catch {}
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Cloud sync ────────────────────────────────────────────────────────────
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -484,6 +533,7 @@ export default function App() {
                 onVisibleStocksChange={handleVisibleStocksChange}
                 hasUnread={hasUnread}
                 priceHistory={priceHistory}
+                prevClosePrices={prevClosePrices}
               />
             )}
             {view === 'notifications' && (
