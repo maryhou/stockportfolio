@@ -19,13 +19,14 @@ interface HomeViewProps {
   onViewAllHoldings: () => void;
   onViewAllActivity: () => void;
   onBellClick: () => void;
+  onSearchClick: () => void;
   onVisibleStocksChange: (ids: Set<string>) => void;
   hasUnread: boolean;
   priceHistory: Record<string, number[]>;
   prevClosePrices: Record<string, number>;
 }
 
-export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onVisibleStocksChange, hasUnread, onAddClick, priceHistory, prevClosePrices }: HomeViewProps) {
+export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onSearchClick, onVisibleStocksChange, hasUnread, onAddClick, priceHistory, prevClosePrices }: HomeViewProps) {
   const [showPortfolioInfo,  setShowPortfolioInfo]  = useState(false);
   const [showRealizedInfo,   setShowRealizedInfo]   = useState(false);
   const [showCumulativeInfo, setShowCumulativeInfo] = useState(false);
@@ -165,7 +166,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
           <h1 className="text-2xl font-bold text-gray-800">{settings.userName}</h1>
         </div>
         <div className="flex gap-2">
-          <button className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
+          <button onClick={onSearchClick} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 active:bg-gray-200 transition-colors">
             <SearchIcon size={18} />
           </button>
           <button onClick={onBellClick} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 relative">

@@ -20,6 +20,7 @@ import SettingsSheet from './components/SettingsSheet';
 import ToastContainer, { type ToastData } from './components/Toast';
 import PullToRefreshIndicator from './components/PullToRefreshIndicator';
 import OnboardingModal from './components/OnboardingModal';
+import SearchOverlay, { pushRecentId } from './components/SearchOverlay';
 
 const STORAGE_KEY  = 'stock-tracker-data';
 const ONBOARD_KEY  = 'stock-tracker-onboarded';
@@ -132,6 +133,7 @@ export default function App() {
   const [view, setView] = useState<ViewName>('home');
   const [showAdd, setShowAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => {
     // Already completed onboarding
     if (localStorage.getItem(ONBOARD_KEY)) return false;
@@ -474,6 +476,7 @@ export default function App() {
   }
 
   function handleStockClick(id: string) {
+    pushRecentId(id);
     setSelectedStockId(id);
     setView('activity');
   }
@@ -497,6 +500,7 @@ export default function App() {
                 settings={settings}
                 onStockClick={handleStockClick}
                 onAddClick={() => setShowAdd(true)}
+                onSearchClick={() => setShowSearch(true)}
                 onViewAllHoldings={() => handleNavigate('holdings')}
                 onViewAllActivity={() => handleNavigate('activity')}
                 onBellClick={() => handleNavigate('notifications')}
@@ -584,6 +588,14 @@ export default function App() {
 
       {/* Toast notifications — outside the constrained container, always on top */}
       <ToastContainer toasts={toasts} />
+
+      {showSearch && (
+        <SearchOverlay
+          stocks={stocks}
+          onStockClick={handleStockClick}
+          onClose={() => setShowSearch(false)}
+        />
+      )}
 
       {showOnboarding && (
         <OnboardingModal
