@@ -19,8 +19,10 @@ import AddTransactionSheet from './components/AddTransactionSheet';
 import SettingsSheet from './components/SettingsSheet';
 import ToastContainer, { type ToastData } from './components/Toast';
 import PullToRefreshIndicator from './components/PullToRefreshIndicator';
+import OnboardingModal from './components/OnboardingModal';
 
 const STORAGE_KEY = 'stock-tracker-data';
+const ONBOARD_KEY = 'stock-tracker-onboarded';
 const NOTIF_KEY = 'stock-tracker-notifications';
 const SETTINGS_KEY = 'stock-tracker-settings';
 
@@ -130,6 +132,9 @@ export default function App() {
   const [view, setView] = useState<ViewName>('home');
   const [showAdd, setShowAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => !localStorage.getItem(ONBOARD_KEY),
+  );
   const [previewTheme, setPreviewTheme] = useState<AppTheme | null>(null);
   const [selectedStockId, setSelectedStockId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastData[]>([]);
@@ -198,6 +203,14 @@ export default function App() {
     } catch (e) {
       console.error('Sign-in error:', e);
     }
+  }
+
+  function handleOnboardingComplete(userName: string) {
+    const next = { ...settings, userName };
+    setSettings(next);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+    localStorage.setItem(ONBOARD_KEY, '1');
+    setShowOnboarding(false);
   }
 
   async function handleSignOut() {
@@ -542,6 +555,13 @@ export default function App() {
 
       {/* Toast notifications — outside the constrained container, always on top */}
       <ToastContainer toasts={toasts} />
+
+      {showOnboarding && (
+        <OnboardingModal
+          onComplete={handleOnboardingComplete}
+          onGoogleSignIn={handleSignIn}
+        />
+      )}
     </div>
   );
 }
