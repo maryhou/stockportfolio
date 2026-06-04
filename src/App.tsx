@@ -30,6 +30,14 @@ const SETTINGS_KEY = 'stock-tracker-settings';
 /** System announcements injected once per ID — add new entries here for future updates. */
 const SYSTEM_ANNOUNCEMENTS: import('./types').AppNotification[] = [
   {
+    id: 'sys-v5-search',
+    type: 'system',
+    title: '功能更新：搜尋功能讓你查紀錄不用一秒鐘',
+    description: '點右上角放大鏡，輸入名稱、代號或日期，馬上找到任何持股或交易紀錄。',
+    time: '系統公告',
+    read: false,
+  },
+  {
     id: 'sys-v4-dark-mode',
     type: 'system',
     title: '外觀更新：新增暗色模式',
