@@ -250,12 +250,15 @@ export default function App() {
       historyFetchedRef.current.add(s.symbol);
       fetchStockHistory(s.symbol).then((entries) => {
         if (entries.length > 1) {
-          // Sparklines: extract price numbers only
-          setPriceHistory((prev) => ({ ...prev, [s.symbol]: entries.map((e) => e.price) }));
-          // Prev-close: last entry whose date is strictly before today
+          // Sparklines: exclude today's entry so marketHistory[-1] stays as yesterday's close
           // (guards against TWSE publishing today's close after market hours)
           const today = new Date().toISOString().slice(0, 10);
-          const prevEntry = [...entries].reverse().find((e) => e.date < today);
+          const sparklineEntries = entries.filter((e) => e.date < today);
+          if (sparklineEntries.length > 0) {
+            setPriceHistory((prev) => ({ ...prev, [s.symbol]: sparklineEntries.map((e) => e.price) }));
+          }
+          // Prev-close: last sparkline entry (already excludes today)
+          const prevEntry = sparklineEntries[sparklineEntries.length - 1];
           if (prevEntry) {
             const diffDays = Math.floor(
               (Date.now() - new Date(prevEntry.date).getTime()) / 86_400_000,
