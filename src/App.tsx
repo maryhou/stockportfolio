@@ -252,13 +252,17 @@ export default function App() {
         if (entries.length > 1) {
           // Sparklines: extract price numbers only
           setPriceHistory((prev) => ({ ...prev, [s.symbol]: entries.map((e) => e.price) }));
-          // Prev-close: use last entry only if its date is within 5 calendar days
-          const last = entries[entries.length - 1];
-          const diffDays = Math.floor(
-            (Date.now() - new Date(last.date).getTime()) / 86_400_000,
-          );
-          if (diffDays <= 5) {
-            setPrevClosePrices((prev) => ({ ...prev, [s.symbol]: last.price }));
+          // Prev-close: last entry whose date is strictly before today
+          // (guards against TWSE publishing today's close after market hours)
+          const today = new Date().toISOString().slice(0, 10);
+          const prevEntry = [...entries].reverse().find((e) => e.date < today);
+          if (prevEntry) {
+            const diffDays = Math.floor(
+              (Date.now() - new Date(prevEntry.date).getTime()) / 86_400_000,
+            );
+            if (diffDays <= 5) {
+              setPrevClosePrices((prev) => ({ ...prev, [s.symbol]: prevEntry.price }));
+            }
           }
         }
       });
