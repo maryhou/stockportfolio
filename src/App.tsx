@@ -132,9 +132,18 @@ export default function App() {
   const [view, setView] = useState<ViewName>('home');
   const [showAdd, setShowAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(
-    () => !localStorage.getItem(ONBOARD_KEY),
-  );
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    // Already completed onboarding
+    if (localStorage.getItem(ONBOARD_KEY)) return false;
+    // Existing user: has saved settings or stock data → skip modal and mark as onboarded
+    const hasSettings = !!localStorage.getItem(SETTINGS_KEY);
+    const hasStocks   = !!localStorage.getItem(STORAGE_KEY);
+    if (hasSettings || hasStocks) {
+      localStorage.setItem(ONBOARD_KEY, '1');
+      return false;
+    }
+    return true;
+  });
   const [previewTheme, setPreviewTheme] = useState<AppTheme | null>(null);
   const [selectedStockId, setSelectedStockId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastData[]>([]);
