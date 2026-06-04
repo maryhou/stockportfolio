@@ -4,7 +4,7 @@
  * Production → /api/history proxy (avoids CORS on mobile)
  * Development → direct TWSE call
  *
- * Returns an array of close prices ordered oldest → newest (up to 30 points).
+ * Returns an array of { date: "YYYY-MM-DD", price: number } ordered oldest → newest (up to 30 points).
  * Returns [] on any error so callers can fall back gracefully.
  */
 /**
@@ -20,7 +20,7 @@ function timeoutSignal(ms: number): AbortSignal {
   return ctrl.signal;
 }
 
-export async function fetchStockHistory(symbol: string): Promise<number[]> {
+export async function fetchStockHistory(symbol: string): Promise<{ date: string; price: number }[]> {
   try {
     if (!import.meta.env.DEV) {
       const res = await fetch(`/api/history?symbol=${symbol}`, {
@@ -28,7 +28,7 @@ export async function fetchStockHistory(symbol: string): Promise<number[]> {
       });
       if (!res.ok) return [];
       const data = await res.json();
-      return Array.isArray(data) ? (data as number[]) : [];
+      return Array.isArray(data) ? (data as { date: string; price: number }[]) : [];
     }
 
     // Development: direct TWSE calls
@@ -38,7 +38,7 @@ export async function fetchStockHistory(symbol: string): Promise<number[]> {
       yyyymm01(new Date(now.getFullYear(), now.getMonth() - 1, 1)),
       yyyymm01(now),
     ];
-    const prices: number[] = [];
+    const entries: { date: string; price: number }[] = [];
 
     for (const date of months) {
       const res = await fetch(
@@ -50,10 +50,15 @@ export async function fetchStockHistory(symbol: string): Promise<number[]> {
       if (data.stat !== 'OK' || !Array.isArray(data.data)) continue;
       for (const row of data.data) {
         const p = parseFloat(row[6]?.replace(/,/g, '') ?? '');
-        if (!isNaN(p) && p > 0) prices.push(p);
+        if (!isNaN(p) && p > 0) {
+          const rocDate = row[0] ?? '';
+          const [rocYear, mm, dd] = rocDate.split('/');
+          const isoDate = `${parseInt(rocYear) + 1911}-${mm}-${dd}`;
+          entries.push({ date: isoDate, price: p });
+        }
       }
     }
-    return prices.slice(-30);
+    return entries.slice(-30);
   } catch {
     return [];
   }

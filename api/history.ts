@@ -5,7 +5,7 @@
  * Fetches the current + previous month, returns last 30 close prices (oldest→newest).
  *
  * GET /api/history?symbol=2330
- * Returns: [180.5, 182.0, 181.5, ...]  (array of close prices)
+ * Returns: [{ date: "2026-06-03", price: 180.5 }, ...]  (oldest→newest)
  */
 export const config = {
   runtime: 'edge',
@@ -26,7 +26,7 @@ export default async function handler(request: Request): Promise<Response> {
     yyyymm01(now),
   ];
 
-  const prices: number[] = [];
+  const entries: { date: string; price: number }[] = [];
 
   for (const date of months) {
     try {
@@ -49,10 +49,15 @@ export default async function handler(request: Request): Promise<Response> {
       if (data.stat !== 'OK' || !Array.isArray(data.data)) continue;
 
       for (const row of data.data) {
-        // row[6] = 收盤價 (close price), may contain commas for thousands
+        // row[0] = 日期 e.g. "115/06/03" (ROC year), row[6] = 收盤價
         const raw = row[6]?.replace(/,/g, '');
         const p = parseFloat(raw ?? '');
-        if (!isNaN(p) && p > 0) prices.push(p);
+        if (!isNaN(p) && p > 0) {
+          const rocDate = row[0] ?? '';
+          const [rocYear, mm, dd] = rocDate.split('/');
+          const isoDate = `${parseInt(rocYear) + 1911}-${mm}-${dd}`;
+          entries.push({ date: isoDate, price: p });
+        }
       }
     } catch {
       // skip month on error
@@ -60,7 +65,7 @@ export default async function handler(request: Request): Promise<Response> {
   }
 
   // Return last 30 data points
-  return json(prices.slice(-30), 200, 'public, max-age=1800');
+  return json(entries.slice(-30), 200, 'public, max-age=1800');
 }
 
 function yyyymm01(d: Date): string {
