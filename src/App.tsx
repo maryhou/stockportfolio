@@ -440,6 +440,18 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [stocks.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Cmd+K / Ctrl+K global shortcut to open search
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowSearch(true);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   const ptrEnabled = view === 'home' || view === 'activity' || view === 'holdings' || view === 'profile';
   const ptrState = usePullToRefresh(scrollRef, handleRefreshAll, ptrEnabled);
 
