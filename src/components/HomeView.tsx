@@ -249,7 +249,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
                 <p className="text-[10px] text-white/60 leading-none">已實現損益</p>
               </button>
               <p className={`text-sm font-bold leading-none ${realizedProfit === 0 ? 'text-white/80' : realizedProfit > 0 ? 'text-red-400' : 'text-emerald-300'}`}>
-                {realizedProfit > 0 ? '+' : ''}{formatNTD(realizedProfit)}
+                {isAmountHidden ? '• • •' : `${realizedProfit > 0 ? '+' : ''}${formatNTD(realizedProfit)}`}
               </p>
               <p className="text-[10px] text-white/50 mt-1 leading-none">
                 ({realizedReturn > 0 ? '+' : ''}{realizedReturn.toFixed(2)}%)
@@ -267,7 +267,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
                 <p className="text-[10px] text-white/60 leading-none">累積總損益</p>
               </button>
               <p className={`text-sm font-bold leading-none ${cumulativePL === 0 ? 'text-white/80' : cumulativePL > 0 ? 'text-red-400' : 'text-emerald-300'}`}>
-                {cumulativePL > 0 ? '+' : ''}{formatNTD(cumulativePL)}
+                {isAmountHidden ? '• • •' : `${cumulativePL > 0 ? '+' : ''}${formatNTD(cumulativePL)}`}
               </p>
               <p className="text-[10px] text-white/50 mt-1 leading-none">
                 ({cumulativeReturn > 0 ? '+' : ''}{cumulativeReturn.toFixed(2)}%)
@@ -285,7 +285,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
                 <p className="text-[10px] text-white/60 leading-none">總回收金額</p>
               </button>
               <p className="text-sm font-bold text-white leading-none">
-                {formatNTD(totalProceeds)}
+                {isAmountHidden ? '• • •' : formatNTD(totalProceeds)}
               </p>
             </div>
           </div>
