@@ -68,16 +68,14 @@ export default function DividendView({
         </button>
         <h1 className="text-lg font-bold text-gray-900 flex-1">股息收益</h1>
         <div className="flex items-center gap-2">
+          {/* TODO: 自動估算 — TWSE API 尚未穩定，暫時隱藏
           <button
             onClick={() => setShowImport(true)}
             className="flex items-center gap-1.5 border border-amber-400 text-amber-500 text-sm font-semibold px-3 py-2 rounded-xl active:opacity-80 transition-opacity"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-            </svg>
             自動估算
           </button>
+          */}
           <button
             onClick={() => setShowAdd(true)}
             className="flex items-center gap-1.5 bg-amber-500 text-white text-sm font-semibold px-3.5 py-2 rounded-xl active:opacity-80 transition-opacity"
@@ -357,8 +355,8 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
             </select>
           </div>
 
-          {/* TWSE Quick-fill suggestions */}
-          {!isEdit && (
+          {/* TODO: TWSE Quick-fill — 暫時隱藏，API 尚未穩定 */}
+          {false && !isEdit && (
             <div>
               <div className="flex items-center gap-1.5 mb-2">
                 <label className="label mb-0">TWSE 歷史配息</label>
