@@ -452,11 +452,21 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [stocks.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Re-lock when app goes to background
+  // Re-lock only after 5 minutes in background
   useEffect(() => {
+    const LOCK_AFTER_MS = 5 * 60 * 1000; // 5 minutes
+    let hiddenAt: number | null = null;
+
     function onVisibilityChange() {
-      if (document.visibilityState === 'hidden' && isBiometricEnabled()) {
-        setIsLocked(true);
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now();
+      } else if (document.visibilityState === 'visible') {
+        if (hiddenAt !== null && isBiometricEnabled()) {
+          if (Date.now() - hiddenAt >= LOCK_AFTER_MS) {
+            setIsLocked(true);
+          }
+        }
+        hiddenAt = null;
       }
     }
     document.addEventListener('visibilitychange', onVisibilityChange);
