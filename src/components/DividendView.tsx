@@ -92,20 +92,24 @@ export default function DividendView({
         {/* ── Hero Card ── */}
         <div className="rounded-2xl overflow-hidden shadow-md" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}>
           <div className="px-5 pt-5 pb-4">
-            <p className="text-white/70 text-xs font-medium mb-1">總已入帳股息</p>
+            {/* Top row: label + yield pill */}
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <p className="text-white/70 text-xs font-medium">總已入帳股息</p>
+              {yieldPct > 0 && (
+                <div className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/20 text-white whitespace-nowrap">
+                  年化殖利率 {yieldPct.toFixed(2)}%
+                </div>
+              )}
+            </div>
             <p className="text-3xl font-bold text-white mb-3">+{formatNTD(totalNet)}</p>
-            <div className="flex gap-4">
-              <div className="bg-white/15 rounded-xl px-3 py-2 flex-1">
-                <p className="text-white/70 text-[10px] font-medium">今年</p>
-                <p className="text-white text-base font-bold">+{formatNTD(thisYearTotal)}</p>
+            <div className="flex gap-3">
+              <div className="bg-white/15 rounded-xl px-4 py-2.5 flex-1">
+                <p className="text-white/70 text-[10px] font-medium mb-0.5">今年</p>
+                <p className="text-white text-lg font-bold">+{formatNTD(thisYearTotal)}</p>
               </div>
-              <div className="bg-white/15 rounded-xl px-3 py-2 flex-1">
-                <p className="text-white/70 text-[10px] font-medium">本月</p>
-                <p className="text-white text-base font-bold">+{formatNTD(thisMonthTotal)}</p>
-              </div>
-              <div className="bg-white/15 rounded-xl px-3 py-2 flex-1">
-                <p className="text-white/70 text-[10px] font-medium">年化殖利率</p>
-                <p className="text-white text-base font-bold">{yieldPct > 0 ? `${yieldPct.toFixed(2)}%` : '—'}</p>
+              <div className="bg-white/15 rounded-xl px-4 py-2.5 flex-1">
+                <p className="text-white/70 text-[10px] font-medium mb-0.5">本月</p>
+                <p className="text-white text-lg font-bold">+{formatNTD(thisMonthTotal)}</p>
               </div>
             </div>
           </div>
@@ -169,8 +173,11 @@ export default function DividendView({
                     </svg>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800">{d.stockName}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{d.stockSymbol} · {d.date} · {d.shares} 股</p>
+                    <span className="inline-flex items-center bg-amber-100 text-amber-600 text-[10px] font-bold rounded-full px-2 py-0.5 mb-0.5">
+                      {d.stockSymbol}
+                    </span>
+                    <p className="text-sm font-semibold text-gray-800 truncate">{d.stockName}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{d.date} · {d.shares.toLocaleString()} 股</p>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-sm font-bold text-amber-500">+{formatNTD(d.netAmount)}</p>
