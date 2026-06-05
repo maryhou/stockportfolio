@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import SwipeableRow from './SwipeableRow';
 import type { Stock, BuyTransaction, SellTransaction, AppSettings, Broker } from '../types';
 import {
   calcAvgCost,
@@ -740,8 +741,12 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
             .filter((item) => brokerFilter === 'all' || item.tx.brokerId === brokerFilter)
             .map(({ type, tx }) =>
               type === 'sell' ? (
-                <button
+                <SwipeableRow
                   key={tx.id}
+                  onDelete={() => onDeleteTx('sell', tx.id)}
+                  confirmMessage="確定要刪除這筆賣出紀錄嗎？刪除後損益將重新計算。"
+                >
+                <button
                   onClick={() => setEditTx({ type: 'sell', tx })}
                   className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left w-full active:scale-[0.99] transition-transform"
                 >
@@ -771,6 +776,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                     <MiniStat label="可取得" value={formatNTD((tx as SellTransaction).netProceeds)} />
                   </div>
                 </button>
+                </SwipeableRow>
               ) : (() => {
                 const buyTx = tx as BuyTransaction;
                 const isImported = !!buyTx.imported;
@@ -778,8 +784,12 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                   ? Math.round(buyTx.price * buyTx.shares)
                   : buyTx.price * buyTx.shares + buyTx.fee;
                 return (
-                  <button
+                  <SwipeableRow
                     key={tx.id}
+                    onDelete={() => onDeleteTx('buy', tx.id)}
+                    confirmMessage="確定要刪除這筆買入紀錄嗎？刪除後損益將重新計算。"
+                  >
+                  <button
                     onClick={() => setEditTx({ type: 'buy', tx })}
                     className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left w-full active:scale-[0.99] transition-transform"
                   >
@@ -816,6 +826,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                       </div>
                     )}
                   </button>
+                  </SwipeableRow>
                 );
               })()
             )}

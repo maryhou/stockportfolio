@@ -543,6 +543,7 @@ export default function App() {
                 onAddClick={() => setShowAdd(true)}
                 onSearchClick={() => setShowSearch(true)}
                 onDividendClick={() => setView('dividends')}
+                onDeleteTx={handleDeleteTx}
                 onViewAllHoldings={() => handleNavigate('holdings')}
                 onViewAllActivity={() => handleNavigate('activity')}
                 onBellClick={() => handleNavigate('notifications')}

@@ -11,6 +11,7 @@ import {
 } from '../utils/calculations';
 import { BellIcon, SearchIcon } from './icons/Icons';
 import DividendCard from './DividendCard';
+import SwipeableRow from './SwipeableRow';
 
 interface HomeViewProps {
   stocks: Stock[];
@@ -22,13 +23,14 @@ interface HomeViewProps {
   onBellClick: () => void;
   onSearchClick: () => void;
   onDividendClick: () => void;
+  onDeleteTx: (stockId: string, type: 'buy' | 'sell', txId: string) => void;
   onVisibleStocksChange: (ids: Set<string>) => void;
   hasUnread: boolean;
   priceHistory: Record<string, number[]>;
   prevClosePrices: Record<string, number>;
 }
 
-export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onSearchClick, onDividendClick, onVisibleStocksChange, hasUnread, onAddClick, priceHistory, prevClosePrices }: HomeViewProps) {
+export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onSearchClick, onDividendClick, onDeleteTx, onVisibleStocksChange, hasUnread, onAddClick, priceHistory, prevClosePrices }: HomeViewProps) {
   const [showPortfolioInfo,  setShowPortfolioInfo]  = useState(false);
   const [showRealizedInfo,   setShowRealizedInfo]   = useState(false);
   const [showCumulativeInfo, setShowCumulativeInfo] = useState(false);
@@ -149,12 +151,12 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
   const allTrades = stocks.flatMap((stock) => [
     ...stock.sells.map((tx) => ({
       key: `sell-${tx.id}`,
-      stockId: stock.id, symbol: stock.symbol, name: stock.name, type: 'sell' as const,
+      stockId: stock.id, txId: tx.id, symbol: stock.symbol, name: stock.name, type: 'sell' as const,
       date: tx.date, shares: tx.shares, amount: tx.netProceeds, profit: tx.profit,
     })),
     ...stock.buys.map((tx) => ({
       key: `buy-${tx.id}`,
-      stockId: stock.id, symbol: stock.symbol, name: stock.name, type: 'buy' as const,
+      stockId: stock.id, txId: tx.id, symbol: stock.symbol, name: stock.name, type: 'buy' as const,
       date: tx.date, shares: tx.shares, amount: tx.price * tx.shares + tx.fee, profit: null,
     })),
   ]).sort((a, b) => b.date.localeCompare(a.date) || b.key.localeCompare(a.key)).slice(0, 10);
@@ -439,9 +441,14 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              {allTrades.map(({ key, stockId, ...tx }, idx) => (
+              {allTrades.map(({ key, stockId, txId, type, ...tx }, idx) => (
                 <div key={key} className={idx >= 5 ? 'hidden lg:block' : undefined}>
-                  <RecentItem {...tx} onClick={() => onStockClick(stockId)} />
+                  <SwipeableRow
+                    onDelete={() => onDeleteTx(stockId, type, txId)}
+                    confirmMessage="確定要刪除這筆交易紀錄嗎？刪除後無法復原。"
+                  >
+                    <RecentItem {...tx} type={type} onClick={() => onStockClick(stockId)} />
+                  </SwipeableRow>
                 </div>
               ))}
             </div>
