@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchStockDividends, type DividendRecord } from '../utils/fetchDividends';
+import { fetchStockDividends } from '../utils/fetchDividends';
 import type { Stock, DividendTransaction, AppSettings } from '../types';
 import {
   calcYearDividends,
@@ -275,21 +275,7 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
   const [transferFeeStr, setTransferFeeStr] = useState(editDividend ? String(editDividend.transferFee) : String(defaultTransferFee));
   const [note,           setNote]           = useState(editDividend?.note ?? '');
 
-  // TWSE quick-fill suggestions
-  const [suggestions,    setSuggestions]    = useState<DividendRecord[]>([]);
-  const [loadingSugg,    setLoadingSugg]    = useState(false);
-
-  const selectedStock = stocks.find((s) => s.id === stockId);
-
-  // Fetch dividend suggestions when stock changes
-  useEffect(() => {
-    if (isEdit || !selectedStock) return;
-    setSuggestions([]);
-    setLoadingSugg(true);
-    fetchStockDividends(selectedStock.symbol)
-      .then(setSuggestions)
-      .finally(() => setLoadingSugg(false));
-  }, [stockId]); // eslint-disable-line react-hooks/exhaustive-deps
+  // TODO: TWSE quick-fill — disabled until reliable endpoint is found
 
   function handleStockChange(id: string) {
     setStockId(id);
@@ -297,13 +283,6 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
       const s = stocks.find((st) => st.id === id);
       if (s) setSharesStr(String(calcRemainingShares(s.buys, s.sells)));
     }
-  }
-
-  // Apply a TWSE suggestion
-  function applySuggestion(rec: DividendRecord) {
-    setAmtPerShare(String(rec.cashPerShare));
-    // Default date to July 1 of that year (typical annual payout season in Taiwan)
-    setDate(`${rec.year}-07-01`);
   }
 
   const amtPerShareNum = parseFloat(amtPerShare) || 0;
@@ -361,49 +340,6 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
               ))}
             </select>
           </div>
-
-          {/* TODO: TWSE Quick-fill — 暫時隱藏，API 尚未穩定 */}
-          {false && !isEdit && (
-            <div>
-              <div className="flex items-center gap-1.5 mb-2">
-                <label className="label mb-0">TWSE 歷史配息</label>
-                {loadingSugg && (
-                  <svg className="animate-spin text-amber-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                  </svg>
-                )}
-              </div>
-              {suggestions.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {suggestions.map((rec) => {
-                    const previewGross = calcDividendGross(rec.cashPerShare, parseInt(sharesStr) || 0);
-                    const previewHealth = calcDividendHealthInsurance(previewGross);
-                    const previewNet = calcDividendNet(previewGross, previewHealth, parseInt(transferFeeStr) || 0);
-                    return (
-                      <button
-                        key={rec.year}
-                        onClick={() => applySuggestion(rec)}
-                        className={`flex-1 min-w-[calc(50%-4px)] text-left border rounded-2xl px-3.5 py-2.5 transition-colors active:scale-[0.98]
-                          ${amtPerShare === String(rec.cashPerShare)
-                            ? 'border-amber-400 bg-amber-50'
-                            : 'border-gray-200 bg-gray-50 active:bg-amber-50'}`}
-                      >
-                        <p className="text-[10px] font-medium text-gray-400">{rec.year} 年度</p>
-                        <p className="text-sm font-bold text-gray-800">每股 ${rec.cashPerShare}</p>
-                        {parseInt(sharesStr) > 0 && (
-                          <p className="text-[10px] text-amber-500 font-medium mt-0.5">
-                            預估入帳 +{formatNTD(previewNet)}
-                          </p>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : !loadingSugg ? (
-                <p className="text-xs text-gray-400">查無資料，請手動輸入</p>
-              ) : null}
-            </div>
-          )}
 
           {/* Date */}
           <div>
