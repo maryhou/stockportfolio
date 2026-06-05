@@ -1,72 +1,72 @@
 /**
- * Vercel Edge Function — TWSE historical cash dividend per share.
+ * Vercel Edge Function — Yahoo Finance dividend history for Taiwan stocks.
  *
- * Source: https://www.twse.com.tw/exchangeReport/BWIBBU_d
- * Returns last 5 years of cash dividend records (newest first).
+ * Tries {symbol}.TW first, falls back to {symbol}.TWO for OTC stocks.
+ * Returns up to 10 most-recent dividend records, newest first.
  *
- * GET /api/dividends?symbol=0056
- * Returns: [{ year: "2024", cashPerShare: 2.8 }, ...]
+ * GET /api/dividends?symbol=00919
+ * Returns: [{ date: "2024-06-21", cashPerShare: 0.7 }, ...]
  */
 export const config = {
   runtime: 'edge',
   regions: ['sin1', 'hnd1'],
 };
 
-const BASE = 'https://www.twse.com.tw/exchangeReport/BWIBBU_d';
+type YahooChart = {
+  chart?: {
+    result?: Array<{
+      events?: {
+        dividends?: Record<string, { amount: number; date: number }>;
+      };
+    }>;
+    error?: unknown;
+  };
+};
 
 export default async function handler(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
   const symbol = searchParams.get('symbol')?.trim();
   if (!symbol) return json([], 400);
 
-  try {
-    const url = `${BASE}?response=json&stockNo=${symbol}`;
-    const res = await fetch(url, {
-      headers: {
-        Accept: 'application/json',
-        Referer: 'https://www.twse.com.tw/',
-        'User-Agent': 'Mozilla/5.0',
-      },
-      signal: AbortSignal.timeout(8_000),
-    });
+  // Try listed (.TW) first, then OTC (.TWO)
+  for (const suffix of ['.TW', '.TWO']) {
+    try {
+      const url =
+        `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}${suffix}` +
+        `?events=dividends&interval=1d&range=5y`;
 
-    if (!res.ok) return json([], 200);
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible)',
+          Accept: 'application/json',
+        },
+        signal: AbortSignal.timeout(8_000),
+      });
 
-    const data = (await res.json()) as {
-      stat?: string;
-      data?: string[][];
-      // fields: 年度, 股票股利, 公積股利, 股票小計, 現金公積, 現金盈餘, 合計, ...
-    };
+      if (!res.ok) continue;
 
-    if (data.stat !== 'OK' || !Array.isArray(data.data)) return json([], 200);
+      const data = (await res.json()) as YahooChart;
+      const divMap = data.chart?.result?.[0]?.events?.dividends;
+      if (!divMap || Object.keys(divMap).length === 0) continue;
 
-    const results: { year: string; cashPerShare: number }[] = [];
+      const results = Object.values(divMap)
+        .map((d) => ({
+          date: new Date(d.date * 1000).toISOString().slice(0, 10),
+          cashPerShare: Math.round(d.amount * 10000) / 10000,
+        }))
+        .filter((d) => d.cashPerShare > 0)
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, 10);
 
-    for (const row of [...data.data].reverse()) {
-      // Fields: 年度, 股票股利, 公積股利, 股票小計, 現金公積, 現金盈餘, 合計, ...
-      const rocYear = parseInt(row[0]?.trim() ?? '0');
-      if (!rocYear) continue;
-      const ceYear = String(rocYear + 1911);
-
-      const p = (i: number) => parseFloat(row[i]?.replace(/,/g, '') ?? '0') || 0;
-      const stockTotal = p(3);                     // 股票小計
-      const cashParts  = p(4) + p(5);             // 現金公積 + 現金盈餘
-      const grandTotal = p(6);                     // 合計 (all dividends)
-
-      // For regular stocks: cashParts should be > 0
-      // For ETFs: cashParts may be 0; fall back to (grandTotal - stockTotal)
-      const cash = cashParts > 0 ? cashParts : Math.max(0, grandTotal - stockTotal);
-
-      if (cash > 0) {
-        results.push({ year: ceYear, cashPerShare: Math.round(cash * 10000) / 10000 });
+      if (results.length > 0) {
+        return json(results, 200, 'public, max-age=43200'); // cache 12h
       }
+    } catch {
+      // try next suffix
     }
-
-    // newest first, cap at 5
-    return json(results.slice(0, 5), 200, 'public, max-age=43200');
-  } catch {
-    return json([], 200);
   }
+
+  return json([], 200);
 }
 
 function json(body: unknown, status = 200, cacheControl = 'no-store'): Response {

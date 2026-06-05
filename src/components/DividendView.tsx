@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchStockDividends } from '../utils/fetchDividends';
+import { fetchStockDividends, type DividendRecord } from '../utils/fetchDividends';
 import type { Stock, DividendTransaction, AppSettings } from '../types';
 import {
   calcYearDividends,
@@ -68,14 +68,16 @@ export default function DividendView({
         </button>
         <h1 className="text-lg font-bold text-gray-900 flex-1">股息收益</h1>
         <div className="flex items-center gap-2">
-          {/* TODO: 自動估算 — TWSE API 尚未穩定，暫時隱藏
           <button
             onClick={() => setShowImport(true)}
             className="flex items-center gap-1.5 border border-amber-400 text-amber-500 text-sm font-semibold px-3 py-2 rounded-xl active:opacity-80 transition-opacity"
           >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
             自動估算
           </button>
-          */}
           <button
             onClick={() => setShowAdd(true)}
             className="flex items-center gap-1.5 bg-amber-500 text-white text-sm font-semibold px-3.5 py-2 rounded-xl active:opacity-80 transition-opacity"
@@ -275,7 +277,27 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
   const [transferFeeStr, setTransferFeeStr] = useState(editDividend ? String(editDividend.transferFee) : String(defaultTransferFee));
   const [note,           setNote]           = useState(editDividend?.note ?? '');
 
-  // TODO: TWSE quick-fill — disabled until reliable endpoint is found
+  // Yahoo Finance quick-fill suggestions
+  const [suggestions,    setSuggestions]    = useState<DividendRecord[]>([]);
+  const [loadingSugg,    setLoadingSugg]    = useState(false);
+
+  const selectedStock = stocks.find((s) => s.id === stockId);
+
+  // Fetch suggestions when stock changes
+  useEffect(() => {
+    if (isEdit || !selectedStock) return;
+    setSuggestions([]);
+    setLoadingSugg(true);
+    fetchStockDividends(selectedStock.symbol)
+      .then(setSuggestions)
+      .finally(() => setLoadingSugg(false));
+  }, [stockId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Apply a suggestion: use exact date from Yahoo Finance
+  function applySuggestion(rec: DividendRecord) {
+    setAmtPerShare(String(rec.cashPerShare));
+    setDate(rec.date);
+  }
 
   function handleStockChange(id: string) {
     setStockId(id);
@@ -340,6 +362,50 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
               ))}
             </select>
           </div>
+
+          {/* Yahoo Finance quick-fill */}
+          {!isEdit && (
+            <div>
+              <div className="flex items-center gap-1.5 mb-2">
+                <label className="label mb-0 text-gray-500">近期配息紀錄</label>
+                {loadingSugg && (
+                  <svg className="animate-spin text-amber-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                  </svg>
+                )}
+              </div>
+              {suggestions.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  {suggestions.slice(0, 5).map((rec) => {
+                    const previewGross  = calcDividendGross(rec.cashPerShare, parseInt(sharesStr) || 0);
+                    const previewHealth = calcDividendHealthInsurance(previewGross);
+                    const previewNet    = calcDividendNet(previewGross, previewHealth, parseInt(transferFeeStr) || 0);
+                    const isActive      = amtPerShare === String(rec.cashPerShare) && date === rec.date;
+                    return (
+                      <button
+                        key={rec.date}
+                        onClick={() => applySuggestion(rec)}
+                        className={`w-full flex items-center justify-between text-left border rounded-2xl px-4 py-3 transition-colors active:scale-[0.99]
+                          ${isActive ? 'border-amber-400 bg-amber-50' : 'border-gray-200 bg-gray-50 active:bg-amber-50'}`}
+                      >
+                        <div>
+                          <p className="text-[10px] font-medium text-gray-400">{rec.date}</p>
+                          <p className="text-sm font-bold text-gray-800">每股 ${rec.cashPerShare}</p>
+                        </div>
+                        {parseInt(sharesStr) > 0 && (
+                          <p className={`text-sm font-bold ${isActive ? 'text-amber-500' : 'text-gray-400'}`}>
+                            +{formatNTD(previewNet)}
+                          </p>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : !loadingSugg ? (
+                <p className="text-xs text-gray-400">查無資料，請手動輸入</p>
+              ) : null}
+            </div>
+          )}
 
           {/* Date */}
           <div>
@@ -561,7 +627,7 @@ function ImportDividendSheet({ stocks, settings, onConfirm, onClose }: ImportDiv
   const [loading,     setLoading]     = useState(true);
   const [items,       setItems]       = useState<ImportItem[]>([]);
   const [selected,    setSelected]    = useState<Set<string>>(new Set());
-  const [loadingMsg,  setLoadingMsg]  = useState('正在查詢 TWSE 配息資料...');
+  const [loadingMsg,  setLoadingMsg]  = useState('正在查詢 Yahoo Finance 配息資料...');
 
   const transferFee = settings.dividendTransferFee ?? 10;
 
@@ -576,13 +642,13 @@ function ImportDividendSheet({ stocks, settings, onConfirm, onClose }: ImportDiv
         const records = await fetchStockDividends(stock.symbol);
 
         for (const rec of records) {
-          // Reference date: July 1 of that year (典型台灣除息季節)
-          const refDate = `${rec.year}-07-01`;
+          // Use exact ex-dividend date from Yahoo Finance
+          const refDate = rec.date;
           const sharesHeld = calcSharesHeldAtDate(stock.buys, stock.sells, refDate);
           if (sharesHeld <= 0) continue;
 
-          // Skip if a record for this year already exists
-          const alreadyExists = (stock.dividends ?? []).some((d) => d.date.startsWith(rec.year));
+          // Skip if exact same date already recorded
+          const alreadyExists = (stock.dividends ?? []).some((d) => d.date === refDate);
           if (alreadyExists) continue;
 
           const gross     = calcDividendGross(rec.cashPerShare, sharesHeld);
@@ -590,14 +656,14 @@ function ImportDividendSheet({ stocks, settings, onConfirm, onClose }: ImportDiv
           const net       = calcDividendNet(gross, healthFee, transferFee);
 
           const item: ImportItem = {
-            key:         `${stock.id}-${rec.year}`,
+            key:         `${stock.id}-${rec.date}`,
             stockId:     stock.id,
             stockName:   stock.name,
             stockSymbol: stock.symbol,
-            year:        rec.year,
+            year:        rec.date.slice(0, 4),
             refDate,
             dividend: {
-              id:                 `div-import-${stock.id}-${rec.year}`,
+              id:                 `div-import-${stock.id}-${rec.date}`,
               date:               refDate,
               amountPerShare:     rec.cashPerShare,
               shares:             sharesHeld,
@@ -641,7 +707,7 @@ function ImportDividendSheet({ stocks, settings, onConfirm, onClose }: ImportDiv
         <div className="flex items-center justify-between px-4 mb-1 flex-shrink-0">
           <div>
             <h2 className="text-lg font-bold text-gray-900">匯入歷史股息</h2>
-            <p className="text-[11px] text-gray-400 mt-0.5">以各年度 7/1 持有股數估算，可逐筆修改</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">以 Yahoo Finance 配息日持有股數估算，可逐筆修改</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full active:bg-gray-100">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round">

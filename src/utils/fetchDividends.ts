@@ -1,6 +1,6 @@
 /**
- * Fetch historical cash dividend per share from TWSE (via /api/dividends proxy in prod).
- * Returns [] on any error.
+ * Fetch dividend history via /api/dividends proxy (prod) or Yahoo Finance (dev).
+ * Returns up to 10 records, newest first. Returns [] on any error.
  */
 function timeoutSignal(ms: number): AbortSignal {
   if (typeof AbortSignal.timeout === 'function') return AbortSignal.timeout(ms);
@@ -10,7 +10,7 @@ function timeoutSignal(ms: number): AbortSignal {
 }
 
 export interface DividendRecord {
-  year: string;        // CE year e.g. "2024"
+  date: string;        // exact ex-dividend date "YYYY-MM-DD"
   cashPerShare: number;
 }
 
@@ -25,27 +25,34 @@ export async function fetchStockDividends(symbol: string): Promise<DividendRecor
       return Array.isArray(data) ? (data as DividendRecord[]) : [];
     }
 
-    // Development: direct TWSE call
-    const res = await fetch(
-      `https://www.twse.com.tw/exchangeReport/BWIBBU_d?response=json&stockNo=${symbol}`,
-      { signal: timeoutSignal(8_000) },
-    );
-    if (!res.ok) return [];
-    const data = (await res.json()) as { stat?: string; data?: string[][] };
-    if (data.stat !== 'OK' || !Array.isArray(data.data)) return [];
+    // Development: direct Yahoo Finance (may be blocked by CORS — use prod for testing)
+    for (const suffix of ['.TW', '.TWO']) {
+      try {
+        const url =
+          `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}${suffix}` +
+          `?events=dividends&interval=1d&range=5y`;
+        const res = await fetch(url, { signal: timeoutSignal(8_000) });
+        if (!res.ok) continue;
 
-    const results: DividendRecord[] = [];
-    for (const row of [...data.data].reverse()) {
-      const rocYear = parseInt(row[0]?.trim() ?? '0');
-      if (!rocYear) continue;
-      const p = (i: number) => parseFloat(row[i]?.replace(/,/g, '') ?? '0') || 0;
-      const stockTotal = p(3);
-      const cashParts  = p(4) + p(5);
-      const grandTotal = p(6);
-      const cash = cashParts > 0 ? cashParts : Math.max(0, grandTotal - stockTotal);
-      if (cash > 0) results.push({ year: String(rocYear + 1911), cashPerShare: Math.round(cash * 10000) / 10000 });
+        const data = await res.json() as {
+          chart?: { result?: Array<{ events?: { dividends?: Record<string, { amount: number; date: number }> } }> };
+        };
+        const divMap = data.chart?.result?.[0]?.events?.dividends;
+        if (!divMap || Object.keys(divMap).length === 0) continue;
+
+        const results = Object.values(divMap)
+          .map((d) => ({
+            date: new Date(d.date * 1000).toISOString().slice(0, 10),
+            cashPerShare: Math.round(d.amount * 10000) / 10000,
+          }))
+          .filter((d) => d.cashPerShare > 0)
+          .sort((a, b) => b.date.localeCompare(a.date))
+          .slice(0, 10);
+
+        if (results.length > 0) return results;
+      } catch { continue; }
     }
-    return results.slice(0, 5);
+    return [];
   } catch {
     return [];
   }
