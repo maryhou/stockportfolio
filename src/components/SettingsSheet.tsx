@@ -1,4 +1,10 @@
 import { useState } from 'react';
+import {
+  isBiometricSupported,
+  isBiometricEnabled,
+  registerBiometric,
+  disableBiometric,
+} from '../utils/biometric';
 import type { AppSettings, Broker, AppTheme } from '../types';
 import { CloseIcon } from './icons/Icons';
 
@@ -21,6 +27,9 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
   const [brokers,      setBrokers]      = useState<Broker[]>([...settings.brokers]);
   const [editMode,     setEditMode]     = useState<EditMode>({ kind: 'none' });
   const [theme,        setTheme]        = useState<AppTheme>(settings.theme ?? 'default');
+  const [bioEnabled,   setBioEnabled]   = useState(() => isBiometricEnabled());
+  const [bioLoading,   setBioLoading]   = useState(false);
+  const [bioError,     setBioError]     = useState('');
 
   // Inline broker form fields
   const [formName,     setFormName]     = useState('');
@@ -80,6 +89,23 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
   }
 
   const formEffective = ((parseFloat(formFeeRate) || 0) * (parseFloat(formDiscount) || 0) / 100).toFixed(4);
+
+  async function handleBioToggle() {
+    setBioError('');
+    if (bioEnabled) {
+      disableBiometric();
+      setBioEnabled(false);
+    } else {
+      setBioLoading(true);
+      const ok = await registerBiometric();
+      setBioLoading(false);
+      if (ok) {
+        setBioEnabled(true);
+      } else {
+        setBioError('設定失敗，請確認裝置支援 Face ID / 指紋辨識');
+      }
+    }
+  }
 
   return (
     <>
@@ -250,6 +276,46 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
             </button>
 
           </div>
+
+          {/* 隱私設定 */}
+          {isBiometricSupported() && (
+            <>
+              <SectionLabel>隱私</SectionLabel>
+              <div className="mb-5">
+                <div className="bg-gray-50 rounded-2xl px-4 py-3.5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-primary-600">
+                        <path d="M4 8V6a2 2 0 0 1 2-2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/>
+                        <path d="M20 16v2a2 2 0 0 1-2 2h-2"/><path d="M8 20H6a2 2 0 0 1-2-2v-2"/>
+                        <path d="M9 10h.01"/><path d="M15 10h.01"/>
+                        <path d="M9.5 15a3.5 3.5 0 0 0 5 0"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">Face ID / 生物辨識解鎖</p>
+                      <p className="text-xs text-gray-400 mt-0.5">開啟 App 時需要驗證身份</p>
+                    </div>
+                  </div>
+                  {/* Toggle */}
+                  <button
+                    onClick={handleBioToggle}
+                    disabled={bioLoading}
+                    className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 ${
+                      bioEnabled ? 'bg-primary-500' : 'bg-gray-200'
+                    } ${bioLoading ? 'opacity-50' : ''}`}
+                  >
+                    <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${
+                      bioEnabled ? 'translate-x-5.5' : 'translate-x-0.5'
+                    }`} />
+                  </button>
+                </div>
+                {bioError && (
+                  <p className="text-xs text-red-500 mt-2 px-1">{bioError}</p>
+                )}
+              </div>
+            </>
+          )}
 
           <button
             onClick={handleSave}

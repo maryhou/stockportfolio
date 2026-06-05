@@ -22,6 +22,8 @@ import PullToRefreshIndicator from './components/PullToRefreshIndicator';
 import OnboardingModal from './components/OnboardingModal';
 import SearchOverlay, { pushRecentId } from './components/SearchOverlay';
 import DividendView from './components/DividendView';
+import AppLock from './components/AppLock';
+import { isBiometricEnabled } from './utils/biometric';
 
 const STORAGE_KEY  = 'stock-tracker-data';
 const ONBOARD_KEY  = 'stock-tracker-onboarded';
@@ -143,6 +145,7 @@ export default function App() {
   const [showAdd, setShowAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [isLocked, setIsLocked] = useState(() => isBiometricEnabled());
   const [showOnboarding, setShowOnboarding] = useState(() => {
     // Already completed onboarding
     if (localStorage.getItem(ONBOARD_KEY)) return false;
@@ -449,6 +452,17 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [stocks.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Re-lock when app goes to background
+  useEffect(() => {
+    function onVisibilityChange() {
+      if (document.visibilityState === 'hidden' && isBiometricEnabled()) {
+        setIsLocked(true);
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, []);
+
   // Cmd+K / Ctrl+K global shortcut to open search
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -529,6 +543,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex" data-theme={(previewTheme ?? settings.theme) ?? 'default'}>
+      {isLocked && <AppLock onUnlocked={() => setIsLocked(false)} />}
       <SideNav active={view} onNavigate={handleNavigate} onAddClick={() => setShowAdd(true)} hasUnread={hasUnread} userName={settings.userName} />
 
       <div className="flex-1 lg:ml-64 flex flex-col min-h-screen min-w-0 overflow-x-hidden">
