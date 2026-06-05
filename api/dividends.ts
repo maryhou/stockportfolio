@@ -43,15 +43,22 @@ export default async function handler(request: Request): Promise<Response> {
     const results: { year: string; cashPerShare: number }[] = [];
 
     for (const row of [...data.data].reverse()) {
-      // row[0] = ROC year (e.g. "113"), row[4] = 現金公積, row[5] = 現金盈餘
+      // Fields: 年度, 股票股利, 公積股利, 股票小計, 現金公積, 現金盈餘, 合計, ...
       const rocYear = parseInt(row[0]?.trim() ?? '0');
       if (!rocYear) continue;
       const ceYear = String(rocYear + 1911);
-      const cash =
-        (parseFloat(row[4]?.replace(/,/g, '') ?? '0') || 0) +
-        (parseFloat(row[5]?.replace(/,/g, '') ?? '0') || 0);
+
+      const p = (i: number) => parseFloat(row[i]?.replace(/,/g, '') ?? '0') || 0;
+      const stockTotal = p(3);                     // 股票小計
+      const cashParts  = p(4) + p(5);             // 現金公積 + 現金盈餘
+      const grandTotal = p(6);                     // 合計 (all dividends)
+
+      // For regular stocks: cashParts should be > 0
+      // For ETFs: cashParts may be 0; fall back to (grandTotal - stockTotal)
+      const cash = cashParts > 0 ? cashParts : Math.max(0, grandTotal - stockTotal);
+
       if (cash > 0) {
-        results.push({ year: ceYear, cashPerShare: cash });
+        results.push({ year: ceYear, cashPerShare: Math.round(cash * 10000) / 10000 });
       }
     }
 

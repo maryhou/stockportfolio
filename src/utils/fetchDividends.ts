@@ -38,10 +38,12 @@ export async function fetchStockDividends(symbol: string): Promise<DividendRecor
     for (const row of [...data.data].reverse()) {
       const rocYear = parseInt(row[0]?.trim() ?? '0');
       if (!rocYear) continue;
-      const cash =
-        (parseFloat(row[4]?.replace(/,/g, '') ?? '0') || 0) +
-        (parseFloat(row[5]?.replace(/,/g, '') ?? '0') || 0);
-      if (cash > 0) results.push({ year: String(rocYear + 1911), cashPerShare: cash });
+      const p = (i: number) => parseFloat(row[i]?.replace(/,/g, '') ?? '0') || 0;
+      const stockTotal = p(3);
+      const cashParts  = p(4) + p(5);
+      const grandTotal = p(6);
+      const cash = cashParts > 0 ? cashParts : Math.max(0, grandTotal - stockTotal);
+      if (cash > 0) results.push({ year: String(rocYear + 1911), cashPerShare: Math.round(cash * 10000) / 10000 });
     }
     return results.slice(0, 5);
   } catch {
