@@ -21,6 +21,7 @@ import ToastContainer, { type ToastData } from './components/Toast';
 import PullToRefreshIndicator from './components/PullToRefreshIndicator';
 import OnboardingModal from './components/OnboardingModal';
 import SearchOverlay, { pushRecentId } from './components/SearchOverlay';
+import DividendView from './components/DividendView';
 
 const STORAGE_KEY  = 'stock-tracker-data';
 const ONBOARD_KEY  = 'stock-tracker-onboarded';
@@ -476,6 +477,26 @@ export default function App() {
     showToast('交易記錄已更新');
   }
 
+  function handleSaveDividend(stockId: string, dividend: import('./types').DividendTransaction) {
+    update(stocks.map((s) => {
+      if (s.id !== stockId) return s;
+      const existing = s.dividends ?? [];
+      const idx = existing.findIndex((d) => d.id === dividend.id);
+      const dividends = idx >= 0
+        ? existing.map((d) => d.id === dividend.id ? dividend : d)
+        : [...existing, dividend];
+      return { ...s, dividends };
+    }));
+    showToast('股息記錄已儲存');
+  }
+
+  function handleDeleteDividend(stockId: string, dividendId: string) {
+    update(stocks.map((s) =>
+      s.id !== stockId ? s : { ...s, dividends: (s.dividends ?? []).filter((d) => d.id !== dividendId) }
+    ));
+    showToast('股息記錄已刪除');
+  }
+
   function handleDeleteTx(stockId: string, type: 'buy' | 'sell', txId: string) {
     const updated = stocks.map((s) => {
       if (s.id !== stockId) return s;
@@ -521,6 +542,7 @@ export default function App() {
                 onStockClick={handleStockClick}
                 onAddClick={() => setShowAdd(true)}
                 onSearchClick={() => setShowSearch(true)}
+                onDividendClick={() => setView('dividends')}
                 onViewAllHoldings={() => handleNavigate('holdings')}
                 onViewAllActivity={() => handleNavigate('activity')}
                 onBellClick={() => handleNavigate('notifications')}
@@ -536,6 +558,15 @@ export default function App() {
                 onMarkAllRead={handleMarkAllRead}
                 onNotificationClick={handleNotificationClick}
                 onDeleteNotification={handleDeleteNotification}
+              />
+            )}
+            {view === 'dividends' && (
+              <DividendView
+                stocks={stocks}
+                settings={settings}
+                onBack={() => setView('home')}
+                onSaveDividend={handleSaveDividend}
+                onDeleteDividend={handleDeleteDividend}
               />
             )}
             {view === 'activity' && (

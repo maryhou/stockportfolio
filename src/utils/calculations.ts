@@ -1,4 +1,73 @@
-import type { BuyTransaction, SellTransaction } from '../types';
+import type { BuyTransaction, SellTransaction, DividendTransaction } from '../types';
+
+// How many shares the user held on a specific date (YYYY-MM-DD)
+export function calcSharesHeldAtDate(
+  buys: BuyTransaction[],
+  sells: SellTransaction[],
+  date: string,
+): number {
+  const bought = buys.filter((b) => b.date <= date).reduce((s, b) => s + b.shares, 0);
+  const sold   = sells.filter((sv) => sv.date <= date).reduce((s, sv) => s + sv.shares, 0);
+  return Math.max(0, bought - sold);
+}
+
+// ── Dividend constants ──────────────────────────────────────────────────────
+export const HEALTH_INSURANCE_RATE      = 0.0211;
+export const HEALTH_INSURANCE_THRESHOLD = 20_000;
+
+export function calcDividendHealthInsurance(gross: number): number {
+  if (gross < HEALTH_INSURANCE_THRESHOLD) return 0;
+  return Math.floor(gross * HEALTH_INSURANCE_RATE);
+}
+
+export function calcDividendGross(amountPerShare: number, shares: number): number {
+  return Math.round(amountPerShare * shares);
+}
+
+export function calcDividendNet(gross: number, healthFee: number, transferFee: number): number {
+  return Math.max(0, gross - healthFee - transferFee);
+}
+
+export function calcTotalDividendNet(dividends: DividendTransaction[]): number {
+  return dividends.reduce((s, d) => s + d.netAmount, 0);
+}
+
+// Dividends in a given year (YYYY string)
+export function calcYearDividends(dividends: DividendTransaction[], year: string): number {
+  return dividends
+    .filter((d) => d.date.startsWith(year))
+    .reduce((s, d) => s + d.netAmount, 0);
+}
+
+// Dividends in a given month (YYYY-MM string)
+export function calcMonthDividends(dividends: DividendTransaction[], yearMonth: string): number {
+  return dividends
+    .filter((d) => d.date.startsWith(yearMonth))
+    .reduce((s, d) => s + d.netAmount, 0);
+}
+
+// Monthly totals for a given year → array[0..11]
+export function calcMonthlyDividends(dividends: DividendTransaction[], year: string): number[] {
+  return Array.from({ length: 12 }, (_, i) => {
+    const ym = `${year}-${String(i + 1).padStart(2, '0')}`;
+    return calcMonthDividends(dividends, ym);
+  });
+}
+
+// Annualised yield: (sum of past-12-month net dividends / total invested) × 100
+export function calcDividendYield(
+  dividends: DividendTransaction[],
+  totalInvested: number,
+): number {
+  if (totalInvested <= 0 || dividends.length === 0) return 0;
+  const cutoff = new Date();
+  cutoff.setFullYear(cutoff.getFullYear() - 1);
+  const cutoffStr = cutoff.toISOString().slice(0, 10);
+  const past12m = dividends
+    .filter((d) => d.date >= cutoffStr)
+    .reduce((s, d) => s + d.netAmount, 0);
+  return (past12m / totalInvested) * 100;
+}
 
 export function calcFee(price: number, shares: number, feeRate = 0.001425, feeDiscount = 0.6): number {
   return Math.floor(price * shares * feeRate * feeDiscount);

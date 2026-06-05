@@ -10,6 +10,7 @@ import {
   formatPrice,
 } from '../utils/calculations';
 import { BellIcon, SearchIcon } from './icons/Icons';
+import DividendCard from './DividendCard';
 
 interface HomeViewProps {
   stocks: Stock[];
@@ -20,13 +21,14 @@ interface HomeViewProps {
   onViewAllActivity: () => void;
   onBellClick: () => void;
   onSearchClick: () => void;
+  onDividendClick: () => void;
   onVisibleStocksChange: (ids: Set<string>) => void;
   hasUnread: boolean;
   priceHistory: Record<string, number[]>;
   prevClosePrices: Record<string, number>;
 }
 
-export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onSearchClick, onVisibleStocksChange, hasUnread, onAddClick, priceHistory, prevClosePrices }: HomeViewProps) {
+export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onSearchClick, onDividendClick, onVisibleStocksChange, hasUnread, onAddClick, priceHistory, prevClosePrices }: HomeViewProps) {
   const [showPortfolioInfo,  setShowPortfolioInfo]  = useState(false);
   const [showRealizedInfo,   setShowRealizedInfo]   = useState(false);
   const [showCumulativeInfo, setShowCumulativeInfo] = useState(false);
@@ -293,6 +295,9 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
           </div>
         </div>
       </div>
+
+      {/* Dividend Card */}
+      <DividendCard stocks={stocks} onClick={onDividendClick} />
 
       {/* Holdings + Recent: side-by-side on desktop */}
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">

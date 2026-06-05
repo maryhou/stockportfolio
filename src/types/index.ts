@@ -27,6 +27,18 @@ export interface SellTransaction {
   brokerId?: string;
 }
 
+export interface DividendTransaction {
+  id: string;
+  date: string;             // 發放日 YYYY-MM-DD
+  amountPerShare: number;   // 每股股息 (元)
+  shares: number;           // 持有股數
+  grossAmount: number;      // 應得股息 = amountPerShare × shares
+  healthInsuranceFee: number; // 健保補充費 (2.11% if gross >= 20,000)
+  transferFee: number;       // 匯款手續費
+  netAmount: number;         // 實際入帳
+  note?: string;
+}
+
 export interface Stock {
   id: string;
   name: string;
@@ -35,9 +47,10 @@ export interface Stock {
   currentPrice: number;
   buys: BuyTransaction[];
   sells: SellTransaction[];
+  dividends?: DividendTransaction[];
 }
 
-export type ViewName = 'home' | 'activity' | 'holdings' | 'profile' | 'notifications';
+export type ViewName = 'home' | 'activity' | 'holdings' | 'profile' | 'notifications' | 'dividends';
 
 export type AppTheme = 'default' | 'neutral' | 'dark';
 
@@ -46,6 +59,7 @@ export interface AppSettings {
   brokers: Broker[];    // replaces old brokerName / feeRate / feeDiscount
   taxRate: number;      // universal across brokers, e.g. 0.003 (= 0.3%)
   theme?: AppTheme;
+  dividendTransferFee?: number; // 匯款手續費預設值，default 10
 }
 
 export const DEFAULT_BROKER: Broker = {
