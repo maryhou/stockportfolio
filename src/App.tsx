@@ -36,6 +36,22 @@ const STOCKS_DIRTY_KEY = 'stock-tracker-stocks-dirty';
 /** System announcements injected once per ID — add new entries here for future updates. */
 const SYSTEM_ANNOUNCEMENTS: import('./types').AppNotification[] = [
   {
+    id: 'sys-v6-dividend-month-filter',
+    type: 'system',
+    title: '功能更新：股息月度篩選',
+    description: '點擊月份長條圖即可篩選當月股息紀錄與總額。',
+    time: '系統公告',
+    read: false,
+  },
+  {
+    id: 'sys-v6-bond-etf-sync-fix',
+    type: 'system',
+    title: '問題修正：債券 ETF 報價與雲端同步',
+    description: '債券 ETF 現價已可正常顯示；股息紀錄現在會正確同步到所有裝置。',
+    time: '系統公告',
+    read: false,
+  },
+  {
     id: 'sys-v5-search',
     type: 'system',
     title: '功能更新：搜尋功能讓你查紀錄不用一秒鐘',

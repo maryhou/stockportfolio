@@ -45,14 +45,14 @@ export default function DividendCard({ stocks, onClick }: DividendCardProps) {
         </div>
 
         <div className="min-w-0">
-          <p className="text-[11px] text-gray-400 mb-0.5 font-medium">本月已入帳股息</p>
+          <p className="text-[11px] text-gray-400 mb-0.5 font-medium">本月股息收益</p>
           {hasData ? (
             <>
               <p className="text-xl font-bold text-amber-500 leading-tight">
                 +{formatNTD(thisMonthTotal)}
               </p>
               <p className="text-[11px] text-gray-400 mt-0.5">
-                {thisMonthCount > 0 ? `已入帳 ${thisMonthCount} 筆` : '本月尚無紀錄'}
+                {thisMonthCount > 0 ? `共 ${thisMonthCount} 筆股息紀錄` : '本月尚無紀錄'}
               </p>
             </>
           ) : (

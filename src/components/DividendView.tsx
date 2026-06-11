@@ -32,6 +32,8 @@ export default function DividendView({
 }: DividendViewProps) {
   const [showAdd,    setShowAdd]    = useState(false);
   const [showImport, setShowImport] = useState(false);
+  // 0-based month selected in the bar chart; null = show all records
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [editTarget, setEditTarget] = useState<{ stockId: string; dividend: DividendTransaction } | null>(null);
   const [detailTarget, setDetailTarget] = useState<{ stock: Stock; dividend: DividendTransaction } | null>(null);
 
@@ -54,6 +56,12 @@ export default function DividendView({
   // Monthly bar chart data (current year)
   const monthlyTotals = calcMonthlyDividends(allDividends, yearStr);
   const maxMonthly    = Math.max(...monthlyTotals, 1);
+
+  // Records shown in the list — filtered to the selected chart month
+  const visibleDividends = selectedMonth === null
+    ? allDividends
+    : allDividends.filter((d) =>
+        d.date.startsWith(`${yearStr}-${String(selectedMonth + 1).padStart(2, '0')}`));
 
   const transferFee = settings.dividendTransferFee ?? 10;
 
@@ -96,7 +104,7 @@ export default function DividendView({
           <div className="px-5 pt-5 pb-4">
             {/* Top row: label + yield pill */}
             <div className="flex items-center justify-between gap-2 mb-1">
-              <p className="text-white/70 text-xs font-medium">總已入帳股息</p>
+              <p className="text-white/70 text-xs font-medium">總股息收益</p>
               {yieldPct > 0 && (
                 <div className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/20 text-white whitespace-nowrap">
                   年化殖利率 {yieldPct.toFixed(2)}%
@@ -119,23 +127,37 @@ export default function DividendView({
 
         {/* ── Monthly Bar Chart ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-4 pt-4 pb-3">
-          <p className="text-[13px] font-semibold text-gray-500 mb-3">{yearStr} 月度股息</p>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <p className="text-[13px] font-semibold text-gray-500">{yearStr} 月度股息</p>
+            {selectedMonth !== null && (
+              <p className="text-[13px] font-bold text-amber-500">
+                {selectedMonth + 1} 月股息 +{formatNTD(monthlyTotals[selectedMonth])}
+              </p>
+            )}
+          </div>
           <div className="flex items-end gap-1 h-20">
             {monthlyTotals.map((val, i) => {
               const heightPct = val > 0 ? Math.max((val / maxMonthly) * 100, 8) : 0;
               const isCurrentMonth = i === monthIdx;
+              const isSelected = i === selectedMonth;
               return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                <button
+                  key={i}
+                  onClick={() => setSelectedMonth(isSelected ? null : i)}
+                  className="flex-1 flex flex-col items-center gap-1"
+                >
                   <div className="w-full flex items-end justify-center" style={{ height: 64 }}>
                     <div
-                      className={`w-full rounded-t-sm transition-all ${isCurrentMonth ? 'bg-amber-400' : 'bg-amber-200'}`}
+                      className={`w-full rounded-t-sm transition-all
+                        ${isSelected ? 'bg-amber-500' : isCurrentMonth ? 'bg-amber-400' : 'bg-amber-200'}`}
                       style={{ height: `${heightPct}%` }}
                     />
                   </div>
-                  <span className={`text-[9px] font-medium ${isCurrentMonth ? 'text-amber-500' : 'text-gray-300'}`}>
+                  <span className={`text-[9px] font-medium
+                    ${isSelected ? 'text-amber-600 font-bold' : isCurrentMonth ? 'text-amber-500' : 'text-gray-300'}`}>
                     {MONTHS[i].replace('月', '')}
                   </span>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -156,9 +178,27 @@ export default function DividendView({
           </div>
         ) : (
           <div>
-            <p className="text-[13px] font-semibold text-gray-500 mb-2 px-1">股息紀錄</p>
+            <div className="flex items-center justify-between mb-2 px-1">
+              <p className="text-[13px] font-semibold text-gray-500">
+                {selectedMonth === null ? '股息紀錄' : `${selectedMonth + 1} 月股息紀錄`}
+              </p>
+              {selectedMonth !== null && (
+                <button
+                  onClick={() => setSelectedMonth(null)}
+                  className="text-[12px] font-semibold text-amber-500 active:opacity-70"
+                >
+                  顯示全部
+                </button>
+              )}
+            </div>
+            {visibleDividends.length === 0 ? (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 py-10 text-center">
+                <p className="text-sm font-semibold text-gray-500 mb-1">{selectedMonth! + 1} 月沒有股息紀錄</p>
+                <p className="text-xs text-gray-400">點同一根長條或「顯示全部」可取消篩選</p>
+              </div>
+            ) : (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              {allDividends.map((d, i) => (
+              {visibleDividends.map((d, i) => (
                 <button
                   key={d.id}
                   onClick={() => {
@@ -166,7 +206,7 @@ export default function DividendView({
                     setDetailTarget({ stock, dividend: d });
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors
-                    ${i < allDividends.length - 1 ? 'border-b border-gray-50' : ''}`}
+                    ${i < visibleDividends.length - 1 ? 'border-b border-gray-50' : ''}`}
                 >
                   <div className="w-9 h-9 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -191,6 +231,7 @@ export default function DividendView({
                 </button>
               ))}
             </div>
+            )}
           </div>
         )}
       </div>
