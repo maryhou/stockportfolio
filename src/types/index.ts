@@ -29,7 +29,8 @@ export interface SellTransaction {
 
 export interface DividendTransaction {
   id: string;
-  date: string;             // 發放日 YYYY-MM-DD
+  date: string;             // 實際發放日 YYYY-MM-DD（未到此日 = 即將配息）
+  exDate?: string;          // 除息日 YYYY-MM-DD（月度統計歸屬以此為準；舊資料可能缺、退回用發放日）
   amountPerShare: number;   // 每股股息 (元)
   shares: number;           // 持有股數
   grossAmount: number;      // 應得股息 = amountPerShare × shares

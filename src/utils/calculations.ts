@@ -32,17 +32,22 @@ export function calcTotalDividendNet(dividends: DividendTransaction[]): number {
   return dividends.reduce((s, d) => s + d.netAmount, 0);
 }
 
+// 統計歸屬日：以除息日為準，舊資料沒有除息日則用發放日
+export function dividendStatDate(d: DividendTransaction): string {
+  return d.exDate ?? d.date;
+}
+
 // Dividends in a given year (YYYY string)
 export function calcYearDividends(dividends: DividendTransaction[], year: string): number {
   return dividends
-    .filter((d) => d.date.startsWith(year))
+    .filter((d) => dividendStatDate(d).startsWith(year))
     .reduce((s, d) => s + d.netAmount, 0);
 }
 
 // Dividends in a given month (YYYY-MM string)
 export function calcMonthDividends(dividends: DividendTransaction[], yearMonth: string): number {
   return dividends
-    .filter((d) => d.date.startsWith(yearMonth))
+    .filter((d) => dividendStatDate(d).startsWith(yearMonth))
     .reduce((s, d) => s + d.netAmount, 0);
 }
 
@@ -64,7 +69,7 @@ export function calcDividendYield(
   cutoff.setFullYear(cutoff.getFullYear() - 1);
   const cutoffStr = cutoff.toISOString().slice(0, 10);
   const past12m = dividends
-    .filter((d) => d.date >= cutoffStr)
+    .filter((d) => dividendStatDate(d) >= cutoffStr)
     .reduce((s, d) => s + d.netAmount, 0);
   return (past12m / totalInvested) * 100;
 }

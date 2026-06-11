@@ -4,6 +4,7 @@ import {
   calcMonthDividends,
   calcDividendYield,
   calcTotalInvested,
+  dividendStatDate,
   formatNTD,
 } from '../utils/calculations';
 
@@ -20,7 +21,7 @@ export default function DividendCard({ stocks, onClick }: DividendCardProps) {
   const allDividends = stocks.flatMap((s) => s.dividends ?? []);
 
   const thisMonthTotal = calcMonthDividends(allDividends, monthStr);
-  const thisMonthCount = allDividends.filter((d) => d.date.startsWith(monthStr)).length;
+  const thisMonthCount = allDividends.filter((d) => dividendStatDate(d).startsWith(monthStr)).length;
   const thisYearTotal  = calcYearDividends(allDividends, yearStr);
   const totalInvested  = stocks.reduce((s, st) => s + calcTotalInvested(st.buys), 0);
   const yieldPct       = calcDividendYield(allDividends, totalInvested);

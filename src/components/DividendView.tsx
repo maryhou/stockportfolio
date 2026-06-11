@@ -12,12 +12,29 @@ import {
   calcSharesHeldAtDate,
   calcTotalInvested,
   calcRemainingShares,
+  dividendStatDate,
   HEALTH_INSURANCE_THRESHOLD,
   HEALTH_INSURANCE_RATE,
   formatNTD,
 } from '../utils/calculations';
 
 const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+/** "+$1,234" for positive totals, plain "$0" when zero. */
+const signedNTD = (n: number) => `${n > 0 ? '+' : ''}${formatNTD(n)}`;
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
+/** 發放日還沒到 = 即將配息，已到 = 已入帳 */
+function StatusBadge({ payDate }: { payDate: string }) {
+  const upcoming = payDate > todayISO();
+  return (
+    <span className={`inline-flex items-center text-[10px] font-bold rounded-full px-2 py-0.5 whitespace-nowrap
+      ${upcoming ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-500'}`}>
+      {upcoming ? '即將配息' : '已入帳'}
+    </span>
+  );
+}
 
 interface DividendViewProps {
   stocks: Stock[];
@@ -45,7 +62,7 @@ export default function DividendView({
   const allDividends = stocks.flatMap((s) =>
     (s.dividends ?? []).map((d) => ({ ...d, stockId: s.id, stockName: s.name, stockSymbol: s.symbol }))
   );
-  allDividends.sort((a, b) => b.date.localeCompare(a.date));
+  allDividends.sort((a, b) => dividendStatDate(b).localeCompare(dividendStatDate(a)));
 
   const totalNet      = allDividends.reduce((s, d) => s + d.netAmount, 0);
   const thisYearTotal = calcYearDividends(allDividends, yearStr);
@@ -57,11 +74,11 @@ export default function DividendView({
   const monthlyTotals = calcMonthlyDividends(allDividends, yearStr);
   const maxMonthly    = Math.max(...monthlyTotals, 1);
 
-  // Records shown in the list — filtered to the selected chart month
+  // Records shown in the list — filtered to the selected chart month (by ex-date)
   const visibleDividends = selectedMonth === null
     ? allDividends
     : allDividends.filter((d) =>
-        d.date.startsWith(`${yearStr}-${String(selectedMonth + 1).padStart(2, '0')}`));
+        dividendStatDate(d).startsWith(`${yearStr}-${String(selectedMonth + 1).padStart(2, '0')}`));
 
   const transferFee = settings.dividendTransferFee ?? 10;
 
@@ -111,15 +128,15 @@ export default function DividendView({
                 </div>
               )}
             </div>
-            <p className="text-3xl font-bold text-white mb-3">+{formatNTD(totalNet)}</p>
+            <p className="text-3xl font-bold text-white mb-3">{signedNTD(totalNet)}</p>
             <div className="flex gap-3">
               <div className="bg-white/15 rounded-xl px-4 py-2.5 flex-1">
                 <p className="text-white/70 text-[10px] font-medium mb-0.5">今年</p>
-                <p className="text-white text-lg font-bold">+{formatNTD(thisYearTotal)}</p>
+                <p className="text-white text-lg font-bold">{signedNTD(thisYearTotal)}</p>
               </div>
               <div className="bg-white/15 rounded-xl px-4 py-2.5 flex-1">
                 <p className="text-white/70 text-[10px] font-medium mb-0.5">本月</p>
-                <p className="text-white text-lg font-bold">+{formatNTD(thisMonthTotal)}</p>
+                <p className="text-white text-lg font-bold">{signedNTD(thisMonthTotal)}</p>
               </div>
             </div>
           </div>
@@ -131,7 +148,7 @@ export default function DividendView({
             <p className="text-[13px] font-semibold text-gray-500">{yearStr} 月度股息</p>
             {selectedMonth !== null && (
               <p className="text-[13px] font-bold text-amber-500">
-                {selectedMonth + 1} 月股息 +{formatNTD(monthlyTotals[selectedMonth])}
+                {selectedMonth + 1} 月股息 {signedNTD(monthlyTotals[selectedMonth])}
               </p>
             )}
           </div>
@@ -215,11 +232,16 @@ export default function DividendView({
                     </svg>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="inline-flex items-center bg-amber-100 text-amber-600 text-[10px] font-bold rounded-full px-2 py-0.5 mb-0.5">
-                      {d.stockSymbol}
-                    </span>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="inline-flex items-center bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full px-2 py-0.5">
+                        {d.stockSymbol}
+                      </span>
+                      <StatusBadge payDate={d.date} />
+                    </div>
                     <p className="text-sm font-semibold text-gray-800 truncate">{d.stockName}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{d.date} · {d.shares.toLocaleString()} 股</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      {d.exDate ? `除息 ${d.exDate} · ` : ''}發放 {d.date} · {d.shares.toLocaleString()} 股
+                    </p>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-sm font-bold text-amber-500">+{formatNTD(d.netAmount)}</p>
@@ -305,15 +327,18 @@ interface AddDividendSheetProps {
 
 function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockId, onSave, onClose }: AddDividendSheetProps) {
   const isEdit = !!editDividend;
-  const holdingStocks = stocks.filter((s) => calcRemainingShares(s.buys, s.sells) > 0 || isEdit);
+  // Include sold-out stocks too, so past dividends can be back-filled
+  const selectableStocks = stocks.filter((s) => s.buys.length > 0 || isEdit);
 
-  const [stockId,        setStockId]        = useState(editStockId ?? holdingStocks[0]?.id ?? '');
+  const [stockId,        setStockId]        = useState(editStockId ?? selectableStocks[0]?.id ?? '');
   const [date,           setDate]           = useState(editDividend?.date ?? new Date().toISOString().slice(0, 10));
+  const [exDate,         setExDate]         = useState(editDividend?.exDate ?? '');
   const [amtPerShare,    setAmtPerShare]    = useState(editDividend ? String(editDividend.amountPerShare) : '');
   const [sharesStr,      setSharesStr]      = useState(() => {
     if (editDividend) return String(editDividend.shares);
-    const s = stocks.find((st) => st.id === (editStockId ?? holdingStocks[0]?.id ?? ''));
-    return s ? String(calcRemainingShares(s.buys, s.sells)) : '';
+    const s = stocks.find((st) => st.id === (editStockId ?? selectableStocks[0]?.id ?? ''));
+    const remaining = s ? calcRemainingShares(s.buys, s.sells) : 0;
+    return remaining > 0 ? String(remaining) : '';
   });
   const [transferFeeStr, setTransferFeeStr] = useState(editDividend ? String(editDividend.transferFee) : String(defaultTransferFee));
   const [note,           setNote]           = useState(editDividend?.note ?? '');
@@ -324,27 +349,41 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
 
   const selectedStock = stocks.find((s) => s.id === stockId);
 
-  // Fetch suggestions when stock changes
+  // Fetch suggestions when stock changes, auto-fill the latest record
   useEffect(() => {
     if (isEdit || !selectedStock) return;
     setSuggestions([]);
     setLoadingSugg(true);
     fetchStockDividends(selectedStock.symbol)
-      .then(setSuggestions)
+      .then((recs) => {
+        setSuggestions(recs);
+        if (recs.length > 0) applySuggestion(recs[0]);
+      })
       .finally(() => setLoadingSugg(false));
   }, [stockId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Apply a suggestion: use exact date from Yahoo Finance
+  // Apply a suggestion: rec.date is the ex-dividend date; use the real
+  // payment date when the source provides it (TWSE/TPEx ETF data).
+  // Shares default to the holdings on that ex-date, so back-filling
+  // dividends of sold-out stocks gets the right share count.
   function applySuggestion(rec: DividendRecord) {
     setAmtPerShare(String(rec.cashPerShare));
-    setDate(rec.date);
+    setExDate(rec.date);
+    setDate(rec.payDate ?? rec.date);
+    if (selectedStock) {
+      const held = calcSharesHeldAtDate(selectedStock.buys, selectedStock.sells, rec.date);
+      setSharesStr(held > 0 ? String(held) : '');
+    }
   }
 
   function handleStockChange(id: string) {
     setStockId(id);
     if (!isEdit) {
       const s = stocks.find((st) => st.id === id);
-      if (s) setSharesStr(String(calcRemainingShares(s.buys, s.sells)));
+      if (s) {
+        const remaining = calcRemainingShares(s.buys, s.sells);
+        setSharesStr(remaining > 0 ? String(remaining) : '');
+      }
     }
   }
 
@@ -354,20 +393,22 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
   const gross          = calcDividendGross(amtPerShareNum, sharesNum);
   const healthFee      = calcDividendHealthInsurance(gross);
   const net            = calcDividendNet(gross, healthFee, transferFeeNum);
-  const canSave        = stockId && amtPerShareNum > 0 && sharesNum > 0 && date;
+  const canSave        = stockId && amtPerShareNum > 0 && sharesNum > 0 && date && exDate;
 
   function handleSave() {
     if (!canSave) return;
+    // Spread optional fields conditionally — Firestore rejects undefined values
     const dividend: DividendTransaction = {
       id:                editDividend?.id ?? `div-${Date.now()}`,
       date,
+      ...(exDate ? { exDate } : {}),
       amountPerShare:    amtPerShareNum,
       shares:            sharesNum,
       grossAmount:       gross,
       healthInsuranceFee: healthFee,
       transferFee:       transferFeeNum,
       netAmount:         net,
-      note:              note || undefined,
+      ...(note ? { note } : {}),
     };
     onSave(stockId, dividend);
   }
@@ -398,8 +439,10 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
               value={stockId}
               onChange={(e) => handleStockChange(e.target.value)}
             >
-              {holdingStocks.map((s) => (
-                <option key={s.id} value={s.id}>{s.symbol} {s.name}</option>
+              {selectableStocks.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.symbol} {s.name}{calcRemainingShares(s.buys, s.sells) <= 0 ? '（已清倉）' : ''}
+                </option>
               ))}
             </select>
           </div>
@@ -421,7 +464,7 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
                     const previewGross  = calcDividendGross(rec.cashPerShare, parseInt(sharesStr) || 0);
                     const previewHealth = calcDividendHealthInsurance(previewGross);
                     const previewNet    = calcDividendNet(previewGross, previewHealth, parseInt(transferFeeStr) || 0);
-                    const isActive      = amtPerShare === String(rec.cashPerShare) && date === rec.date;
+                    const isActive      = amtPerShare === String(rec.cashPerShare) && date === (rec.payDate ?? rec.date);
                     return (
                       <button
                         key={rec.date}
@@ -430,7 +473,9 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
                           ${isActive ? 'border-amber-400 bg-amber-50' : 'border-gray-200 bg-gray-50 active:bg-amber-50'}`}
                       >
                         <div>
-                          <p className="text-[10px] font-medium text-gray-400">{rec.date}</p>
+                          <p className="text-[10px] font-medium text-gray-400">
+                            {rec.payDate ? `除息 ${rec.date} · 發放 ${rec.payDate}` : rec.date}
+                          </p>
                           <p className="text-sm font-bold text-gray-800">每股 ${rec.cashPerShare}</p>
                         </div>
                         {parseInt(sharesStr) > 0 && (
@@ -448,15 +493,26 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
             </div>
           )}
 
-          {/* Date */}
-          <div>
-            <label className="label">發放日</label>
-            <input
-              type="date"
-              className="input"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
+          {/* Dates */}
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="label">除息日</label>
+              <input
+                type="date"
+                className="input"
+                value={exDate}
+                onChange={(e) => setExDate(e.target.value)}
+              />
+            </div>
+            <div className="flex-1">
+              <label className="label">實際發放日</label>
+              <input
+                type="date"
+                className="input"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
           </div>
 
           {/* Amount per share + shares */}
@@ -568,7 +624,10 @@ function DividendDetailModal({ stock, dividend: d, onEdit, onDelete, onClose }: 
         {/* Header */}
         <div className="flex items-start justify-between mb-5">
           <div>
-            <p className="text-[11px] text-gray-400 font-medium">{stock.symbol} · {d.date}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[11px] text-gray-400 font-medium">{stock.symbol} · {d.date}</p>
+              <StatusBadge payDate={d.date} />
+            </div>
             <h2 className="text-lg font-bold text-gray-900">{stock.name}</h2>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full active:bg-gray-100">
@@ -580,6 +639,10 @@ function DividendDetailModal({ stock, dividend: d, onEdit, onDelete, onClose }: 
 
         {/* Breakdown */}
         <div className="bg-gray-50 rounded-2xl p-4 space-y-3 mb-4">
+          {d.exDate && (
+            <Row label="除息日" value={d.exDate} valueClass="text-gray-800 font-semibold" />
+          )}
+          <Row label="實際發放日" value={d.date} valueClass="text-gray-800 font-semibold" />
           <Row label="每股配息" value={`$${d.amountPerShare}`} valueClass="text-gray-800 font-semibold" />
           <Row label="持有股數" value={`${d.shares.toLocaleString()} 股`} valueClass="text-gray-800 font-semibold" />
           <div className="border-t border-gray-200 pt-2">
@@ -683,13 +746,16 @@ function ImportDividendSheet({ stocks, settings, onConfirm, onClose }: ImportDiv
         const records = await fetchStockDividends(stock.symbol);
 
         for (const rec of records) {
-          // Use exact ex-dividend date from Yahoo Finance
+          // rec.date = ex-dividend date (配息資格以除息日持股計算)
           const refDate = rec.date;
+          const payDate = rec.payDate ?? rec.date;
           const sharesHeld = calcSharesHeldAtDate(stock.buys, stock.sells, refDate);
           if (sharesHeld <= 0) continue;
 
-          // Skip if exact same date already recorded
-          const alreadyExists = (stock.dividends ?? []).some((d) => d.date === refDate);
+          // Skip if already recorded (match ex-date or either date field)
+          const alreadyExists = (stock.dividends ?? []).some(
+            (d) => d.exDate === refDate || d.date === refDate || d.date === payDate,
+          );
           if (alreadyExists) continue;
 
           const gross     = calcDividendGross(rec.cashPerShare, sharesHeld);
@@ -705,7 +771,8 @@ function ImportDividendSheet({ stocks, settings, onConfirm, onClose }: ImportDiv
             refDate,
             dividend: {
               id:                 `div-import-${stock.id}-${rec.date}`,
-              date:               refDate,
+              date:               payDate,
+              exDate:             refDate,
               amountPerShare:     rec.cashPerShare,
               shares:             sharesHeld,
               grossAmount:        gross,
@@ -748,7 +815,7 @@ function ImportDividendSheet({ stocks, settings, onConfirm, onClose }: ImportDiv
         <div className="flex items-center justify-between px-4 mb-1 flex-shrink-0">
           <div>
             <h2 className="text-lg font-bold text-gray-900">匯入歷史股息</h2>
-            <p className="text-[11px] text-gray-400 mt-0.5">以 Yahoo Finance 配息日持有股數估算，可逐筆修改</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">以官方公告的除息日持股數估算，可逐筆修改</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full active:bg-gray-100">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round">
@@ -846,7 +913,7 @@ function ImportDividendSheet({ stocks, settings, onConfirm, onClose }: ImportDiv
           <div className="px-4 pt-3 flex-shrink-0 border-t border-gray-100">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm text-gray-500">選取 {selectedItems.length} 筆</p>
-              <p className="text-sm font-bold text-amber-500">+{formatNTD(totalNet)}</p>
+              <p className="text-sm font-bold text-amber-500">{signedNTD(totalNet)}</p>
             </div>
             <button
               onClick={() => onConfirm(selectedItems)}

@@ -11,6 +11,7 @@ function timeoutSignal(ms: number): AbortSignal {
 
 export interface DividendRecord {
   date: string;        // exact ex-dividend date "YYYY-MM-DD"
+  payDate?: string;    // actual payment date "YYYY-MM-DD" (TWSE/TPEx ETF sources only)
   cashPerShare: number;
 }
 
