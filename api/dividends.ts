@@ -2,10 +2,13 @@
  * Vercel Edge Function — dividend history with real payment dates.
  *
  * Sources, in order:
- *   1. TWSE etfDiv      — TWSE-listed ETFs (0050, 0056, …): 除息日/發放日/金額
- *   2. TPEx ETF 訊息中心 — TPEx-listed ETFs (bond ETFs like 00679B): parsed
+ *   1. TPEx ETF 訊息中心 — TPEx-listed ETFs (bond ETFs like 00679B): parsed
  *      from 收益分配 announcements
- *   3. Yahoo Finance    — anything else (regular stocks): ex-date only
+ *   2. Yahoo Finance    — anything else (regular stocks): ex-date only
+ *
+ * TWSE-listed ETFs are NOT handled here: www.twse.com.tw firewalls
+ * datacenter IPs (403/timeout from Vercel) but has open CORS, so the
+ * client fetches etfDiv directly from the browser instead.
  *
  * GET /api/dividends?symbol=00919
  * Returns: [{ date: "2026-05-22", payDate: "2026-06-12", cashPerShare: 0.28 }, ...]
@@ -31,39 +34,7 @@ function rocToISO(roc: string): string | null {
   return `${parseInt(m[1]) + 1911}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
 }
 
-function yyyymmdd(d: Date): string {
-  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-}
-
-// ── Source 1: TWSE-listed ETFs ────────────────────────────────────────────────
-async function fetchTwseEtfDiv(symbol: string): Promise<DividendRecord[]> {
-  const now = new Date();
-  const start = yyyymmdd(new Date(now.getFullYear() - 3, now.getMonth(), 1));
-  const end = yyyymmdd(new Date(now.getFullYear(), now.getMonth() + 4, 1));
-  const url = `https://www.twse.com.tw/rwd/zh/ETF/etfDiv?stkNo=${symbol}&startDate=${start}&endDate=${end}&response=json`;
-
-  const res = await fetch(url, {
-    headers: { Accept: 'application/json', Referer: 'https://www.twse.com.tw/', 'User-Agent': UA },
-    signal: AbortSignal.timeout(8_000),
-  });
-  if (!res.ok) return [];
-
-  const data = (await res.json()) as { status?: string; data?: string[][] };
-  if (data.status !== 'ok' || !Array.isArray(data.data)) return [];
-
-  const out: DividendRecord[] = [];
-  for (const row of data.data) {
-    // row = [代號, 簡稱, 除息交易日, 基準日, 收益分配發放日, 金額, …]
-    const exDate = rocToISO(row[2] ?? '');
-    const payDate = rocToISO(row[4] ?? '');
-    const cash = parseFloat(row[5] ?? '');
-    if (!exDate || isNaN(cash) || cash <= 0) continue;
-    out.push({ date: exDate, ...(payDate ? { payDate } : {}), cashPerShare: cash });
-  }
-  return out.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);
-}
-
-// ── Source 2: TPEx-listed ETFs (收益分配公告) ─────────────────────────────────
+// ── Source 1: TPEx-listed ETFs (收益分配公告) ─────────────────────────────────
 async function fetchTpexEtfDiv(symbol: string): Promise<DividendRecord[]> {
   const listRes = await fetch('https://info.tpex.org.tw/api/etfMaInfo', {
     method: 'POST',
@@ -114,7 +85,7 @@ async function fetchTpexEtfDiv(symbol: string): Promise<DividendRecord[]> {
   return out.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);
 }
 
-// ── Source 3: Yahoo Finance fallback (ex-date only) ──────────────────────────
+// ── Source 2: Yahoo Finance fallback (ex-date only) ──────────────────────────
 type YahooChart = {
   chart?: {
     result?: Array<{ events?: { dividends?: Record<string, { amount: number; date: number }> } }>;
@@ -159,7 +130,7 @@ export default async function handler(request: Request): Promise<Response> {
   const symbol = searchParams.get('symbol')?.trim();
   if (!symbol) return json([], 400);
 
-  for (const source of [fetchTwseEtfDiv, fetchTpexEtfDiv, fetchYahoo]) {
+  for (const source of [fetchTpexEtfDiv, fetchYahoo]) {
     try {
       const results = await source(symbol);
       if (results.length > 0) return json(results, 200, 'public, max-age=43200'); // cache 12h

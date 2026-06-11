@@ -1,18 +1,22 @@
 /**
- * Vercel Edge Function — TWSE historical daily close prices.
+ * Vercel Edge Function — historical daily close prices for TPEx-listed
+ * symbols (bond ETFs etc.), from the TPEx tradingStock API.
  *
- * Source: https://www.twse.com.tw/exchangeReport/STOCK_DAY
- * Fetches the current + previous month, returns last 30 close prices (oldest→newest).
+ * TWSE-listed symbols are NOT handled here: www.twse.com.tw firewalls
+ * datacenter IPs (403/timeout from Vercel) but has open CORS, so the client
+ * fetches STOCK_DAY directly from the browser and only calls this proxy
+ * when that returns nothing (i.e. OTC symbols — TPEx has no CORS).
  *
- * GET /api/history?symbol=2330
- * Returns: [{ date: "2026-06-03", price: 180.5 }, ...]  (oldest→newest)
+ * Fetches the current + previous month, returns last 30 close prices.
+ *
+ * GET /api/history?symbol=00679B
+ * Returns: [{ date: "2026-06-03", price: 26.48 }, ...]  (oldest→newest)
  */
 export const config = {
   runtime: 'edge',
   regions: ['sin1', 'hnd1'],
 };
 
-const TWSE_BASE = 'https://www.twse.com.tw/exchangeReport/STOCK_DAY';
 const TPEX_BASE = 'https://www.tpex.org.tw/www/zh-tw/afterTrading/tradingStock';
 
 /** Parse rows shared by TWSE/TPEx: row[0] = ROC date "115/06/03", row[6] = 收盤價. */
@@ -26,22 +30,6 @@ function collectRows(rows: string[][], entries: { date: string; price: number }[
       entries.push({ date: `${parseInt(rocYear) + 1911}-${mm}-${dd}`, price: p });
     }
   }
-}
-
-async function fetchTwseMonth(symbol: string, month: Date, entries: { date: string; price: number }[]) {
-  const url = `${TWSE_BASE}?response=json&date=${yyyymm01(month)}&stockNo=${symbol}`;
-  const res = await fetch(url, {
-    headers: {
-      Accept: 'application/json',
-      Referer: 'https://www.twse.com.tw/',
-      'User-Agent': 'Mozilla/5.0',
-    },
-    signal: AbortSignal.timeout(8_000),
-  });
-  if (!res.ok) return;
-  const data = (await res.json()) as { stat?: string; data?: string[][] };
-  if (data.stat !== 'OK' || !Array.isArray(data.data)) return;
-  collectRows(data.data, entries);
 }
 
 async function fetchTpexMonth(symbol: string, month: Date, entries: { date: string; price: number }[]) {
@@ -74,29 +62,14 @@ export default async function handler(request: Request): Promise<Response> {
 
   for (const month of months) {
     try {
-      await fetchTwseMonth(symbol, month, entries);
+      await fetchTpexMonth(symbol, month, entries);
     } catch {
       // skip month on error
     }
   }
 
-  // Not on TWSE — try TPEx (上櫃, e.g. bond ETFs like 00679B)
-  if (entries.length === 0) {
-    for (const month of months) {
-      try {
-        await fetchTpexMonth(symbol, month, entries);
-      } catch {
-        // skip month on error
-      }
-    }
-  }
-
   // Return last 30 data points
   return json(entries.slice(-30), 200, 'public, max-age=1800');
-}
-
-function yyyymm01(d: Date): string {
-  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}01`;
 }
 
 function json(body: unknown, status = 200, cacheControl = 'no-store'): Response {
