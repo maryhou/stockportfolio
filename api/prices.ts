@@ -24,8 +24,10 @@ export default async function handler(request: Request): Promise<Response> {
   const symbols = raw.split(',').map((s) => s.trim()).filter(Boolean);
   if (symbols.length === 0) return json({});
 
-  // TWSE uses tse_ prefix for main board (TSE) stocks
-  const exCh = symbols.map((s) => `tse_${s}.tw`).join('|');
+  // Query both boards: tse_ for TWSE-listed, otc_ for TPEx-listed (e.g. bond
+  // ETFs like 00679B). Each symbol exists on only one — the other returns an
+  // empty record that the parser skips.
+  const exCh = symbols.flatMap((s) => [`tse_${s}.tw`, `otc_${s}.tw`]).join('|');
   const url = `${TWSE_URL}?ex_ch=${encodeURIComponent(exCh)}&json=1&delay=0`;
 
   try {

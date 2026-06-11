@@ -45,7 +45,8 @@ export async function fetchStockPrices(
   }
 
   // ── Development: direct TWSE call ────────────────────────────────────────────
-  const exCh = symbols.map((s) => `tse_${s}.tw`).join('|');
+  // Query both boards: tse_ for TWSE-listed, otc_ for TPEx-listed (bond ETFs etc.)
+  const exCh = symbols.flatMap((s) => [`tse_${s}.tw`, `otc_${s}.tw`]).join('|');
   const url = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=${encodeURIComponent(exCh)}&json=1&delay=0`;
 
   const res = await fetch(url, {

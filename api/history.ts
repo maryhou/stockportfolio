@@ -12,7 +12,54 @@ export const config = {
   regions: ['sin1', 'hnd1'],
 };
 
-const BASE = 'https://www.twse.com.tw/exchangeReport/STOCK_DAY';
+const TWSE_BASE = 'https://www.twse.com.tw/exchangeReport/STOCK_DAY';
+const TPEX_BASE = 'https://www.tpex.org.tw/www/zh-tw/afterTrading/tradingStock';
+
+/** Parse rows shared by TWSE/TPEx: row[0] = ROC date "115/06/03", row[6] = 收盤價. */
+function collectRows(rows: string[][], entries: { date: string; price: number }[]) {
+  for (const row of rows) {
+    const raw = row[6]?.replace(/,/g, '');
+    const p = parseFloat(raw ?? '');
+    if (!isNaN(p) && p > 0) {
+      const rocDate = row[0] ?? '';
+      const [rocYear, mm, dd] = rocDate.split('/');
+      entries.push({ date: `${parseInt(rocYear) + 1911}-${mm}-${dd}`, price: p });
+    }
+  }
+}
+
+async function fetchTwseMonth(symbol: string, month: Date, entries: { date: string; price: number }[]) {
+  const url = `${TWSE_BASE}?response=json&date=${yyyymm01(month)}&stockNo=${symbol}`;
+  const res = await fetch(url, {
+    headers: {
+      Accept: 'application/json',
+      Referer: 'https://www.twse.com.tw/',
+      'User-Agent': 'Mozilla/5.0',
+    },
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!res.ok) return;
+  const data = (await res.json()) as { stat?: string; data?: string[][] };
+  if (data.stat !== 'OK' || !Array.isArray(data.data)) return;
+  collectRows(data.data, entries);
+}
+
+async function fetchTpexMonth(symbol: string, month: Date, entries: { date: string; price: number }[]) {
+  const d = `${month.getFullYear()}/${String(month.getMonth() + 1).padStart(2, '0')}/01`;
+  const url = `${TPEX_BASE}?code=${symbol}&date=${encodeURIComponent(d)}&response=json`;
+  const res = await fetch(url, {
+    headers: {
+      Accept: 'application/json',
+      Referer: 'https://www.tpex.org.tw/',
+      'User-Agent': 'Mozilla/5.0',
+    },
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!res.ok) return;
+  const data = (await res.json()) as { tables?: Array<{ data?: string[][] }> };
+  const rows = data.tables?.[0]?.data;
+  if (Array.isArray(rows)) collectRows(rows, entries);
+}
 
 export default async function handler(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
@@ -21,46 +68,26 @@ export default async function handler(request: Request): Promise<Response> {
 
   const now = new Date();
   // Fetch previous month first so result is chronological
-  const months = [
-    yyyymm01(new Date(now.getFullYear(), now.getMonth() - 1, 1)),
-    yyyymm01(now),
-  ];
+  const months = [new Date(now.getFullYear(), now.getMonth() - 1, 1), now];
 
   const entries: { date: string; price: number }[] = [];
 
-  for (const date of months) {
+  for (const month of months) {
     try {
-      const url = `${BASE}?response=json&date=${date}&stockNo=${symbol}`;
-      const res = await fetch(url, {
-        headers: {
-          Accept: 'application/json',
-          Referer: 'https://www.twse.com.tw/',
-          'User-Agent': 'Mozilla/5.0',
-        },
-        signal: AbortSignal.timeout(8_000),
-      });
-      if (!res.ok) continue;
-
-      const data = (await res.json()) as {
-        stat?: string;
-        data?: string[][];
-      };
-
-      if (data.stat !== 'OK' || !Array.isArray(data.data)) continue;
-
-      for (const row of data.data) {
-        // row[0] = 日期 e.g. "115/06/03" (ROC year), row[6] = 收盤價
-        const raw = row[6]?.replace(/,/g, '');
-        const p = parseFloat(raw ?? '');
-        if (!isNaN(p) && p > 0) {
-          const rocDate = row[0] ?? '';
-          const [rocYear, mm, dd] = rocDate.split('/');
-          const isoDate = `${parseInt(rocYear) + 1911}-${mm}-${dd}`;
-          entries.push({ date: isoDate, price: p });
-        }
-      }
+      await fetchTwseMonth(symbol, month, entries);
     } catch {
       // skip month on error
+    }
+  }
+
+  // Not on TWSE — try TPEx (上櫃, e.g. bond ETFs like 00679B)
+  if (entries.length === 0) {
+    for (const month of months) {
+      try {
+        await fetchTpexMonth(symbol, month, entries);
+      } catch {
+        // skip month on error
+      }
     }
   }
 

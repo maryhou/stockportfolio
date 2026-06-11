@@ -31,33 +31,50 @@ export async function fetchStockHistory(symbol: string): Promise<{ date: string;
       return Array.isArray(data) ? (data as { date: string; price: number }[]) : [];
     }
 
-    // Development: direct TWSE calls
-    const BASE = 'https://www.twse.com.tw/exchangeReport/STOCK_DAY';
+    // Development: direct TWSE calls, falling back to TPEx for 上櫃 stocks
+    // (e.g. bond ETFs like 00679B). Both APIs use row[0] = ROC date, row[6] = close.
+    const TWSE_BASE = 'https://www.twse.com.tw/exchangeReport/STOCK_DAY';
+    const TPEX_BASE = 'https://www.tpex.org.tw/www/zh-tw/afterTrading/tradingStock';
     const now = new Date();
-    const months = [
-      yyyymm01(new Date(now.getFullYear(), now.getMonth() - 1, 1)),
-      yyyymm01(now),
-    ];
+    const months = [new Date(now.getFullYear(), now.getMonth() - 1, 1), now];
     const entries: { date: string; price: number }[] = [];
 
-    for (const date of months) {
+    function collectRows(rows: string[][]) {
+      for (const row of rows) {
+        const p = parseFloat(row[6]?.replace(/,/g, '') ?? '');
+        if (!isNaN(p) && p > 0) {
+          const rocDate = row[0] ?? '';
+          const [rocYear, mm, dd] = rocDate.split('/');
+          entries.push({ date: `${parseInt(rocYear) + 1911}-${mm}-${dd}`, price: p });
+        }
+      }
+    }
+
+    for (const month of months) {
       const res = await fetch(
-        `${BASE}?response=json&date=${date}&stockNo=${symbol}`,
+        `${TWSE_BASE}?response=json&date=${yyyymm01(month)}&stockNo=${symbol}`,
         { signal: timeoutSignal(8_000) },
       );
       if (!res.ok) continue;
       const data = (await res.json()) as { stat?: string; data?: string[][] };
       if (data.stat !== 'OK' || !Array.isArray(data.data)) continue;
-      for (const row of data.data) {
-        const p = parseFloat(row[6]?.replace(/,/g, '') ?? '');
-        if (!isNaN(p) && p > 0) {
-          const rocDate = row[0] ?? '';
-          const [rocYear, mm, dd] = rocDate.split('/');
-          const isoDate = `${parseInt(rocYear) + 1911}-${mm}-${dd}`;
-          entries.push({ date: isoDate, price: p });
-        }
+      collectRows(data.data);
+    }
+
+    if (entries.length === 0) {
+      for (const month of months) {
+        const d = `${month.getFullYear()}/${String(month.getMonth() + 1).padStart(2, '0')}/01`;
+        const res = await fetch(
+          `${TPEX_BASE}?code=${symbol}&date=${encodeURIComponent(d)}&response=json`,
+          { signal: timeoutSignal(8_000) },
+        );
+        if (!res.ok) continue;
+        const data = (await res.json()) as { tables?: Array<{ data?: string[][] }> };
+        const rows = data.tables?.[0]?.data;
+        if (Array.isArray(rows)) collectRows(rows);
       }
     }
+
     return entries.slice(-30);
   } catch {
     return [];
