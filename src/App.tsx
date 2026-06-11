@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useStockPoller } from './hooks/useStockPoller';
 import { usePullToRefresh } from './hooks/usePullToRefresh';
-import { subscribeToAuth, loadCloudData, saveCloudData, signInWithGoogle, signOutUser, type User } from './lib/firebase';
+import { subscribeToAuth, loadCloudData, saveCloudData, signInWithGoogle, signOutUser, type User, type UserCloudData } from './lib/firebase';
 import type { Stock, ViewName, BuyTransaction, SellTransaction, AppNotification, AppSettings, AppTheme } from './types';
 import { DEFAULT_SETTINGS, DEFAULT_BROKER } from './types';
 import { INITIAL_STOCKS } from './data/initialData';
@@ -29,6 +29,9 @@ const STORAGE_KEY  = 'stock-tracker-data';
 const ONBOARD_KEY  = 'stock-tracker-onboarded';
 const NOTIF_KEY    = 'stock-tracker-notifications';
 const SETTINGS_KEY = 'stock-tracker-settings';
+// Set while local stock changes haven't been confirmed written to Firestore,
+// so a reload before the debounced save lands knows local is newer than cloud.
+const STOCKS_DIRTY_KEY = 'stock-tracker-stocks-dirty';
 
 /** System announcements injected once per ID — add new entries here for future updates. */
 const SYSTEM_ANNOUNCEMENTS: import('./types').AppNotification[] = [
@@ -73,6 +76,28 @@ function normalizeDates(stocks: Stock[]): Stock[] {
     buys:  s.buys.map( (b) => ({ ...b, date: b.date.replace(/\//g, '-') })),
     sells: s.sells.map((sv) => ({ ...sv, date: sv.date.replace(/\//g, '-') })),
   }));
+}
+
+/**
+ * Merge local dividends into cloud stocks for stocks whose cloud copy has no
+ * dividends field at all — i.e. cloud data written before the dividends
+ * feature existed. Once the cloud copy carries a dividends array (even an
+ * empty one, after a deletion), it is authoritative and local is left alone.
+ */
+function mergeLegacyLocalDividends(
+  cloudStocks: Stock[],
+  localStocks: Stock[],
+): { stocks: Stock[]; changed: boolean } {
+  const localById = new Map(localStocks.map((s) => [s.id, s]));
+  let changed = false;
+  const stocks = cloudStocks.map((cs) => {
+    if (cs.dividends !== undefined) return cs;
+    const localDivs = localById.get(cs.id)?.dividends;
+    if (!localDivs?.length) return cs;
+    changed = true;
+    return { ...cs, dividends: localDivs };
+  });
+  return { stocks, changed };
 }
 
 function loadStocks(): Stock[] {
@@ -174,17 +199,52 @@ export default function App() {
   // Pending partial data to batch-write after debounce
   const pendingCloudData = useRef<{ stocks?: Stock[]; settings?: AppSettings; notifications?: AppNotification[] }>({});
 
+  // Writes pending data and clears the stocks-dirty marker once Firestore
+  // confirms the write, so reloads know whether local stocks are ahead of cloud.
+  function writeCloudData(uid: string, data: Partial<UserCloudData>) {
+    saveCloudData(uid, data).then((ok) => {
+      if (ok && data.stocks) localStorage.removeItem(STOCKS_DIRTY_KEY);
+    });
+  }
+
   function queueCloudSave(partial: { stocks?: Stock[]; settings?: AppSettings; notifications?: AppNotification[] }) {
     const uid = currentUserRef.current?.uid;
     if (!uid) return;
+    if (partial.stocks) localStorage.setItem(STOCKS_DIRTY_KEY, '1');
     pendingCloudData.current = { ...pendingCloudData.current, ...partial };
     if (cloudSaveTimer.current) clearTimeout(cloudSaveTimer.current);
     cloudSaveTimer.current = setTimeout(() => {
       const data = pendingCloudData.current;
       pendingCloudData.current = {};
-      saveCloudData(uid, data);
+      writeCloudData(uid, data);
     }, 1500);
   }
+
+  // Flush the pending debounced save immediately when the page is hidden or
+  // unloading, so a quick reload/close doesn't lose the last 1.5s of changes.
+  useEffect(() => {
+    function flushCloudSave() {
+      const uid = currentUserRef.current?.uid;
+      if (!uid) return;
+      const data = pendingCloudData.current;
+      if (Object.keys(data).length === 0) return;
+      if (cloudSaveTimer.current) {
+        clearTimeout(cloudSaveTimer.current);
+        cloudSaveTimer.current = null;
+      }
+      pendingCloudData.current = {};
+      writeCloudData(uid, data);
+    }
+    function onVisibilityChange() {
+      if (document.visibilityState === 'hidden') flushCloudSave();
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('pagehide', flushCloudSave);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('pagehide', flushCloudSave);
+    };
+  }, []);
 
   // Listen to Firebase auth state
   useEffect(() => {
@@ -197,10 +257,22 @@ export default function App() {
       try {
         const cloudData = await loadCloudData(user.uid);
         if (cloudData) {
-          // Use cloud data as source of truth
-          const normalizedStocks = normalizeDates(cloudData.stocks ?? []);
-          setStocks(normalizedStocks);
-          saveStocks(normalizedStocks);
+          const localStocks = loadStocks();
+          if (localStorage.getItem(STOCKS_DIRTY_KEY)) {
+            // Local stock changes never reached Firestore (reload beat the
+            // debounced save) — local is newer, push it up instead of
+            // letting stale cloud data overwrite it.
+            setStocks(localStocks);
+            writeCloudData(user.uid, { stocks: localStocks });
+          } else {
+            // Cloud is source of truth, but recover dividends that only
+            // exist locally because the cloud copy predates the feature.
+            const normalizedStocks = normalizeDates(cloudData.stocks ?? []);
+            const { stocks: mergedStocks, changed } = mergeLegacyLocalDividends(normalizedStocks, localStocks);
+            setStocks(mergedStocks);
+            saveStocks(mergedStocks);
+            if (changed) writeCloudData(user.uid, { stocks: mergedStocks });
+          }
           setSettings({ ...cloudData.settings });
           localStorage.setItem(SETTINGS_KEY, JSON.stringify(cloudData.settings));
           setNotifications(cloudData.notifications ?? []);

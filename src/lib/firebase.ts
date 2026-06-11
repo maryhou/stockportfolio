@@ -43,12 +43,14 @@ export async function loadCloudData(uid: string): Promise<UserCloudData | null> 
   }
 }
 
-/** Save (merge) partial user data to Firestore. */
-export async function saveCloudData(uid: string, data: Partial<UserCloudData>): Promise<void> {
+/** Save (merge) partial user data to Firestore. Returns true on success. */
+export async function saveCloudData(uid: string, data: Partial<UserCloudData>): Promise<boolean> {
   try {
     await setDoc(doc(db, 'users', uid), data, { merge: true });
+    return true;
   } catch (e) {
     console.error('[Firebase] save error:', e);
+    return false;
   }
 }
 
