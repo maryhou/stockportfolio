@@ -49,8 +49,12 @@ export default function DividendView({
 }: DividendViewProps) {
   const [showAdd,    setShowAdd]    = useState(false);
   const [showImport, setShowImport] = useState(false);
-  // 0-based month selected in the bar chart; null = show all records
+  // 0-based month selected in the bar chart; null = show the whole year
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  // Year shown in the chart and record list
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
+  // Stock id to filter chart + records by; null = all stocks
+  const [stockFilter, setStockFilter] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<{ stockId: string; dividend: DividendTransaction } | null>(null);
   const [detailTarget, setDetailTarget] = useState<{ stock: Stock; dividend: DividendTransaction } | null>(null);
 
@@ -70,15 +74,33 @@ export default function DividendView({
   const totalInvested = stocks.reduce((s, st) => s + calcTotalInvested(st.buys), 0);
   const yieldPct      = calcDividendYield(allDividends, totalInvested);
 
-  // Monthly bar chart data (current year)
-  const monthlyTotals = calcMonthlyDividends(allDividends, yearStr);
-  const maxMonthly    = Math.max(...monthlyTotals, 1);
-
-  // Records shown in the list — filtered to the selected chart month (by ex-date)
-  const visibleDividends = selectedMonth === null
+  // Stocks that have dividend records — shown as filter chips
+  const dividendStocks = stocks.filter((s) => (s.dividends ?? []).length > 0);
+  const filteredDividends = stockFilter === null
     ? allDividends
-    : allDividends.filter((d) =>
-        dividendStatDate(d).startsWith(`${yearStr}-${String(selectedMonth + 1).padStart(2, '0')}`));
+    : allDividends.filter((d) => d.stockId === stockFilter);
+
+  // Years that have records (newest first); always include the current year
+  const years = Array.from(new Set([
+    today.getFullYear(),
+    ...allDividends.map((d) => parseInt(dividendStatDate(d).slice(0, 4))),
+  ])).sort((a, b) => b - a);
+  const yearIdx = years.indexOf(selectedYear);
+  const selYearStr = String(selectedYear);
+
+  // Monthly bar chart data for the selected year / stock filter
+  const monthlyTotals = calcMonthlyDividends(filteredDividends, selYearStr);
+  const maxMonthly    = Math.max(...monthlyTotals, 1);
+  const selectedYearTotal = calcYearDividends(filteredDividends, selYearStr);
+
+  // Records shown in the list — selected year, narrowed to a month when a bar
+  // is tapped (attribution by ex-date)
+  const visibleDividends = filteredDividends.filter((d) => {
+    const sd = dividendStatDate(d);
+    return selectedMonth === null
+      ? sd.startsWith(selYearStr)
+      : sd.startsWith(`${selYearStr}-${String(selectedMonth + 1).padStart(2, '0')}`);
+  });
 
   const transferFee = settings.dividendTransferFee ?? 10;
 
@@ -142,20 +164,67 @@ export default function DividendView({
           </div>
         </div>
 
+        {/* ── Stock filter chips ── */}
+        {dividendStocks.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-0.5">
+            <button
+              onClick={() => setStockFilter(null)}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors
+                ${stockFilter === null ? 'bg-amber-500 text-white' : 'bg-white border border-gray-200 text-gray-500'}`}
+            >
+              全部
+            </button>
+            {dividendStocks.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setStockFilter(stockFilter === s.id ? null : s.id)}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors
+                  ${stockFilter === s.id ? 'bg-amber-500 text-white' : 'bg-white border border-gray-200 text-gray-500'}`}
+              >
+                {s.symbol}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* ── Monthly Bar Chart ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-4 pt-4 pb-3">
           <div className="flex items-center justify-between gap-2 mb-3">
-            <p className="text-[13px] font-semibold text-gray-500">{yearStr} 月度股息</p>
-            {selectedMonth !== null && (
-              <p className="text-[13px] font-bold text-amber-500">
-                {selectedMonth + 1} 月股息 {signedNTD(monthlyTotals[selectedMonth])}
-              </p>
-            )}
+            <div className="flex items-center gap-0.5">
+              {years.length > 1 && (
+                <button
+                  onClick={() => setSelectedYear(years[yearIdx + 1])}
+                  disabled={yearIdx >= years.length - 1}
+                  className="w-6 h-6 flex items-center justify-center rounded-full active:bg-gray-100 disabled:opacity-25"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6"/>
+                  </svg>
+                </button>
+              )}
+              <p className="text-[13px] font-semibold text-gray-500">{selectedYear} 月度股息</p>
+              {years.length > 1 && (
+                <button
+                  onClick={() => setSelectedYear(years[yearIdx - 1])}
+                  disabled={yearIdx <= 0}
+                  className="w-6 h-6 flex items-center justify-center rounded-full active:bg-gray-100 disabled:opacity-25"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+            <p className="text-[13px] font-bold text-amber-500">
+              {selectedMonth !== null
+                ? `${selectedMonth + 1} 月股息 ${signedNTD(monthlyTotals[selectedMonth])}`
+                : `全年 ${signedNTD(selectedYearTotal)}`}
+            </p>
           </div>
           <div className="flex items-end gap-1 h-20">
             {monthlyTotals.map((val, i) => {
               const heightPct = val > 0 ? Math.max((val / maxMonthly) * 100, 8) : 0;
-              const isCurrentMonth = i === monthIdx;
+              const isCurrentMonth = i === monthIdx && selectedYear === today.getFullYear();
               const isSelected = i === selectedMonth;
               return (
                 <button
@@ -197,7 +266,7 @@ export default function DividendView({
           <div>
             <div className="flex items-center justify-between mb-2 px-1">
               <p className="text-[13px] font-semibold text-gray-500">
-                {selectedMonth === null ? '股息紀錄' : `${selectedMonth + 1} 月股息紀錄`}
+                {selectedMonth === null ? `${selectedYear} 股息紀錄` : `${selectedMonth + 1} 月股息紀錄`}
               </p>
               {selectedMonth !== null && (
                 <button
@@ -210,8 +279,12 @@ export default function DividendView({
             </div>
             {visibleDividends.length === 0 ? (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 py-10 text-center">
-                <p className="text-sm font-semibold text-gray-500 mb-1">{selectedMonth! + 1} 月沒有股息紀錄</p>
-                <p className="text-xs text-gray-400">點同一根長條或「顯示全部」可取消篩選</p>
+                <p className="text-sm font-semibold text-gray-500 mb-1">
+                  {selectedMonth === null ? `${selectedYear} 年沒有股息紀錄` : `${selectedMonth + 1} 月沒有股息紀錄`}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {selectedMonth === null ? '切換年份或篩選條件查看其他紀錄' : '點同一根長條或「顯示全部」可取消篩選'}
+                </p>
               </div>
             ) : (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
