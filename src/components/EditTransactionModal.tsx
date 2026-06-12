@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { Stock, BuyTransaction, SellTransaction, AppSettings } from '../types';
 import { calcFee, calcTax, formatNTD, formatPrice, isETFSymbol, ETF_TAX_RATE } from '../utils/calculations';
 import { CloseIcon } from './icons/Icons';
+import BottomSheet, { type BottomSheetHandle } from './BottomSheet';
 
 interface EditTransactionModalProps {
   stock: Stock;
@@ -17,17 +18,11 @@ interface EditTransactionModalProps {
 export default function EditTransactionModal({
   stock, txType, transaction, avgCost, settings, onSave, onDelete, onClose,
 }: EditTransactionModalProps) {
-  // ── Slide animation ────────────────────────────────────────────────────────
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => setShow(true));
-    return () => cancelAnimationFrame(raf);
-  }, []);
+  // Sheet enter/exit animation + gestures live in BottomSheet
+  const sheetRef = useRef<BottomSheetHandle>(null);
 
   function handleClose() {
-    setShow(false);
-    setTimeout(onClose, 280);
+    sheetRef.current?.close();
   }
 
   // Detect imported transaction (匯入初始持倉 — fee already baked into price)
@@ -101,29 +96,14 @@ export default function EditTransactionModal({
   }
 
   function handleDelete() {
-    setShow(false);
-    setTimeout(onDelete, 280);
+    sheetRef.current?.close(onDelete);
   }
 
   const isBuy = txType === 'buy';
 
   return (
     <>
-      {/* Sheet backdrop — fades in/out */}
-      <div
-        onClick={handleClose}
-        className={`fixed inset-0 bg-black/30 z-[55] backdrop-blur-sm transition-opacity duration-300 ${show ? 'opacity-100' : 'opacity-0'}`}
-      />
-
-      {/* Bottom sheet — slides up/down */}
-      <div
-        className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] lg:max-w-lg bg-white rounded-t-3xl z-[60] shadow-2xl transition-transform duration-300 ease-out ${show ? 'translate-y-0' : 'translate-y-full'}`}
-        style={{ maxHeight: '92vh', overflowY: 'auto' }}
-      >
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 bg-gray-200 rounded-full" />
-        </div>
-
+      <BottomSheet ref={sheetRef} onClose={onClose} zBackdrop="z-[55]" zSheet="z-[60]">
         <div className="px-5 pb-28">
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
@@ -292,7 +272,7 @@ export default function EditTransactionModal({
             刪除這筆交易
           </button>
         </div>
-      </div>
+      </BottomSheet>
 
       {/* Delete confirm — separate overlay above everything */}
       {confirmDelete && (

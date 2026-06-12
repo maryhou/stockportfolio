@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchStockDividends, type DividendRecord } from '../utils/fetchDividends';
+import BottomSheet, { type BottomSheetHandle } from './BottomSheet';
 import type { Stock, DividendTransaction, AppSettings } from '../types';
 import {
   calcYearDividends,
@@ -137,7 +138,7 @@ export default function DividendView({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-32 lg:pb-10 space-y-4">
         {/* ── Hero Card ── */}
         <div className="rounded-2xl overflow-hidden shadow-md" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}>
           <div className="px-5 pt-5 pb-4">
@@ -399,6 +400,7 @@ interface AddDividendSheetProps {
 }
 
 function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockId, onSave, onClose }: AddDividendSheetProps) {
+  const sheetRef = useRef<BottomSheetHandle>(null);
   const isEdit = !!editDividend;
   // Include sold-out stocks too, so past dividends can be back-filled
   const selectableStocks = stocks.filter((s) => s.buys.length > 0 || isEdit);
@@ -483,20 +485,18 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
       netAmount:         net,
       ...(note ? { note } : {}),
     };
-    onSave(stockId, dividend);
+    sheetRef.current?.close(() => onSave(stockId, dividend));
   }
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/40 flex items-end" onClick={onClose}>
-      <div
-        className="w-full bg-white rounded-t-3xl px-4 pt-5 pb-10 max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Handle */}
-        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
+    <BottomSheet ref={sheetRef} onClose={onClose} zBackdrop="z-[199]" zSheet="z-[200]">
+      <div className="px-4 pb-10">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-bold text-gray-900">{isEdit ? '編輯股息' : '新增股息'}</h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full active:bg-gray-100">
+          <button
+            onClick={() => sheetRef.current?.close()}
+            className="w-8 h-8 flex items-center justify-center rounded-full active:bg-gray-100"
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
@@ -568,20 +568,20 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
 
           {/* Dates */}
           <div className="flex gap-3">
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <label className="label">除息日</label>
               <input
                 type="date"
-                className="input"
+                className="input input-date"
                 value={exDate}
                 onChange={(e) => setExDate(e.target.value)}
               />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <label className="label">實際發放日</label>
               <input
                 type="date"
-                className="input"
+                className="input input-date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
               />
@@ -667,7 +667,7 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
           </button>
         </div>
       </div>
-    </div>
+    </BottomSheet>
   );
 }
 
@@ -683,17 +683,12 @@ interface DividendDetailModalProps {
 }
 
 function DividendDetailModal({ stock, dividend: d, onEdit, onDelete, onClose }: DividendDetailModalProps) {
+  const sheetRef = useRef<BottomSheetHandle>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/40 flex items-end" onClick={onClose}>
-      <div
-        className="w-full bg-white rounded-t-3xl px-4 pt-5 pb-10"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Handle */}
-        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
-
+    <BottomSheet ref={sheetRef} onClose={onClose} zBackdrop="z-[199]" zSheet="z-[200]">
+      <div className="px-4 pb-10">
         {/* Header */}
         <div className="flex items-start justify-between mb-5">
           <div>
@@ -703,7 +698,7 @@ function DividendDetailModal({ stock, dividend: d, onEdit, onDelete, onClose }: 
             </div>
             <h2 className="text-lg font-bold text-gray-900">{stock.name}</h2>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full active:bg-gray-100">
+          <button onClick={() => sheetRef.current?.close()} className="w-8 h-8 flex items-center justify-center rounded-full active:bg-gray-100">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
@@ -750,7 +745,7 @@ function DividendDetailModal({ stock, dividend: d, onEdit, onDelete, onClose }: 
                 取消
               </button>
               <button
-                onClick={onDelete}
+                onClick={() => sheetRef.current?.close(onDelete)}
                 className="flex-1 py-3 rounded-2xl text-sm font-bold bg-red-500 text-white active:opacity-80"
               >
                 確認刪除
@@ -767,7 +762,7 @@ function DividendDetailModal({ stock, dividend: d, onEdit, onDelete, onClose }: 
                 </svg>
               </button>
               <button
-                onClick={onEdit}
+                onClick={() => sheetRef.current?.close(onEdit)}
                 className="flex-1 py-3 rounded-2xl text-sm font-bold bg-amber-500 text-white active:opacity-80"
               >
                 編輯
@@ -776,7 +771,7 @@ function DividendDetailModal({ stock, dividend: d, onEdit, onDelete, onClose }: 
           )}
         </div>
       </div>
-    </div>
+    </BottomSheet>
   );
 }
 
@@ -801,6 +796,7 @@ interface ImportDividendSheetProps {
 }
 
 function ImportDividendSheet({ stocks, settings, onConfirm, onClose }: ImportDividendSheetProps) {
+  const sheetRef = useRef<BottomSheetHandle>(null);
   const [loading,     setLoading]     = useState(true);
   const [items,       setItems]       = useState<ImportItem[]>([]);
   const [selected,    setSelected]    = useState<Set<string>>(new Set());
@@ -879,18 +875,15 @@ function ImportDividendSheet({ stocks, settings, onConfirm, onClose }: ImportDiv
   const totalNet = selectedItems.reduce((s, i) => s + i.dividend.netAmount, 0);
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/40 flex items-end" onClick={onClose}>
-      <div className="w-full bg-white rounded-t-3xl pt-5 pb-10 max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-        {/* Handle */}
-        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4 flex-shrink-0" />
-
+    <BottomSheet ref={sheetRef} onClose={onClose} zBackdrop="z-[199]" zSheet="z-[200]">
+      <div className="pb-10">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 mb-1 flex-shrink-0">
+        <div className="flex items-center justify-between px-4 mb-1">
           <div>
             <h2 className="text-lg font-bold text-gray-900">匯入歷史股息</h2>
             <p className="text-[11px] text-gray-400 mt-0.5">以官方公告的除息日持股數估算，可逐筆修改</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full active:bg-gray-100">
+          <button onClick={() => sheetRef.current?.close()} className="w-8 h-8 flex items-center justify-center rounded-full active:bg-gray-100">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
@@ -898,7 +891,7 @@ function ImportDividendSheet({ stocks, settings, onConfirm, onClose }: ImportDiv
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-4 py-3">
+        <div className="px-4 py-3">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <svg className="animate-spin text-amber-400" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -983,13 +976,13 @@ function ImportDividendSheet({ stocks, settings, onConfirm, onClose }: ImportDiv
 
         {/* Footer */}
         {!loading && items.length > 0 && (
-          <div className="px-4 pt-3 flex-shrink-0 border-t border-gray-100">
+          <div className="px-4 pt-3 border-t border-gray-100">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm text-gray-500">選取 {selectedItems.length} 筆</p>
               <p className="text-sm font-bold text-amber-500">{signedNTD(totalNet)}</p>
             </div>
             <button
-              onClick={() => onConfirm(selectedItems)}
+              onClick={() => sheetRef.current?.close(() => onConfirm(selectedItems))}
               disabled={selectedItems.length === 0}
               className={`w-full py-3.5 rounded-2xl text-sm font-bold transition-opacity
                 ${selectedItems.length > 0 ? 'bg-amber-500 text-white active:opacity-80' : 'bg-gray-100 text-gray-400'}`}
@@ -999,7 +992,7 @@ function ImportDividendSheet({ stocks, settings, onConfirm, onClose }: ImportDiv
           </div>
         )}
       </div>
-    </div>
+    </BottomSheet>
   );
 }
 

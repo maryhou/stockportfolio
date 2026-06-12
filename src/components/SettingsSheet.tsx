@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   isBiometricSupported,
   isBiometricEnabled,
@@ -7,6 +7,7 @@ import {
 } from '../utils/biometric';
 import type { AppSettings, Broker, AppTheme } from '../types';
 import { CloseIcon } from './icons/Icons';
+import BottomSheet, { type BottomSheetHandle } from './BottomSheet';
 
 interface SettingsSheetProps {
   settings: AppSettings;
@@ -22,6 +23,7 @@ function emptyBrokerForm() {
 }
 
 export default function SettingsSheet({ settings, onSave, onThemePreview, onClose }: SettingsSheetProps) {
+  const sheetRef = useRef<BottomSheetHandle>(null);
   const [userName,     setUserName]     = useState(settings.userName);
   const [taxRateInput, setTaxRateInput] = useState(String(+(settings.taxRate * 100).toPrecision(6)));
   const [brokers,      setBrokers]      = useState<Broker[]>([...settings.brokers]);
@@ -79,13 +81,15 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
   }
 
   function handleSave() {
-    onSave({
-      userName: userName.trim() || settings.userName,
-      brokers: brokers.length > 0 ? brokers : settings.brokers,
-      taxRate: parseFloat(taxRateInput) / 100 || settings.taxRate,
-      theme,
+    sheetRef.current?.close(() => {
+      onSave({
+        userName: userName.trim() || settings.userName,
+        brokers: brokers.length > 0 ? brokers : settings.brokers,
+        taxRate: parseFloat(taxRateInput) / 100 || settings.taxRate,
+        theme,
+      });
+      onClose();
     });
-    onClose();
   }
 
   const formEffective = ((parseFloat(formFeeRate) || 0) * (parseFloat(formDiscount) || 0) / 100).toFixed(4);
@@ -108,21 +112,11 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
   }
 
   return (
-    <>
-      <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={handleClose} />
-
-      <div
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] lg:max-w-lg bg-white rounded-t-3xl z-50 shadow-2xl"
-        style={{ maxHeight: '92vh', overflowY: 'auto' }}
-      >
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 bg-gray-200 rounded-full" />
-        </div>
-
+    <BottomSheet ref={sheetRef} onClose={handleClose} zBackdrop="z-40" zSheet="z-50">
         <div className="px-5 pb-10">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-gray-800">偏好設定</h2>
-            <button onClick={handleClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+            <button onClick={() => sheetRef.current?.close()} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
               <CloseIcon size={16} className="text-gray-500" />
             </button>
           </div>
@@ -324,8 +318,7 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
             儲存設定
           </button>
         </div>
-      </div>
-    </>
+    </BottomSheet>
   );
 }
 
