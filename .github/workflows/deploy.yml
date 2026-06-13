@@ -19,6 +19,12 @@ jobs:
 
       - run: npm ci
 
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        run: npm test
+
       - name: Deploy to Vercel (production)
         run: npx vercel --token ${{ secrets.VERCEL_TOKEN }} --prod --yes
         env:
