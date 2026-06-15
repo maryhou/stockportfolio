@@ -699,7 +699,7 @@ export default function App() {
                 priceHistory={priceHistory}
                 onBack={() => { setSelectedStockId(null); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                 onSelectStock={(id) => setSelectedStockId(id)}
-                onUpdatePrice={handleUpdatePrice}
+
                 onUpdateTarget={handleUpdateTarget}
                 onSaveTx={handleSaveTx}
                 onDeleteTx={handleDeleteTx}

@@ -22,7 +22,6 @@ interface ActivityViewProps {
   priceHistory?: Record<string, number[]>;
   onBack: () => void;
   onSelectStock: (id: string) => void;
-  onUpdatePrice: (stockId: string, price: number) => void;
   onUpdateTarget: (stockId: string, price: number) => void;
   onSaveTx: (stockId: string, type: 'buy' | 'sell', tx: BuyTransaction | SellTransaction) => void;
   onDeleteTx: (stockId: string, type: 'buy' | 'sell', txId: string) => void;
@@ -31,7 +30,7 @@ interface ActivityViewProps {
   lastUpdated: Date | null;
 }
 
-export default function ActivityView({ stocks, selectedStockId, settings, priceHistory, onBack, onSelectStock, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx, onRefresh, isRefreshing, lastUpdated }: ActivityViewProps) {
+export default function ActivityView({ stocks, selectedStockId, settings, priceHistory, onBack, onSelectStock, onUpdateTarget, onSaveTx, onDeleteTx, onRefresh, isRefreshing, lastUpdated }: ActivityViewProps) {
   const stock = selectedStockId ? stocks.find((s) => s.id === selectedStockId) : null;
 
   if (stock) {
@@ -41,7 +40,6 @@ export default function ActivityView({ stocks, selectedStockId, settings, priceH
         settings={settings}
         marketHistory={priceHistory?.[stock.symbol]}
         onBack={onBack}
-        onUpdatePrice={onUpdatePrice}
         onUpdateTarget={onUpdateTarget}
         onSaveTx={(type, tx) => onSaveTx(stock.id, type, tx)}
         onDeleteTx={(type, txId) => onDeleteTx(stock.id, type, txId)}
@@ -373,12 +371,11 @@ function fmtTime(d: Date) {
   return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
 }
 
-function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, onUpdateTarget, onSaveTx, onDeleteTx, onRefresh, isRefreshing, lastUpdated }: {
+function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, onSaveTx, onDeleteTx, onRefresh, isRefreshing, lastUpdated }: {
   stock: Stock;
   settings: AppSettings;
   marketHistory?: number[];
   onBack: () => void;
-  onUpdatePrice: (id: string, price: number) => void;
   onUpdateTarget: (id: string, price: number) => void;
   onSaveTx: (type: 'buy' | 'sell', tx: BuyTransaction | SellTransaction) => void;
   onDeleteTx: (type: 'buy' | 'sell', txId: string) => void;
@@ -386,9 +383,8 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
   isRefreshing: boolean;
   lastUpdated: Date | null;
 }) {
-  const [editingPrice, setEditingPrice] = useState(false);
+
   const [editingTarget, setEditingTarget] = useState(false);
-  const [priceInput, setPriceInput] = useState('');
   const [targetInput, setTargetInput] = useState('');
   const [editTx, setEditTx] = useState<{ type: 'buy' | 'sell'; tx: BuyTransaction | SellTransaction } | null>(null);
   const [txFilter,     setTxFilter]     = useState<'all' | 'buy' | 'sell'>('all');
@@ -634,20 +630,9 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <div>
             <p className="text-xs text-gray-400 mb-1">目前股價</p>
-            {editingPrice ? (
-              <div className="flex gap-1">
-                <input autoFocus type="number" value={priceInput} onChange={(e) => setPriceInput(e.target.value)}
-                  className="w-full text-sm border border-primary-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-primary-200"
-                  placeholder={String(stock.currentPrice)} />
-                <button onClick={() => { const v = parseFloat(priceInput); if (!isNaN(v) && v > 0) onUpdatePrice(stock.id, v); setEditingPrice(false); }}
-                  className="text-xs bg-primary-600 text-white px-2 py-1 rounded-lg">OK</button>
-              </div>
-            ) : (
-              <button onClick={() => { setPriceInput(String(stock.currentPrice)); setEditingPrice(true); }}
-                className="flex items-center gap-1 text-base font-bold text-gray-800 hover:text-primary-600 transition-colors">
-                {formatPrice(stock.currentPrice)}
-                <span className="text-[10px] text-gray-400 font-normal">點擊更新</span>
-              </button>
+            <p className="text-base font-bold text-gray-800">{formatPrice(stock.currentPrice)}</p>
+            {lastUpdated && (
+              <p className="text-[10px] text-gray-400 mt-0.5">已更新 {fmtTime(lastUpdated)}</p>
             )}
           </div>
           <div>
