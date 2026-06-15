@@ -300,7 +300,7 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
                     } ${bioLoading ? 'opacity-50' : ''}`}
                   >
                     <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-                      bioEnabled ? 'translate-x-5.5' : 'translate-x-0.5'
+                      bioEnabled ? 'translate-x-[22px]' : 'translate-x-0.5'
                     }`} />
                   </button>
                 </div>
