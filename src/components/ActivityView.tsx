@@ -686,7 +686,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
       <div>
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-semibold text-gray-700">
-            交易記錄
+            交易記錄 <span className="text-gray-400 font-normal text-xs">點擊可編輯</span>
           </h3>
           <div className="flex gap-0.5 bg-gray-100 rounded-xl p-1">
             {(['all', 'buy', 'sell'] as const).map((tab) => (
@@ -747,7 +747,10 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                   onEdit={() => setEditTx({ type: 'sell', tx })}
                   confirmMessage="確定要刪除這筆賣出紀錄嗎？刪除後損益將重新計算。"
                 >
-                <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left w-full">
+                <button
+                  onClick={() => setEditTx({ type: 'sell', tx })}
+                  className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left w-full active:scale-[0.99] transition-transform"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center">
@@ -773,7 +776,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                     <MiniStat label="交易稅" value={`-${formatNTD((tx as SellTransaction).tax)}`} />
                     <MiniStat label="可取得" value={formatNTD((tx as SellTransaction).netProceeds)} />
                   </div>
-                </div>
+                </button>
                 </SwipeableRow>
               ) : (() => {
                 const buyTx = tx as BuyTransaction;
@@ -788,7 +791,10 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                     onEdit={() => setEditTx({ type: 'buy', tx })}
                     confirmMessage="確定要刪除這筆買入紀錄嗎？刪除後損益將重新計算。"
                   >
-                  <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left w-full">
+                  <button
+                    onClick={() => setEditTx({ type: 'buy', tx })}
+                    className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left w-full active:scale-[0.99] transition-transform"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isImported ? 'bg-blue-100' : 'bg-primary-100'}`}>
@@ -821,7 +827,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                         <MiniStat label="買入金額" value={formatNTD(buyTx.price * buyTx.shares)} />
                       </div>
                     )}
-                  </div>
+                  </button>
                   </SwipeableRow>
                 );
               })()
