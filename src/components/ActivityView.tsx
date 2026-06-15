@@ -744,6 +744,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                 <SwipeableRow
                   key={tx.id}
                   onDelete={() => onDeleteTx('sell', tx.id)}
+                  onEdit={() => setEditTx({ type: 'sell', tx })}
                   confirmMessage="確定要刪除這筆賣出紀錄嗎？刪除後損益將重新計算。"
                 >
                 <button
@@ -787,6 +788,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdatePrice, on
                   <SwipeableRow
                     key={tx.id}
                     onDelete={() => onDeleteTx('buy', tx.id)}
+                    onEdit={() => setEditTx({ type: 'buy', tx })}
                     confirmMessage="確定要刪除這筆買入紀錄嗎？刪除後損益將重新計算。"
                   >
                   <button

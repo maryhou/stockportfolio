@@ -150,12 +150,13 @@ export function formatNumber(n: number): string {
 
 /**
  * Taiwan ETF detection.
- * All TWSE/TPEx ETFs have symbols starting with '0' (e.g. 0050, 0056, 006208, 00878).
+ * All TWSE/TPEx ETFs have symbols starting with '0' followed by at least 3 digits,
+ * optionally ending with a letter (e.g. 0050, 006208, 00631L, 00632R).
  * Regular stocks use 4-digit codes not starting with '0' (e.g. 2330, 2454).
  * ETF transaction tax rate = 0.1% vs 0.3% for regular stocks.
  */
 export function isETFSymbol(symbol: string): boolean {
-  return /^0\d{3,}$/.test(symbol.trim());
+  return /^0\d{3,}[A-Za-z]?$/.test(symbol.trim());
 }
 
 export const ETF_TAX_RATE = 0.001;   // 0.1%

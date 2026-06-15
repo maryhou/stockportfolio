@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 interface SwipeableRowProps {
   children: React.ReactNode;
   onDelete: () => void;
+  onEdit?: () => void;
   confirmTitle?: string;
   confirmMessage?: string;
 }
@@ -12,6 +13,7 @@ const DELETE_THRESHOLD = -72; // px — swipe past this to trigger confirm
 export default function SwipeableRow({
   children,
   onDelete,
+  onEdit,
   confirmTitle   = '確認刪除',
   confirmMessage = '確定要刪除這筆交易紀錄嗎？',
 }: SwipeableRowProps) {
@@ -19,18 +21,22 @@ export default function SwipeableRow({
   const [isDragging,  setIsDragging]  = useState(false);
   const [exiting,     setExiting]     = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [hovered,     setHovered]     = useState(false);
 
-  const drag = useRef({ active: false, startX: 0, hasMoved: false });
+  const drag = useRef({ active: false, startX: 0, hasMoved: false, isTouch: false });
 
-  // ── Pointer handlers (works on touch + mouse) ──────────────────────────────
+  // ── Pointer handlers (touch only — mouse skips drag) ──────────────────────
   function onPointerDown(e: React.PointerEvent) {
-    drag.current = { active: true, startX: e.clientX, hasMoved: false };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    setIsDragging(true);
+    const isTouch = e.pointerType === 'touch';
+    drag.current = { active: isTouch, startX: e.clientX, hasMoved: false, isTouch };
+    if (isTouch) {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      setIsDragging(true);
+    }
   }
 
   function onPointerMove(e: React.PointerEvent) {
-    if (!drag.current.active || exiting) return;
+    if (!drag.current.active || !drag.current.isTouch || exiting) return;
     const dx = e.clientX - drag.current.startX;
     if (Math.abs(dx) > 6) drag.current.hasMoved = true;
     setOffsetX(Math.max(-120, Math.min(0, dx)));
@@ -42,16 +48,14 @@ export default function SwipeableRow({
     setIsDragging(false);
 
     if (offsetX <= DELETE_THRESHOLD) {
-      // Swiped far enough — show confirmation
-      setOffsetX(DELETE_THRESHOLD); // hold at threshold
+      setOffsetX(DELETE_THRESHOLD);
       setShowConfirm(true);
     } else {
-      setOffsetX(0); // snap back
+      setOffsetX(0);
     }
   }
 
   function handleCardClick(e: React.MouseEvent) {
-    // If dragged, suppress click so the card tap doesn't fire
     if (drag.current.hasMoved) { e.preventDefault(); e.stopPropagation(); }
   }
 
@@ -67,15 +71,18 @@ export default function SwipeableRow({
     setOffsetX(0);
   }
 
-  // Backdrop opacity scales 0→1 as card approaches threshold
   const backdropOpacity = exiting
     ? 1
     : Math.min(1, Math.abs(offsetX) / Math.abs(DELETE_THRESHOLD));
 
   return (
     <>
-      <div className="relative rounded-2xl overflow-hidden">
-        {/* Red backdrop — revealed as card slides left */}
+      <div
+        className="relative rounded-2xl overflow-hidden"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        {/* Red backdrop — touch swipe only */}
         <div
           className="absolute inset-0 bg-red-500 rounded-2xl flex items-center justify-end pr-5"
           style={{ opacity: backdropOpacity }}
@@ -90,7 +97,7 @@ export default function SwipeableRow({
           </svg>
         </div>
 
-        {/* Card — draggable */}
+        {/* Card */}
         <div
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -105,6 +112,39 @@ export default function SwipeableRow({
           className="relative select-none"
         >
           {children}
+
+          {/* Desktop hover action buttons */}
+          <div
+            className="absolute inset-y-0 right-0 flex items-center gap-1 pr-3 pointer-events-none transition-opacity duration-150"
+            style={{ opacity: hovered ? 1 : 0, pointerEvents: hovered ? 'auto' : 'none' }}
+          >
+            {onEdit && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onEdit(); }}
+                className="w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-amber-50 hover:text-amber-600 text-gray-400 transition-colors"
+                title="編輯"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+            )}
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowConfirm(true); }}
+              className="w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-red-50 hover:text-red-500 text-gray-400 transition-colors"
+              title="刪除"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import type { Stock, AppSettings } from '../types';
+import type { Stock, AppSettings, BuyTransaction, SellTransaction } from '../types';
+import EditTransactionModal from './EditTransactionModal';
 import {
   calcAvgCost,
   calcRemainingShares,
@@ -24,15 +25,17 @@ interface HomeViewProps {
   onSearchClick: () => void;
   onDividendClick: () => void;
   onDeleteTx: (stockId: string, type: 'buy' | 'sell', txId: string) => void;
+  onSaveTx: (stockId: string, type: 'buy' | 'sell', tx: BuyTransaction | SellTransaction) => void;
   onVisibleStocksChange: (ids: Set<string>) => void;
   hasUnread: boolean;
   priceHistory: Record<string, number[]>;
   prevClosePrices: Record<string, number>;
 }
 
-export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onSearchClick, onDividendClick, onDeleteTx, onVisibleStocksChange, hasUnread, onAddClick, priceHistory, prevClosePrices }: HomeViewProps) {
+export default function HomeView({ stocks, settings, onStockClick, onViewAllHoldings, onViewAllActivity, onBellClick, onSearchClick, onDividendClick, onDeleteTx, onSaveTx, onVisibleStocksChange, hasUnread, onAddClick, priceHistory, prevClosePrices }: HomeViewProps) {
   const [showPortfolioInfo,  setShowPortfolioInfo]  = useState(false);
   const [showRealizedInfo,   setShowRealizedInfo]   = useState(false);
+  const [editTx, setEditTx] = useState<{ stockId: string; type: 'buy' | 'sell'; tx: BuyTransaction | SellTransaction } | null>(null);
   const [showCumulativeInfo, setShowCumulativeInfo] = useState(false);
   const [showProceedsInfo,   setShowProceedsInfo]   = useState(false);
   const [isAmountHidden,     setIsAmountHidden]     = useState(false);
@@ -445,6 +448,13 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
                 <div key={key} className={idx >= 5 ? 'hidden lg:block' : undefined}>
                   <SwipeableRow
                     onDelete={() => onDeleteTx(stockId, type, txId)}
+                    onEdit={() => {
+                      const stock = stocks.find((s) => s.id === stockId);
+                      const found = type === 'buy'
+                        ? stock?.buys.find((b) => b.id === txId)
+                        : stock?.sells.find((sv) => sv.id === txId);
+                      if (found) setEditTx({ stockId, type, tx: found });
+                    }}
                     confirmMessage="確定要刪除這筆交易紀錄嗎？刪除後無法復原。"
                   >
                     <RecentItem {...tx} type={type} onClick={() => onStockClick(stockId)} />
@@ -631,6 +641,24 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
           </div>
         </div>
       )}
+
+      {editTx && (() => {
+        const stock = stocks.find((s) => s.id === editTx.stockId);
+        if (!stock) return null;
+        const avgCost = calcAvgCost(stock.buys);
+        return (
+          <EditTransactionModal
+            stock={stock}
+            txType={editTx.type}
+            transaction={editTx.tx}
+            avgCost={avgCost}
+            settings={settings}
+            onSave={(tx) => { onSaveTx(editTx.stockId, editTx.type, tx); setEditTx(null); }}
+            onDelete={() => { onDeleteTx(editTx.stockId, editTx.type, editTx.tx.id); setEditTx(null); }}
+            onClose={() => setEditTx(null)}
+          />
+        );
+      })()}
 
     </div>
   );

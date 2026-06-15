@@ -442,8 +442,10 @@ export default function AddTransactionSheet({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs text-gray-500">交易稅</span>
-                        {detectedETF && (
+                        {detectedETF ? (
                           <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">ETF 0.1%</span>
+                        ) : (
+                          <span className="text-[10px] font-semibold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">股票 0.3%</span>
                         )}
                       </div>
                       <span className="text-xs font-semibold text-gray-700">-{formatNTD(tax)}</span>

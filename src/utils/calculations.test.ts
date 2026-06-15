@@ -233,6 +233,11 @@ describe('isETFSymbol', () => {
     expect(isETFSymbol(' 0056 ')).toBe(true); // 容忍前後空白
   });
 
+  it('槓桿/反向 ETF 字母結尾仍視為 ETF', () => {
+    expect(isETFSymbol('00631L')).toBe(true);
+    expect(isETFSymbol('00632R')).toBe(true);
+  });
+
   it('一般股票代號不是 ETF', () => {
     expect(isETFSymbol('2330')).toBe(false);
     expect(isETFSymbol('2454')).toBe(false);
