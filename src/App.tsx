@@ -577,7 +577,7 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const ptrEnabled = view === 'home' || view === 'activity' || view === 'holdings' || view === 'profile';
+  const ptrEnabled = view === 'home' || view === 'activity' || view === 'holdings' || view === 'profile' || view === 'dividends';
   const ptrState = usePullToRefresh(scrollRef, handleRefreshAll, ptrEnabled);
 
   function handleUpdateTarget(stockId: string, price: number) {
