@@ -498,6 +498,7 @@ export default function App() {
   function handleUpdatePrice(stockId: string, price: number) {
     const stock = stocks.find((s) => s.id === stockId);
     update(stocks.map((s) => s.id === stockId ? { ...s, currentPrice: price } : s));
+    setLastUpdated(new Date());
     if (stock && stock.targetPrice > 0 && price >= stock.targetPrice) {
       pushNotification({
         type: 'target',
