@@ -446,8 +446,8 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
     setExDate(rec.date);
     setDate(rec.payDate ?? rec.date);
     if (selectedStock) {
-      const held = calcSharesHeldAtDate(selectedStock.buys, selectedStock.sells, rec.date);
-      setSharesStr(held > 0 ? String(held) : '');
+      const remaining = calcRemainingShares(selectedStock.buys, selectedStock.sells);
+      setSharesStr(remaining > 0 ? String(remaining) : '');
     }
   }
 
@@ -612,6 +612,9 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
                 onChange={(e) => setSharesStr(e.target.value)}
                 min="1"
               />
+              {!isEdit && sharesStr !== '' && (
+                <p className="text-xs text-gray-400 mt-1">已帶入目前持股數，請依除息日實際持有數量修改</p>
+              )}
             </div>
           </div>
 
