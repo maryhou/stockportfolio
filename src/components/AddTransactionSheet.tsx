@@ -352,7 +352,7 @@ export default function AddTransactionSheet({
           {/* Date */}
           <div className="mb-4">
             <label className="label">{isImport ? '追蹤起始日期' : '交易日期'}</label>
-            <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
+            <input type="date" className="input input-date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
 
           {/* Price & Shares */}
