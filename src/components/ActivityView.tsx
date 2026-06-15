@@ -742,11 +742,11 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
                         <span className="text-xs font-bold text-emerald-600">賣</span>
                       </div>
                       <div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-sm font-semibold text-gray-800">成交價 ${formatNumber((tx as SellTransaction).price)} × {(tx as SellTransaction).shares} 股</p>
+                        <p className="text-sm font-semibold text-gray-800">成交價 ${formatNumber((tx as SellTransaction).price)} × {(tx as SellTransaction).shares} 股</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <p className="text-[11px] text-gray-400">{(tx as SellTransaction).date}</p>
                           <BrokerTag brokerId={(tx as SellTransaction).brokerId} brokers={settings.brokers} />
                         </div>
-                        <p className="text-[11px] text-gray-400 mt-0.5">{(tx as SellTransaction).date}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -786,13 +786,13 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
                           <span className={`text-xs font-bold ${isImported ? 'text-blue-600' : 'text-primary-600'}`}>{isImported ? '匯' : '買'}</span>
                         </div>
                         <div>
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <p className="text-sm font-semibold text-gray-800">
-                              {isImported ? `均價 $${formatNumber(buyTx.price)} × ${buyTx.shares} 股` : `成交價 $${formatNumber(buyTx.price)} × ${buyTx.shares} 股`}
-                            </p>
-                            {!isImported && <BrokerTag brokerId={buyTx.brokerId} brokers={settings.brokers} />}
+                          <p className="text-sm font-semibold text-gray-800">
+                            {isImported ? `均價 $${formatNumber(buyTx.price)} × ${buyTx.shares} 股` : `成交價 $${formatNumber(buyTx.price)} × ${buyTx.shares} 股`}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <p className="text-[11px] text-gray-400">{buyTx.date}</p>
+                            <BrokerTag brokerId={buyTx.brokerId} brokers={settings.brokers} />
                           </div>
-                          <p className="text-[11px] text-gray-400 mt-0.5">{buyTx.date}</p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -1229,7 +1229,7 @@ function BrokerTag({ brokerId, brokers }: { brokerId?: string; brokers: Broker[]
   const name = brokers.find((b) => b.id === brokerId)?.name;
   if (!name) return null;
   return (
-    <span className="text-[10px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full leading-none">
+    <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full leading-none">
       {name}
     </span>
   );
