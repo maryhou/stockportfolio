@@ -295,12 +295,12 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
                   <button
                     onClick={handleBioToggle}
                     disabled={bioLoading}
-                    className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 ${
+                    className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 overflow-hidden ${
                       bioEnabled ? 'bg-primary-500' : 'bg-gray-200'
                     } ${bioLoading ? 'opacity-50' : ''}`}
                   >
-                    <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-                      bioEnabled ? 'translate-x-[22px]' : 'translate-x-0.5'
+                    <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${
+                      bioEnabled ? 'translate-x-[22px]' : 'translate-x-0'
                     }`} />
                   </button>
                 </div>
