@@ -188,8 +188,8 @@ export default function App() {
   const [showSearch, setShowSearch] = useState(false);
   const [isLocked, setIsLocked] = useState(() => {
     if (!isBiometricEnabled()) return false;
-    const lastUnlock = Number(localStorage.getItem('bio-last-unlock') ?? 0);
-    return Date.now() - lastUnlock > 30 * 60 * 1000;
+    // sessionStorage is cleared when the app/tab is closed, so closing = always re-lock
+    return !sessionStorage.getItem('bio-unlocked');
   });
   const [showOnboarding, setShowOnboarding] = useState(() => {
     // Already completed onboarding
@@ -547,7 +547,7 @@ export default function App() {
 
   // Re-lock only after 5 minutes in background
   useEffect(() => {
-    const LOCK_AFTER_MS = 30 * 60 * 1000; // 30 minutes
+    const LOCK_AFTER_MS = 5 * 60 * 1000; // 5 minutes
     let hiddenAt: number | null = null;
 
     function onVisibilityChange() {
@@ -647,7 +647,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50 flex" data-theme={(previewTheme ?? settings.theme) ?? 'default'}>
       {isLocked && <AppLock onUnlocked={() => {
-        localStorage.setItem('bio-last-unlock', String(Date.now()));
+        sessionStorage.setItem('bio-unlocked', '1');
         setIsLocked(false);
       }} />}
       <SideNav active={view} onNavigate={handleNavigate} onAddClick={() => setShowAdd(true)} hasUnread={hasUnread} userName={settings.userName} />
