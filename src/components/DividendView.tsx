@@ -490,7 +490,7 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
 
   return (
     <BottomSheet ref={sheetRef} onClose={onClose} zBackdrop="z-[199]" zSheet="z-[200]">
-      <div className="px-4 pb-10">
+      <div className="dividend-form px-4 pb-10">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-bold text-gray-900">{isEdit ? '編輯股息' : '新增股息'}</h2>
           <button
