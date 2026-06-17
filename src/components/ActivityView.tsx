@@ -120,7 +120,7 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
   const allTrades = displayStocks
     .flatMap((st) => [
       ...st.sells.map((tx) => ({ stockId: st.id, stockName: st.name, stockSymbol: st.symbol, type: 'sell' as const, date: tx.date, shares: tx.shares, price: tx.price, amount: tx.netProceeds, profit: tx.profit, id: tx.id })),
-      ...st.buys.map((tx) => ({ stockId: st.id, stockName: st.name, stockSymbol: st.symbol, type: 'buy' as const, date: tx.date, shares: tx.shares, price: tx.price, amount: tx.price * tx.shares + tx.fee, profit: null, id: tx.id })),
+      ...st.buys.map((tx) => ({ stockId: st.id, stockName: st.name, stockSymbol: st.symbol, type: 'buy' as const, date: tx.date, shares: tx.shares, price: tx.price, amount: Math.floor(tx.price * tx.shares) + tx.fee, profit: null, id: tx.id })),
     ])
     .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
 

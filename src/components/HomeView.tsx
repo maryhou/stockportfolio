@@ -160,7 +160,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
     ...stock.buys.map((tx) => ({
       key: `buy-${tx.id}`,
       stockId: stock.id, txId: tx.id, symbol: stock.symbol, name: stock.name, type: 'buy' as const,
-      date: tx.date, shares: tx.shares, amount: tx.price * tx.shares + tx.fee, profit: null,
+      date: tx.date, shares: tx.shares, amount: Math.floor(tx.price * tx.shares) + tx.fee, profit: null,
     })),
   ]).sort((a, b) => b.date.localeCompare(a.date) || b.key.localeCompare(a.key)).slice(0, 10);
 
