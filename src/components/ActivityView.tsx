@@ -808,7 +808,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
                       </div>
                     ) : (
                       <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-2 gap-2 text-center">
-                        <MiniStat label="手續費" value={`-${formatNTD(buyTx.fee)}`} />
+                        <MiniStat label="手續費" value={formatNTD(buyTx.fee)} />
                         <MiniStat label="買入金額" value={formatNTD(Math.floor(buyTx.price * buyTx.shares))} />
                       </div>
                     )}
