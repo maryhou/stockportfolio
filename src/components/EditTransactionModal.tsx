@@ -225,7 +225,7 @@ export default function EditTransactionModal({
                 ) : isBuy ? (
                   <>
                     <PreviewRow label="買入金額" value={formatNTD(Math.floor(priceN * sharesN))} />
-                    <PreviewRow label="手續費" value={`-${formatNTD(fee)}`} />
+                    <PreviewRow label="手續費" value={formatNTD(fee)} />
                     {fee > 0 && <PreviewRow label="總花費" value={formatNTD(Math.floor(priceN * sharesN) + fee)} highlight />}
                   </>
                 ) : (
