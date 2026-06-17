@@ -85,7 +85,7 @@ export function calcTax(price: number, shares: number, taxRate = 0.003): number 
 export function calcAvgCost(buys: BuyTransaction[]): number {
   const totalShares = buys.reduce((s, b) => s + b.shares, 0);
   if (totalShares === 0) return 0;
-  const totalCost = buys.reduce((s, b) => s + b.price * b.shares + b.fee, 0);
+  const totalCost = buys.reduce((s, b) => s + Math.floor(b.price * b.shares) + b.fee, 0);
   return totalCost / totalShares;
 }
 
@@ -96,7 +96,7 @@ export function calcRemainingShares(buys: BuyTransaction[], sells: SellTransacti
 }
 
 export function calcTotalInvested(buys: BuyTransaction[]): number {
-  return buys.reduce((s, b) => s + b.price * b.shares + b.fee, 0);
+  return buys.reduce((s, b) => s + Math.floor(b.price * b.shares) + b.fee, 0);
 }
 
 export function calcTotalRealizedProfit(sells: SellTransaction[]): number {
@@ -130,7 +130,7 @@ export function buildSellTransaction(
 ): SellTransaction {
   const fee = calcFee(price, shares, rates?.feeRate, rates?.feeDiscount);
   const tax = calcTax(price, shares, rates?.taxRate);
-  const netProceeds = price * shares - fee - tax;
+  const netProceeds = Math.floor(price * shares) - fee - tax;
   const profit = netProceeds - avgCost * shares;
   return { id, date, price, shares, fee, tax, profit, netProceeds };
 }

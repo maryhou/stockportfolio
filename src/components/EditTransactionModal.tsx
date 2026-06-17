@@ -71,7 +71,7 @@ export default function EditTransactionModal({
     ? (taxOverride !== '' ? (parseInt(taxOverride) || 0) : autoTax)
     : 0;
 
-  const netProceeds = txType === 'sell' ? priceN * sharesN - fee - tax : 0;
+  const netProceeds = txType === 'sell' ? Math.floor(priceN * sharesN) - fee - tax : 0;
   const profit = txType === 'sell' ? netProceeds - avgCost * sharesN : 0;
 
   // Skip first render so stored fee=0 isn't overwritten by auto-calc on mount
@@ -224,13 +224,13 @@ export default function EditTransactionModal({
                   </>
                 ) : isBuy ? (
                   <>
-                    <PreviewRow label="買入金額" value={formatNTD(priceN * sharesN)} />
+                    <PreviewRow label="買入金額" value={formatNTD(Math.floor(priceN * sharesN))} />
                     <PreviewRow label="手續費" value={`-${formatNTD(fee)}`} />
-                    {fee > 0 && <PreviewRow label="總花費" value={formatNTD(priceN * sharesN + fee)} highlight />}
+                    {fee > 0 && <PreviewRow label="總花費" value={formatNTD(Math.floor(priceN * sharesN) + fee)} highlight />}
                   </>
                 ) : (
                   <>
-                    <PreviewRow label="賣出金額" value={formatNTD(priceN * sharesN)} />
+                    <PreviewRow label="賣出金額" value={formatNTD(Math.floor(priceN * sharesN))} />
                     <PreviewRow label="手續費" value={`-${formatNTD(fee)}`} />
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">

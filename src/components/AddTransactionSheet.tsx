@@ -102,7 +102,7 @@ export default function AddTransactionSheet({
   const effectiveTaxRate = detectedETF ? ETF_TAX_RATE : settings.taxRate;
 
   const tax = txType === 'sell' && priceN > 0 && sharesN > 0 ? calcTax(priceN, sharesN, effectiveTaxRate) : 0;
-  const netProceeds = txType === 'sell' ? priceN * sharesN - fee - tax : 0;
+  const netProceeds = txType === 'sell' ? Math.floor(priceN * sharesN) - fee - tax : 0;
   const profit = txType === 'sell' ? netProceeds - avgCost * sharesN : 0;
 
   useEffect(() => { setFeeOverride(''); }, [price, shares]);
@@ -158,7 +158,7 @@ export default function AddTransactionSheet({
         const tx: BuyTransaction = { id: `b${Date.now()}`, date, price: priceN, shares: sharesN, fee, brokerId };
         onAddStock({ id: newSymbol, name: newName, symbol: newSymbol, targetPrice: 0, currentPrice: priceN, buys: [tx], sells: [] });
       } else {
-        const np = priceN * sharesN - fee - tax;
+        const np = Math.floor(priceN * sharesN) - fee - tax;
         const tx: SellTransaction = { id: `s${Date.now()}`, date, price: priceN, shares: sharesN, fee, tax, netProceeds: np, profit: np, brokerId };
         onAddStock({ id: newSymbol, name: newName, symbol: newSymbol, targetPrice: 0, currentPrice: priceN, buys: [], sells: [tx] });
       }
@@ -186,7 +186,7 @@ export default function AddTransactionSheet({
       const tx: BuyTransaction = { id: `b${Date.now()}`, date, price: priceN, shares: sharesN, fee, brokerId };
       onAddBuy(stockId, tx);
     } else {
-      const np = priceN * sharesN - fee - tax;
+      const np = Math.floor(priceN * sharesN) - fee - tax;
       const tx: SellTransaction = { id: `s${Date.now()}`, date, price: priceN, shares: sharesN, fee, tax, netProceeds: np, profit: np - avgCost * sharesN, brokerId };
       onAddSell(stockId, tx);
     }
@@ -428,9 +428,9 @@ export default function AddTransactionSheet({
                   </>
                 ) : txType === 'buy' ? (
                   <>
-                    <PreviewRow label="買入金額" value={formatNTD(priceN * sharesN)} />
+                    <PreviewRow label="買入金額" value={formatNTD(Math.floor(priceN * sharesN))} />
                     <PreviewRow label="手續費" value={`-${formatNTD(fee)}`} />
-                    <PreviewRow label="總花費" value={formatNTD(priceN * sharesN + fee)} highlight />
+                    <PreviewRow label="總花費" value={formatNTD(Math.floor(priceN * sharesN) + fee)} highlight />
                     {stock && !isBuyingClosedStock && (
                       <PreviewRow label="新平均成本" value={formatNumber(calcNewAvgCost(stock, priceN, sharesN, fee))} highlight />
                     )}
@@ -478,9 +478,9 @@ export default function AddTransactionSheet({
 }
 
 function calcNewAvgCost(stock: Stock, price: number, shares: number, fee: number): number {
-  const existingCost = stock.buys.reduce((s, b) => s + b.price * b.shares + b.fee, 0);
+  const existingCost = stock.buys.reduce((s, b) => s + Math.floor(b.price * b.shares) + b.fee, 0);
   const existingShares = stock.buys.reduce((s, b) => s + b.shares, 0);
-  return Math.floor((existingCost + price * shares + fee) / (existingShares + shares));
+  return Math.floor((existingCost + Math.floor(price * shares) + fee) / (existingShares + shares));
 }
 
 function PreviewRow({ label, value, highlight, profit }: {
