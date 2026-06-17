@@ -768,7 +768,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
                 const isImported = !!buyTx.imported;
                 const totalCost = isImported
                   ? Math.round(buyTx.price * buyTx.shares)
-                  : buyTx.price * buyTx.shares + buyTx.fee;
+                  : Math.floor(buyTx.price * buyTx.shares) + buyTx.fee;
                 return (
                   <SwipeableRow
                     key={tx.id}
@@ -809,7 +809,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
                     ) : (
                       <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-2 gap-2 text-center">
                         <MiniStat label="手續費" value={`-${formatNTD(buyTx.fee)}`} />
-                        <MiniStat label="買入金額" value={formatNTD(buyTx.price * buyTx.shares)} />
+                        <MiniStat label="買入金額" value={formatNTD(Math.floor(buyTx.price * buyTx.shares))} />
                       </div>
                     )}
                   </button>
