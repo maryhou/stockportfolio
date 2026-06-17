@@ -320,7 +320,7 @@ function PreviewRow({ label, value, highlight, profit }: {
   label: string; value: string; highlight?: boolean; profit?: number;
 }) {
   const color = profit !== undefined
-    ? profit >= 0 ? 'text-emerald-600' : 'text-red-500'
+    ? profit >= 0 ? 'text-red-500' : 'text-emerald-600'
     : highlight ? 'text-gray-800 font-bold' : 'text-gray-600';
   return (
     <div className="flex justify-between items-center">
