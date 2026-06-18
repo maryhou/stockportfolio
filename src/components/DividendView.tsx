@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { fetchStockDividends, type DividendRecord } from '../utils/fetchDividends';
 import BottomSheet, { type BottomSheetHandle } from './BottomSheet';
 import type { Stock, DividendTransaction, AppSettings } from '../types';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
+import PullToRefreshIndicator from './PullToRefreshIndicator';
 import {
   calcYearDividends,
   calcMonthDividends,
@@ -43,11 +45,14 @@ interface DividendViewProps {
   onBack: () => void;
   onSaveDividend: (stockId: string, dividend: DividendTransaction) => void;
   onDeleteDividend: (stockId: string, dividendId: string) => void;
+  onRefresh: () => Promise<void>;
 }
 
 export default function DividendView({
-  stocks, settings, onBack, onSaveDividend, onDeleteDividend,
+  stocks, settings, onBack, onSaveDividend, onDeleteDividend, onRefresh,
 }: DividendViewProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const ptrState = usePullToRefresh(scrollRef, onRefresh);
   const [showAdd,    setShowAdd]    = useState(false);
   const [showImport, setShowImport] = useState(false);
   // 0-based month selected in the bar chart; null = show the whole year
@@ -138,7 +143,9 @@ export default function DividendView({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-32 lg:pb-10 space-y-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto pb-32 lg:pb-10">
+        <PullToRefreshIndicator state={ptrState} />
+        <div className="px-4 pt-4 space-y-4">
         {/* ── Hero Card ── */}
         <div className="rounded-2xl overflow-hidden shadow-md" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}>
           <div className="px-5 pt-5 pb-4">
@@ -330,6 +337,7 @@ export default function DividendView({
             )}
           </div>
         )}
+        </div>{/* end inner px-4 pt-4 */}
       </div>
 
       {/* ── Import History Sheet ── */}

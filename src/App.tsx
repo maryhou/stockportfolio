@@ -579,7 +579,7 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const ptrEnabled = view === 'home' || view === 'activity' || view === 'holdings' || view === 'profile' || view === 'dividends';
+  const ptrEnabled = view === 'home' || view === 'activity' || view === 'holdings' || view === 'profile';
   const ptrState = usePullToRefresh(scrollRef, handleRefreshAll, ptrEnabled);
 
   function handleUpdateTarget(stockId: string, price: number) {
@@ -691,6 +691,7 @@ export default function App() {
                 onBack={() => setView('home')}
                 onSaveDividend={handleSaveDividend}
                 onDeleteDividend={handleDeleteDividend}
+                onRefresh={handleRefreshAll}
               />
             )}
             {view === 'activity' && (
