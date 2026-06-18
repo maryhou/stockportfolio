@@ -144,7 +144,7 @@ export default function DividendView({
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto pb-32 lg:pb-10">
-        <PullToRefreshIndicator state={ptrState} />
+        <PullToRefreshIndicator state={ptrState} color="#f59e0b" />
         <div className="px-4 pt-4 space-y-4">
         {/* ── Hero Card ── */}
         <div className="rounded-2xl overflow-hidden shadow-md" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}>

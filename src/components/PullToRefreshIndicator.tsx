@@ -7,7 +7,7 @@ function fmt(d: Date) {
   return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
 }
 
-export default function PullToRefreshIndicator({ state }: { state: PTRState }) {
+export default function PullToRefreshIndicator({ state, color = '#6C63FF' }: { state: PTRState; color?: string }) {
   const { pullY, status, progress, lastUpdated, errorMsg } = state;
 
   // Height: follows finger while pulling; holds at 56px during refresh/result; 0 when idle
@@ -41,7 +41,7 @@ export default function PullToRefreshIndicator({ state }: { state: PTRState }) {
               <circle cx="14" cy="14" r={RADIUS} fill="none" stroke="#e5e7eb" strokeWidth="2.5" />
               <circle
                 cx="14" cy="14" r={RADIUS}
-                fill="none" stroke="#6C63FF" strokeWidth="2.5"
+                fill="none" stroke={color} strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeDasharray={CIRCUMFERENCE}
                 strokeDashoffset={CIRCUMFERENCE * (1 - progress)}
