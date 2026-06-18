@@ -159,8 +159,14 @@ export function isETFSymbol(symbol: string): boolean {
   return /^0\d{3,}[A-Za-z]?$/.test(symbol.trim());
 }
 
-export const ETF_TAX_RATE = 0.001;   // 0.1%
-export const STOCK_TAX_RATE = 0.003; // 0.3%
+/** Bond ETFs end with 'B' (e.g. 00679B, 00680B). Sell transaction tax = 0. */
+export function isBondETFSymbol(symbol: string): boolean {
+  return /^0\d{3,}[Bb]$/.test(symbol.trim());
+}
+
+export const BOND_ETF_TAX_RATE = 0;    // 0%
+export const ETF_TAX_RATE = 0.001;     // 0.1%
+export const STOCK_TAX_RATE = 0.003;   // 0.3%
 
 /** Format a stock price with exactly 2 decimal places (e.g. 2,310.50). */
 export function formatPrice(n: number): string {

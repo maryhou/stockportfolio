@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Stock, BuyTransaction, SellTransaction, AppSettings } from '../types';
-import { calcFee, calcTax, formatNTD, formatPrice, isETFSymbol, ETF_TAX_RATE } from '../utils/calculations';
+import { calcFee, calcTax, formatNTD, formatPrice, isETFSymbol, isBondETFSymbol, ETF_TAX_RATE, BOND_ETF_TAX_RATE } from '../utils/calculations';
 import { CloseIcon } from './icons/Icons';
 import BottomSheet, { type BottomSheetHandle } from './BottomSheet';
 
@@ -64,7 +64,8 @@ export default function EditTransactionModal({
     ? calcFee(priceN, sharesN, selectedBroker.feeRate, selectedBroker.feeDiscount)
     : 0;
   const detectedETF = isETFSymbol(stock.symbol);
-  const effectiveTaxRate = detectedETF ? ETF_TAX_RATE : settings.taxRate;
+  const detectedBondETF = isBondETFSymbol(stock.symbol);
+  const effectiveTaxRate = detectedBondETF ? BOND_ETF_TAX_RATE : detectedETF ? ETF_TAX_RATE : settings.taxRate;
   const autoTax = priceN > 0 && sharesN > 0 ? calcTax(priceN, sharesN, effectiveTaxRate) : 0;
   const fee = isImportedTx ? 0 : (feeOverride !== '' ? (parseInt(feeOverride) || 0) : autoFee);
   const tax = txType === 'sell'
@@ -235,13 +236,15 @@ export default function EditTransactionModal({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs text-gray-500">交易稅</span>
-                        {detectedETF ? (
+                        {detectedBondETF ? (
+                          <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">債券ETF 免稅</span>
+                        ) : detectedETF ? (
                           <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">ETF 0.1%</span>
                         ) : (
                           <span className="text-[10px] font-semibold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">股票 0.3%</span>
                         )}
                       </div>
-                      <span className="text-xs font-semibold text-gray-700">-{formatNTD(tax)}</span>
+                      <span className="text-xs font-semibold text-gray-700">{tax > 0 ? '-' : ''}{formatNTD(tax)}</span>
                     </div>
                     <PreviewRow label="總回收金額" value={formatNTD(netProceeds)} highlight />
                     <PreviewRow label="損益" value={`${profit >= 0 ? '+' : ''}${formatNTD(profit)}`} profit={profit} />
