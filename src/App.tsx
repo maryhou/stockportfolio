@@ -315,16 +315,17 @@ export default function App() {
     return unsub;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function handleSignIn() {
+  async function handleSignIn(): Promise<{ isNewUser: boolean; displayName: string }> {
     try {
-      await signInWithGoogle();
+      return await signInWithGoogle();
     } catch (e) {
       console.error('Sign-in error:', e);
+      return { isNewUser: false, displayName: '' };
     }
   }
 
   function handleOnboardingComplete(userName: string) {
-    const next = { ...settings, userName };
+    const next = { ...settings, ...(userName ? { userName } : {}) };
     setSettings(next);
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
     localStorage.setItem(ONBOARD_KEY, '1');

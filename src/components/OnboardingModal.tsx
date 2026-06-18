@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 interface OnboardingModalProps {
   onComplete: (userName: string) => void;
-  onGoogleSignIn: () => Promise<void>;
+  onGoogleSignIn: () => Promise<{ isNewUser: boolean; displayName: string }>;
 }
 
 type Step = 1 | 2 | 3;
@@ -16,19 +16,28 @@ export default function OnboardingModal({ onComplete, onGoogleSignIn }: Onboardi
   async function handleGoogleSignIn() {
     setSigningIn(true);
     try {
-      await onGoogleSignIn();
+      const { isNewUser, displayName } = await onGoogleSignIn();
       setSignedIn(true);
+      if (isNewUser) {
+        setName(displayName);
+        setStep(2);
+      } else {
+        setStep(3);
+      }
     } catch {
-      // user cancelled or error — allow them to continue without signing in
+      // user cancelled or error — fall through to name step
+      setStep(2);
     } finally {
       setSigningIn(false);
-      setStep(3);
     }
   }
 
   function handleFinish() {
-    onComplete(name.trim() || '投資人');
+    onComplete(name.trim() || (signedIn ? '' : '投資人'));
   }
+
+  // Steps shown in indicator: always 3
+  const totalSteps: Step[] = [1, 2, 3];
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
@@ -36,7 +45,7 @@ export default function OnboardingModal({ onComplete, onGoogleSignIn }: Onboardi
 
         {/* Step indicator */}
         <div className="flex gap-1.5 justify-center pt-5 pb-1">
-          {([1, 2, 3] as Step[]).map((s) => (
+          {totalSteps.map((s) => (
             <div
               key={s}
               className={`h-1 rounded-full transition-all duration-300 ${
@@ -48,47 +57,11 @@ export default function OnboardingModal({ onComplete, onGoogleSignIn }: Onboardi
 
         <div className="px-6 pt-4 pb-7">
 
-          {/* ── Step 1: Name ── */}
+          {/* ── Step 1: Google Sign-in ── */}
           {step === 1 && (
             <>
               <div className="mb-5 text-center">
-                <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to))' }}>
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-bold text-gray-800 mb-1">歡迎使用股票追蹤</h2>
-                <p className="text-sm text-gray-400">先告訴我們你怎麼稱呼</p>
-              </div>
-
-              <div className="mb-6">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">你的名字</label>
-                <input
-                  className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent transition"
-                  placeholder="例如：Mary"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && name.trim() && setStep(2)}
-                  autoFocus
-                />
-              </div>
-
-              <button
-                onClick={() => setStep(2)}
-                disabled={!name.trim()}
-                className="w-full py-3.5 rounded-2xl font-semibold text-white bg-primary-600 active:bg-primary-700 disabled:bg-primary-200 transition-colors"
-              >
-                下一步
-              </button>
-            </>
-          )}
-
-          {/* ── Step 2: Google Sign-in ── */}
-          {step === 2 && (
-            <>
-              <div className="mb-5 text-center">
                 <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center bg-blue-50">
-                  {/* Google G logo */}
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -159,10 +132,45 @@ export default function OnboardingModal({ onComplete, onGoogleSignIn }: Onboardi
               </button>
 
               <button
-                onClick={() => setStep(3)}
+                onClick={() => setStep(2)}
                 className="w-full py-2.5 rounded-2xl text-sm font-semibold text-gray-400 active:text-gray-600 transition-colors"
               >
                 先跳過，稍後再設定
+              </button>
+            </>
+          )}
+
+          {/* ── Step 2: Name ── */}
+          {step === 2 && (
+            <>
+              <div className="mb-5 text-center">
+                <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to))' }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-bold text-gray-800 mb-1">歡迎使用股票追蹤</h2>
+                <p className="text-sm text-gray-400">先告訴我們你怎麼稱呼</p>
+              </div>
+
+              <div className="mb-6">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">你的名字</label>
+                <input
+                  className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent transition"
+                  placeholder="例如：Mary"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && name.trim() && setStep(3)}
+                  autoFocus
+                />
+              </div>
+
+              <button
+                onClick={() => setStep(3)}
+                disabled={!name.trim()}
+                className="w-full py-3.5 rounded-2xl font-semibold text-white bg-primary-600 active:bg-primary-700 disabled:bg-primary-200 transition-colors"
+              >
+                下一步
               </button>
             </>
           )}

@@ -58,8 +58,14 @@ export function subscribeToAuth(cb: (user: User | null) => void) {
   return onAuthStateChanged(auth, cb);
 }
 
-export async function signInWithGoogle() {
-  await signInWithPopup(auth, googleProvider);
+export async function signInWithGoogle(): Promise<{ isNewUser: boolean; displayName: string }> {
+  const result = await signInWithPopup(auth, googleProvider);
+  const { getAdditionalUserInfo } = await import('firebase/auth');
+  const info = getAdditionalUserInfo(result);
+  return {
+    isNewUser: info?.isNewUser ?? false,
+    displayName: result.user.displayName ?? '',
+  };
 }
 
 export async function signOutUser() {
