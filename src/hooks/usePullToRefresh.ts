@@ -61,8 +61,20 @@ export function usePullToRefresh(
     let pulling = false;
     let liveY = 0; // track current pull without triggering re-renders on every frame
 
+    // Returns true if any scrollable element between the touch target and the
+    // container has already scrolled down.  PTR must not fire in that case —
+    // the user is swiping down to scroll back up inside a nested scroller.
+    function isInnerScrolled(target: EventTarget | null): boolean {
+      let node = target as Element | null;
+      while (node && node !== el) {
+        if (node.scrollTop > 0) return true;
+        node = node.parentElement;
+      }
+      return false;
+    }
+
     function onTouchStart(e: TouchEvent) {
-      if (busyRef.current || el!.scrollTop > 0) return;
+      if (busyRef.current || el!.scrollTop > 0 || isInnerScrolled(e.target)) return;
       startY = e.touches[0].clientY;
       pulling = true;
       liveY = 0;
@@ -72,16 +84,11 @@ export function usePullToRefresh(
       if (!pulling || busyRef.current) return;
       const dy = e.touches[0].clientY - startY;
 
-      if (dy <= 0 || el!.scrollTop > 0) {
+      if (dy <= 0 || el!.scrollTop > 0 || isInnerScrolled(e.target)) {
         pulling = false;
         setState(s => (s.status === 'pulling' ? { ...s, pullY: 0, status: 'idle', progress: 0 } : s));
         return;
       }
-
-      // Wait for a small threshold before blocking native scroll.
-      // This lets the browser start scrolling first (raising scrollTop) so the
-      // check above can cancel PTR when content is actually scrollable.
-      if (dy < 10) return;
 
       // preventDefault stops the scroll so the page doesn't jump while pulling
       e.preventDefault();
