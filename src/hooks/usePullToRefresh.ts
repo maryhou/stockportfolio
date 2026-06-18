@@ -78,6 +78,11 @@ export function usePullToRefresh(
         return;
       }
 
+      // Wait for a small threshold before blocking native scroll.
+      // This lets the browser start scrolling first (raising scrollTop) so the
+      // check above can cancel PTR when content is actually scrollable.
+      if (dy < 10) return;
+
       // preventDefault stops the scroll so the page doesn't jump while pulling
       e.preventDefault();
       liveY = Math.min(dy * DAMPEN, MAX_PULL);
