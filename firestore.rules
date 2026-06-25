@@ -1,0 +1,15 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Each user document is keyed by Firebase Auth uid.
+    // A signed-in user may read/write ONLY their own document — never anyone
+    // else's. uid is not a secret, so checking auth alone is not enough.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Anything not matched above is denied by default.
+  }
+}
