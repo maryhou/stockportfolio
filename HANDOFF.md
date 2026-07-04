@@ -42,6 +42,20 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
    要升 Vite 8(breaking)才能清掉。
 3. **CI Node 20 deprecation 警告**:GitHub Actions 提示 actions 該升 Node 24,尚未處理。
 
+## 已知問題(已決定暫不處理)
+
+### 已公告但未除息的 ETF 配息不會出現在建議清單(2026-07-04 診斷)
+
+- **現象**:使用者反應新增股息時看不到 006208 已公告的 2026 年配息(4.75,除息 7/16)。
+- **原因**:上市 ETF 股息來自 TWSE `etfDiv` API(`src/utils/fetchDividends.ts` 瀏覽器直查)。
+  公告初期該 API 的「收益分配金額」欄位是 `null`(約除息日前後才補上),
+  解析器遇到金額 NaN 會整列跳過。Yahoo 備援只有歷史除息日,也幫不上。
+- **決定**:先不修。TWSE 補上金額後,現有流程會自動撈到(無快取)。
+- **附註**:此 API 偶爾回傳髒資料(除息日年份出現「106年」「-1893年」),
+  同一查詢連打兩次結果可能不同。若未來要修,方向是:金額 null 的列保留並標示
+  「金額尚未公告」讓使用者自填 + 丟棄年份不合理的列。
+- **快速確認法**:`curl "https://www.twse.com.tw/rwd/zh/ETF/etfDiv?stkNo=<代號>&startDate=<YYYYMM01>&endDate=<YYYYMM01>&response=json"` 看金額欄。
+
 ## 維護規則(改壞會靜默出事的地方)
 
 - **CSP 白名單**:前端要連任何新的外部網域,必須同步加進 `vercel.json` 的
