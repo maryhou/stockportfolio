@@ -27,6 +27,9 @@ interface DividendRecord {
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
 
+// TW symbols: 4–6 digits + optional suffix, e.g. 2330, 00679B, 2887Z1 (特別股)
+const SYMBOL_RE = /^[0-9]{4,6}[A-Z]?[0-9]?$/;
+
 /** "115年04月23日" or "115/04/23" → "2026-04-23" */
 function rocToISO(roc: string): string | null {
   const m = roc.match(/(\d{2,3})[年/](\d{1,2})[月/](\d{1,2})/);
@@ -127,8 +130,8 @@ async function fetchYahoo(symbol: string): Promise<DividendRecord[]> {
 
 export default async function handler(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
-  const symbol = searchParams.get('symbol')?.trim();
-  if (!symbol) return json([], 400);
+  const symbol = searchParams.get('symbol')?.trim().toUpperCase();
+  if (!symbol || !SYMBOL_RE.test(symbol)) return json([], 400);
 
   for (const source of [fetchTpexEtfDiv, fetchYahoo]) {
     try {

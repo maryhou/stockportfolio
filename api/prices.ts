@@ -17,12 +17,19 @@ export const config = {
 
 const TWSE_URL = 'https://mis.twse.com.tw/stock/api/getStockInfo.jsp';
 
+// TW symbols: 4–6 digits + optional suffix, e.g. 2330, 00679B, 2887Z1 (特別股)
+const SYMBOL_RE = /^[0-9]{4,6}[A-Z]?[0-9]?$/;
+const MAX_SYMBOLS = 50;
+
 export default async function handler(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
   const raw = searchParams.get('symbols') ?? '';
 
-  const symbols = raw.split(',').map((s) => s.trim()).filter(Boolean);
+  const symbols = raw.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
   if (symbols.length === 0) return json({});
+  if (symbols.length > MAX_SYMBOLS || symbols.some((s) => !SYMBOL_RE.test(s))) {
+    return json({ error: 'invalid symbols' }, 400);
+  }
 
   // Query both boards: tse_ for TWSE-listed, otc_ for TPEx-listed (e.g. bond
   // ETFs like 00679B). Each symbol exists on only one — the other returns an
