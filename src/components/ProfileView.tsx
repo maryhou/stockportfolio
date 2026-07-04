@@ -8,6 +8,7 @@ import {
   calcExactRealizedProfit,
   formatNTD,
 } from '../utils/calculations';
+import { parseStocksJson } from '../utils/validateImport';
 import { SettingsIcon } from './icons/Icons';
 
 interface ProfileViewProps {
@@ -82,9 +83,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
-        const data = JSON.parse(ev.target?.result as string) as Stock[];
-        if (!Array.isArray(data)) throw new Error('格式錯誤');
-        onImport(data);
+        onImport(parseStocksJson(ev.target?.result as string));
       } catch {
         setImportError('匯入失敗：檔案格式不正確');
       }
