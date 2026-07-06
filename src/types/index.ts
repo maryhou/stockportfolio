@@ -35,7 +35,9 @@ export interface DividendTransaction {
   shares: number;           // 持有股數
   grossAmount: number;      // 應得股息 = amountPerShare × shares
   healthInsuranceFee: number; // 健保補充費 (2.11% if gross >= 20,000)
+  healthFeeExempt?: boolean;  // true = 使用者設定此筆免扣健保補充費（如資本利得配息）
   transferFee: number;       // 匯款手續費
+  transferFeeExempt?: boolean; // true = 使用者設定此筆免扣匯款手續費（如入帳銀行為該檔保管銀行）
   netAmount: number;         // 實際入帳
   note?: string;
 }

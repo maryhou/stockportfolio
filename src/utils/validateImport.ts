@@ -6,8 +6,8 @@
  * validates every field, and rebuilds each record with only known keys so
  * unknown/extra properties never reach state or the cloud.
  *
- * Optional fields (dividends, brokerId, imported, exDate, note) may be
- * missing — older exports didn't have them.
+ * Optional fields (dividends, brokerId, imported, exDate, healthFeeExempt,
+ * transferFeeExempt, note) may be missing — older exports didn't have them.
  */
 import type { Stock, BuyTransaction, SellTransaction, DividendTransaction } from '../types';
 
@@ -45,15 +45,20 @@ function parseSell(v: unknown): SellTransaction | null {
 function parseDividend(v: unknown): DividendTransaction | null {
   if (!isObj(v)) return null;
   const { id, date, exDate, amountPerShare, shares, grossAmount,
-          healthInsuranceFee, transferFee, netAmount, note } = v;
+          healthInsuranceFee, healthFeeExempt, transferFee, transferFeeExempt,
+          netAmount, note } = v;
   if (!isStr(id) || !isStr(date) || !isNum(amountPerShare) || !isNum(shares) ||
       !isNum(grossAmount) || !isNum(healthInsuranceFee) || !isNum(transferFee) ||
       !isNum(netAmount)) return null;
   if (exDate !== undefined && !isStr(exDate)) return null;
+  if (healthFeeExempt !== undefined && typeof healthFeeExempt !== 'boolean') return null;
+  if (transferFeeExempt !== undefined && typeof transferFeeExempt !== 'boolean') return null;
   if (note !== undefined && !isStr(note)) return null;
   return {
     id, date, amountPerShare, shares, grossAmount, healthInsuranceFee, transferFee, netAmount,
     ...(exDate !== undefined ? { exDate } : {}),
+    ...(healthFeeExempt !== undefined ? { healthFeeExempt } : {}),
+    ...(transferFeeExempt !== undefined ? { transferFeeExempt } : {}),
     ...(note !== undefined ? { note } : {}),
   };
 }

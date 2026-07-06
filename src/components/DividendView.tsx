@@ -380,6 +380,11 @@ export default function DividendView({
         <DividendDetailModal
           stock={detailTarget.stock}
           dividend={detailTarget.dividend}
+          defaultTransferFee={transferFee}
+          onSave={(updated) => {
+            onSaveDividend(detailTarget!.stock.id, updated);
+            setDetailTarget({ stock: detailTarget!.stock, dividend: updated });
+          }}
           onEdit={() => {
             setEditTarget({ stockId: detailTarget!.stock.id, dividend: detailTarget!.dividend });
             setDetailTarget(null);
@@ -423,7 +428,15 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
     const remaining = s ? calcRemainingShares(s.buys, s.sells) : 0;
     return remaining > 0 ? String(remaining) : '';
   });
-  const [transferFeeStr, setTransferFeeStr] = useState(editDividend ? String(editDividend.transferFee) : String(defaultTransferFee));
+  // 免扣的紀錄存的匯費是 0，輸入框改帶預設值，勾回「扣」時才有合理金額
+  const [transferFeeStr, setTransferFeeStr] = useState(
+    editDividend && !editDividend.transferFeeExempt ? String(editDividend.transferFee) : String(defaultTransferFee)
+  );
+  const [healthExempt,   setHealthExempt]   = useState(editDividend?.healthFeeExempt ?? false);
+  const [transferExempt, setTransferExempt] = useState(editDividend?.transferFeeExempt ?? false);
+  // 健保費預設依 2.11% 公式自動算；使用者改過欄位就轉手動、不再自動重算
+  const [healthFeeManual, setHealthFeeManual] = useState(() => !!editDividend && isHealthFeeManual(editDividend));
+  const [healthFeeStr,    setHealthFeeStr]    = useState(editDividend ? String(editDividend.healthInsuranceFee) : '');
   const [note,           setNote]           = useState(editDividend?.note ?? '');
 
   // Yahoo Finance quick-fill suggestions
@@ -453,6 +466,7 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
     setAmtPerShare(String(rec.cashPerShare));
     setExDate(rec.date);
     setDate(rec.payDate ?? rec.date);
+    setHealthFeeManual(false); // 金額換了，手動覆寫的健保費已失效，回到自動計算
     if (selectedStock) {
       const remaining = calcRemainingShares(selectedStock.buys, selectedStock.sells);
       setSharesStr(remaining > 0 ? String(remaining) : '');
@@ -472,9 +486,10 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
 
   const amtPerShareNum = parseFloat(amtPerShare) || 0;
   const sharesNum      = parseInt(sharesStr) || 0;
-  const transferFeeNum = parseInt(transferFeeStr) || 0;
+  const transferFeeNum = transferExempt ? 0 : (parseInt(transferFeeStr) || 0);
   const gross          = calcDividendGross(amtPerShareNum, sharesNum);
-  const healthFee      = calcDividendHealthInsurance(gross);
+  const autoHealthFee  = calcDividendHealthInsurance(gross);
+  const healthFee      = healthExempt ? 0 : healthFeeManual ? (parseInt(healthFeeStr) || 0) : autoHealthFee;
   const net            = calcDividendNet(gross, healthFee, transferFeeNum);
   const canSave        = stockId && amtPerShareNum > 0 && sharesNum > 0 && date && exDate;
 
@@ -489,7 +504,9 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
       shares:            sharesNum,
       grossAmount:       gross,
       healthInsuranceFee: healthFee,
+      ...(healthExempt ? { healthFeeExempt: true } : {}),
       transferFee:       transferFeeNum,
+      ...(transferExempt ? { transferFeeExempt: true } : {}),
       netAmount:         net,
       ...(note ? { note } : {}),
     };
@@ -543,8 +560,8 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
                 <div className="flex flex-col gap-2">
                   {suggestions.slice(0, 5).map((rec) => {
                     const previewGross  = calcDividendGross(rec.cashPerShare, parseInt(sharesStr) || 0);
-                    const previewHealth = calcDividendHealthInsurance(previewGross);
-                    const previewNet    = calcDividendNet(previewGross, previewHealth, parseInt(transferFeeStr) || 0);
+                    const previewHealth = healthExempt ? 0 : calcDividendHealthInsurance(previewGross);
+                    const previewNet    = calcDividendNet(previewGross, previewHealth, transferFeeNum);
                     const isActive      = amtPerShare === String(rec.cashPerShare) && date === (rec.payDate ?? rec.date);
                     return (
                       <button
@@ -626,16 +643,52 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
             </div>
           </div>
 
+          {/* Health insurance fee — auto (2.11%) until manually overridden */}
+          <div>
+            <label className="label">健保補充費（元）</label>
+            <input
+              type="number"
+              className={`input ${healthExempt ? 'opacity-40' : ''}`}
+              value={healthFeeManual ? healthFeeStr : String(autoHealthFee)}
+              onChange={(e) => { setHealthFeeManual(true); setHealthFeeStr(e.target.value); }}
+              min="0"
+              disabled={healthExempt}
+            />
+            {healthExempt ? (
+              <p className="text-xs text-gray-400 mt-1">此筆設為免扣健保補充費，可在下方試算勾回</p>
+            ) : healthFeeManual ? (
+              <p className="text-xs text-gray-400 mt-1">
+                已手動修改（如 ETF 僅股利所得部分課徵）
+                <button
+                  onClick={() => setHealthFeeManual(false)}
+                  className="inline-flex items-center gap-1 align-bottom text-amber-500 font-semibold ml-2 active:opacity-70"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                  </svg>
+                  重算 ({(HEALTH_INSURANCE_RATE * 100).toFixed(2)}%)
+                </button>
+              </p>
+            ) : (
+              <p className="text-xs text-gray-400 mt-1">依 {(HEALTH_INSURANCE_RATE * 100).toFixed(2)}% 自動計算，與實際入帳不符可直接修改</p>
+            )}
+          </div>
+
           {/* Transfer fee */}
           <div>
             <label className="label">匯款手續費（元）</label>
             <input
               type="number"
-              className="input"
+              className={`input ${transferExempt ? 'opacity-40' : ''}`}
               value={transferFeeStr}
               onChange={(e) => setTransferFeeStr(e.target.value)}
               min="0"
+              disabled={transferExempt}
             />
+            {transferExempt && (
+              <p className="text-xs text-gray-400 mt-1">此筆設為免扣匯款手續費，可在下方試算勾回</p>
+            )}
           </div>
 
           {/* Note */}
@@ -655,12 +708,20 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
             <div className="bg-amber-50 rounded-2xl p-4 space-y-2.5">
               <p className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider mb-1">試算</p>
               <Row label="應得股息" value={`+${formatNTD(gross)}`} valueClass="text-gray-800 font-semibold" />
-              <Row
-                label={`健保補充費 (${(HEALTH_INSURANCE_RATE * 100).toFixed(2)}%${gross < HEALTH_INSURANCE_THRESHOLD ? `，未達 $${HEALTH_INSURANCE_THRESHOLD.toLocaleString()} 免扣` : ''})`}
-                value={healthFee > 0 ? `-${formatNTD(healthFee)}` : '$0'}
-                valueClass={healthFee > 0 ? 'text-gray-600' : 'text-gray-400'}
+              <HealthFeeRow
+                fee={healthFee}
+                exempt={healthExempt}
+                manual={healthFeeManual}
+                belowThreshold={gross < HEALTH_INSURANCE_THRESHOLD}
+                onToggle={() => setHealthExempt(!healthExempt)}
               />
-              <Row label="匯款手續費" value={transferFeeNum > 0 ? `-${formatNTD(transferFeeNum)}` : '$0'} valueClass="text-gray-600" />
+              <FeeToggleRow
+                label="扣匯款手續費"
+                fee={transferFeeNum}
+                exempt={transferExempt}
+                exemptHint={TRANSFER_EXEMPT_HINT}
+                onToggle={() => setTransferExempt(!transferExempt)}
+              />
               <div className="border-t border-amber-200 pt-2 mt-1">
                 <Row label="實際入帳" value={`+${formatNTD(net)}`} valueClass="text-amber-600 font-bold text-base" />
               </div>
@@ -688,14 +749,44 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
 interface DividendDetailModalProps {
   stock: Stock;
   dividend: DividendTransaction;
+  defaultTransferFee: number;
+  onSave: (updated: DividendTransaction) => void;
   onEdit: () => void;
   onDelete: () => void;
   onClose: () => void;
 }
 
-function DividendDetailModal({ stock, dividend: d, onEdit, onDelete, onClose }: DividendDetailModalProps) {
+function DividendDetailModal({ stock, dividend: d, defaultTransferFee, onSave, onEdit, onDelete, onClose }: DividendDetailModalProps) {
   const sheetRef = useRef<BottomSheetHandle>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // 切換此筆費用的扣 / 免扣，重算後立即存檔。
+  // d 來自列表展開（帶有 stockId 等額外欄位），必須逐欄重建乾淨物件再存，
+  // 否則多餘欄位會被寫進 Firestore。
+  function toggleFee(which: 'health' | 'transfer') {
+    const healthExempt   = which === 'health'   ? !(d.healthFeeExempt ?? false)   : (d.healthFeeExempt ?? false);
+    const transferExempt = which === 'transfer' ? !(d.transferFeeExempt ?? false) : (d.transferFeeExempt ?? false);
+    // 只重算被切換的費用，另一個保留原值（健保費可能是手動覆寫值，不能重算蓋掉）
+    const healthFee = healthExempt ? 0
+      : which === 'health' ? calcDividendHealthInsurance(d.grossAmount)
+      : d.healthInsuranceFee;
+    // 免扣時存 0；從免扣勾回時原值已是 0，回填設定的預設匯費
+    const transferFee = transferExempt ? 0 : (d.transferFeeExempt ? defaultTransferFee : d.transferFee);
+    onSave({
+      id:                 d.id,
+      date:               d.date,
+      ...(d.exDate ? { exDate: d.exDate } : {}),
+      amountPerShare:     d.amountPerShare,
+      shares:             d.shares,
+      grossAmount:        d.grossAmount,
+      healthInsuranceFee: healthFee,
+      ...(healthExempt ? { healthFeeExempt: true } : {}),
+      transferFee,
+      ...(transferExempt ? { transferFeeExempt: true } : {}),
+      netAmount:          calcDividendNet(d.grossAmount, healthFee, transferFee),
+      ...(d.note ? { note: d.note } : {}),
+    });
+  }
 
   return (
     <BottomSheet ref={sheetRef} onClose={onClose} zBackdrop="z-[199]" zSheet="z-[200]">
@@ -730,12 +821,20 @@ function DividendDetailModal({ stock, dividend: d, onEdit, onDelete, onClose }: 
               ${d.amountPerShare} × {d.shares.toLocaleString()} 股
             </div>
           </div>
-          <Row
-            label={`健保補充費 (${(HEALTH_INSURANCE_RATE * 100).toFixed(2)}%${d.grossAmount < HEALTH_INSURANCE_THRESHOLD ? `，未達 $${HEALTH_INSURANCE_THRESHOLD.toLocaleString()} 免扣` : ''})`}
-            value={d.healthInsuranceFee > 0 ? `-${formatNTD(d.healthInsuranceFee)}` : '$0'}
-            valueClass={d.healthInsuranceFee > 0 ? 'text-gray-600' : 'text-gray-400'}
+          <HealthFeeRow
+            fee={d.healthInsuranceFee}
+            exempt={d.healthFeeExempt ?? false}
+            manual={isHealthFeeManual(d)}
+            belowThreshold={d.grossAmount < HEALTH_INSURANCE_THRESHOLD}
+            onToggle={() => toggleFee('health')}
           />
-          <Row label="匯款手續費" value={d.transferFee > 0 ? `-${formatNTD(d.transferFee)}` : '$0'} valueClass="text-gray-600" />
+          <FeeToggleRow
+            label="扣匯款手續費"
+            fee={d.transferFee}
+            exempt={d.transferFeeExempt ?? false}
+            exemptHint={TRANSFER_EXEMPT_HINT}
+            onToggle={() => toggleFee('transfer')}
+          />
           <div className="border-t border-gray-200 pt-3">
             <Row label="實際入帳" value={`+${formatNTD(d.netAmount)}`} valueClass="text-amber-500 font-bold text-base" />
           </div>
@@ -1018,4 +1117,76 @@ function Row({ label, value, valueClass }: { label: string; value: string; value
     </div>
   );
 }
+
+function CheckSquare({ checked }: { checked: boolean }) {
+  return (
+    <div className={`w-[18px] h-[18px] rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+      checked ? 'bg-amber-500 border-amber-500' : 'border-gray-300'
+    }`}>
+      {checked && (
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      )}
+    </div>
+  );
+}
+
+/** 費用列附「扣 / 免扣」勾選框；勾選 = 扣（預設），取消 = 此筆免扣 */
+function FeeToggleRow({ label, fee, exempt, exemptHint, onToggle }: {
+  label: string; fee: number; exempt: boolean; exemptHint: string; onToggle: () => void;
+}) {
+  const showFee = !exempt && fee > 0;
+  return (
+    <div>
+      <button onClick={onToggle} className="w-full flex items-center justify-between gap-2 active:opacity-70">
+        <span className="flex items-center gap-2 flex-1 text-left">
+          <CheckSquare checked={!exempt} />
+          <span className="text-xs text-gray-500">{label}</span>
+        </span>
+        <span className={`text-sm ${showFee ? 'text-gray-600' : 'text-gray-400'}`}>
+          {showFee ? `-${formatNTD(fee)}` : '$0'}
+        </span>
+      </button>
+      {exempt && (
+        <p className="text-[10px] text-gray-400 mt-1 ml-[26px]">{exemptHint}</p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * 健保補充費列。自動模式依 2.11% 公式，未達門檻時顯示靜態「免扣」列；
+ * 手動模式（金額被使用者覆寫，如 ETF 僅股利所得部分課徵）顯示覆寫值並標示（手動），
+ * 門檻判斷不適用。
+ */
+function HealthFeeRow({ fee, exempt, manual, belowThreshold, onToggle }: {
+  fee: number; exempt: boolean; manual: boolean; belowThreshold: boolean; onToggle: () => void;
+}) {
+  if (!manual && belowThreshold) {
+    return (
+      <Row
+        label={`健保補充費 (${(HEALTH_INSURANCE_RATE * 100).toFixed(2)}%，未達 $${HEALTH_INSURANCE_THRESHOLD.toLocaleString()} 免扣)`}
+        value="$0"
+        valueClass="text-gray-400"
+      />
+    );
+  }
+  return (
+    <FeeToggleRow
+      label={manual ? '扣健保補充費（手動）' : `扣健保補充費 (${(HEALTH_INSURANCE_RATE * 100).toFixed(2)}%)`}
+      fee={fee}
+      exempt={exempt}
+      exemptHint="此筆設為免扣（如資本利得配息）"
+      onToggle={onToggle}
+    />
+  );
+}
+
+/** 存的健保費與公式值不同（且非免扣）＝ 當初被手動覆寫過 */
+function isHealthFeeManual(d: DividendTransaction): boolean {
+  return !d.healthFeeExempt && d.healthInsuranceFee !== calcDividendHealthInsurance(d.grossAmount);
+}
+
+const TRANSFER_EXEMPT_HINT = '此筆設為免扣（如入帳銀行為該檔保管銀行）';
 

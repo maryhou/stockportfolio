@@ -1,6 +1,6 @@
 # HANDOFF — WealthTrack 投資日誌
 
-> 最後更新:2026-07-04。給下一個接手的人(或下一次 Claude session)的交接文件。
+> 最後更新:2026-07-06。給下一個接手的人(或下一次 Claude session)的交接文件。
 > 架構與目錄結構詳見 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
 ## 專案是什麼
@@ -33,6 +33,39 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
 | 4 | CSP + 安全 headers(`vercel.json`) | ✅ `33c2957`,實測 CSP 有強制執行 |
 | 5 | 匯入 JSON 逐欄位驗證(`src/utils/validateImport.ts`) | ✅ `c7dd5df`,15 個測試 |
 | 6 | protobufjs CVE(`npm audit fix`) | ✅ `bd736ba` |
+
+### 2026-07-06:股息可逐筆免扣健保補充費與匯款手續費
+
+資本利得性質的配息依規定免扣健保補充費;入帳銀行若是該檔保管銀行則免匯款手續費。
+自動判斷太複雜,改為逐筆手動勾選(預設都扣,與原行為相同):
+
+- `DividendTransaction` 新增選用欄位 `healthFeeExempt?: boolean` 與
+  `transferFeeExempt?: boolean`(true = 此筆免扣;預設不存在 = 照舊)。
+  false 時不寫入欄位(Firestore 不收 undefined、資料保持乾淨);免扣時對應金額存 0。
+- 股息明細 modal 與新增/編輯 sheet 的兩個費用列共用 `FeeToggleRow` checkbox
+  (`src/components/DividendView.tsx`);明細 modal 內切換會立即重算並存檔,
+  匯費勾回時回填設定的預設值。健保費未達 $20,000 門檻時維持靜態顯示、不出現 checkbox。
+  編輯 sheet 的匯費輸入框在免扣時停用並回填預設值。
+- **注意**:明細 modal 的 dividend 物件來自列表展開,帶有 stockId 等額外欄位,
+  存檔前必須逐欄重建乾淨物件(見 `toggleFee`),直接 spread 會把垃圾欄位寫進 Firestore。
+- `validateImport.ts` 已同步驗證新欄位(共 48 測試)。
+
+### 2026-07-06(續):健保補充費金額可手動覆寫
+
+補充保費對 ETF 只以配息中「股利所得」部分課徵(× 占比),占比每期不同且無 API 可查,
+故不做占比欄位,改讓金額直接可改(使用者從銀行明細/收益分配通知書抄實扣值):
+
+- 編輯 sheet 新增「健保補充費(元)」輸入框:預設依 2.11% 公式自動算並隨金額連動;
+  一旦手動改過即轉手動模式、停止自動重算,附「重算 (2.11%)」按鈕可回到自動。
+- **不新增資料欄位**:手動與否用「存值 ≠ 公式值」推斷(`isHealthFeeManual`),
+  舊資料、validateImport 都不用動。手動時 UI 標示「(手動)」且不套用 2 萬門檻判斷。
+- 明細 modal 的 `toggleFee` 只重算被切換的那個費用,另一個保留原值 ——
+  否則切匯費會把手動健保費重算蓋掉(已修)。健保費從免扣勾回時會回到公式值
+  (手動值不保留,要精確金額進編輯改)。「重算」按鈕附 refresh icon。
+- **觀察項**:自動化測試中曾「一次性」讀到無法由程式碼產生的存檔值(健保費=10),
+  以完全相同步驟重演三次皆正確、無法重現,判斷是測試工具連點的 artifact。
+  若實際使用出現健保費異常值,代表有真的 race condition,回頭從
+  `handleSaveDividend`/`toggleFee` 查起。
 
 ## 未完成 / 待辦
 

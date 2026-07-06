@@ -39,6 +39,14 @@ describe('parseStocksJson', () => {
     expect(parseStocksJson('[]')).toEqual([]);
   });
 
+  it('round-trips a fee-exempt dividend', () => {
+    const exempt = {
+      ...validStock,
+      dividends: [{ ...validStock.dividends![0], healthFeeExempt: true, transferFeeExempt: true }],
+    };
+    expect(parseStocksJson(JSON.stringify([exempt]))).toEqual([exempt]);
+  });
+
   it('strips unknown keys instead of persisting them', () => {
     const dirty = { ...validStock, __proto__hack: 'x', extra: { deep: true } };
     const [result] = parseStocksJson(JSON.stringify([dirty]));
@@ -58,6 +66,8 @@ describe('parseStocksJson', () => {
     ['bad sell record', JSON.stringify([{ ...validStock, sells: [{ ...validStock.sells[0], tax: 'x' }] }])],
     ['bad dividend record', JSON.stringify([{ ...validStock, dividends: [{ id: 'd1' }] }])],
     ['bad optional type', JSON.stringify([{ ...validStock, buys: [{ ...validStock.buys[0], brokerId: 7 }] }])],
+    ['non-boolean healthFeeExempt', JSON.stringify([{ ...validStock, dividends: [{ ...validStock.dividends![0], healthFeeExempt: 'yes' }] }])],
+    ['non-boolean transferFeeExempt', JSON.stringify([{ ...validStock, dividends: [{ ...validStock.dividends![0], transferFeeExempt: 1 }] }])],
   ])('rejects %s', (_label, text) => {
     expect(() => parseStocksJson(text)).toThrow();
   });
