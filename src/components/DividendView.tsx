@@ -23,6 +23,9 @@ import {
 
 const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
+// 歷年股息預設最多列出的年數，超過收合成「顯示更多」
+const YEAR_COLLAPSE_LIMIT = 5;
+
 /** "+$1,234" for positive totals, plain "$0" when zero. */
 const signedNTD = (n: number) => `${n > 0 ? '+' : ''}${formatNTD(n)}`;
 
@@ -61,6 +64,8 @@ export default function DividendView({
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   // Stock id to filter chart + records by; null = all stocks
   const [stockFilter, setStockFilter] = useState<string | null>(null);
+  // 歷年股息超過 YEAR_COLLAPSE_LIMIT 年時預設收合，只列最近幾年
+  const [yearsExpanded, setYearsExpanded] = useState(false);
   const [editTarget, setEditTarget] = useState<{ stockId: string; dividend: DividendTransaction } | null>(null);
   const [detailTarget, setDetailTarget] = useState<{ stock: Stock; dividend: DividendTransaction } | null>(null);
 
@@ -86,13 +91,33 @@ export default function DividendView({
     ? allDividends
     : allDividends.filter((d) => d.stockId === stockFilter);
 
-  // Years that have records (newest first); always include the current year
-  const years = Array.from(new Set([
-    today.getFullYear(),
-    ...allDividends.map((d) => parseInt(dividendStatDate(d).slice(0, 4))),
-  ])).sort((a, b) => b - a);
-  const yearIdx = years.indexOf(selectedYear);
+  // Continuous year range from the first record to today (newest first) —
+  // gap years stay visible at $0 so the multi-year record reads as a streak.
+  // Falls back to record-years-only when dirty dates make the span absurd.
+  const recordYears = allDividends.map((d) => parseInt(dividendStatDate(d).slice(0, 4)));
+  const firstYear = recordYears.length > 0 ? Math.min(...recordYears) : today.getFullYear();
+  const lastYear  = recordYears.length > 0 ? Math.max(today.getFullYear(), ...recordYears) : today.getFullYear();
+  const yearSpan  = lastYear - firstYear + 1;
+  const years = yearSpan >= 1 && yearSpan <= 15
+    ? Array.from({ length: yearSpan }, (_, i) => lastYear - i)
+    : Array.from(new Set([
+        today.getFullYear(),
+        ...recordYears,
+      ])).sort((a, b) => b - a);
   const selYearStr = String(selectedYear);
+
+  // Yearly totals for the 歷年股息 overview (respects the stock filter)
+  const yearlyTotals = years.map((y) => calcYearDividends(filteredDividends, String(y)));
+  const maxYearly = Math.max(...yearlyTotals, 1);
+  const filteredTotalNet = filteredDividends.reduce((s, d) => s + d.netAmount, 0);
+  const visibleYears = yearsExpanded ? years : years.slice(0, YEAR_COLLAPSE_LIMIT);
+  const hiddenYearCount = years.length - visibleYears.length;
+
+  // 換年時清掉月份篩選，避免帶著別年的月份殘留
+  function selectYear(y: number) {
+    setSelectedYear(y);
+    setSelectedMonth(null);
+  }
 
   // Monthly bar chart data for the selected year / stock filter
   const monthlyTotals = calcMonthlyDividends(filteredDividends, selYearStr);
@@ -158,7 +183,12 @@ export default function DividendView({
                 </div>
               )}
             </div>
-            <p className="text-3xl font-bold text-white mb-3">{signedNTD(totalNet)}</p>
+            <p className={`text-3xl font-bold text-white ${allDividends.length > 0 ? 'mb-1' : 'mb-3'}`}>{signedNTD(totalNet)}</p>
+            {allDividends.length > 0 && (
+              <p className="text-white/60 text-[11px] font-medium mb-3">
+                自 {firstYear} 年起 · 累計 {allDividends.length} 筆入帳
+              </p>
+            )}
             <div className="flex gap-3">
               <div className="bg-white/15 rounded-xl px-4 py-2.5 flex-1">
                 <p className="text-white/70 text-[10px] font-medium mb-0.5">今年</p>
@@ -195,34 +225,61 @@ export default function DividendView({
           </div>
         )}
 
+        {/* ── Yearly Overview（歷年股息，兼年份切換器）── */}
+        {allDividends.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-4 pt-4 pb-3">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <p className="text-[13px] font-semibold text-gray-500">歷年股息</p>
+              <p className="text-[13px] font-bold text-amber-500">累計 {signedNTD(filteredTotalNet)}</p>
+            </div>
+            <div>
+              {visibleYears.map((y, i) => {
+                const total = yearlyTotals[i];
+                const widthPct = total > 0 ? Math.max((total / maxYearly) * 100, 5) : 0;
+                const isSelected = y === selectedYear;
+                return (
+                  <button
+                    key={y}
+                    onClick={() => selectYear(y)}
+                    className={`w-full flex items-center gap-3 rounded-xl px-2 py-2 transition-colors
+                      ${isSelected ? 'bg-amber-50' : 'active:bg-gray-50'}`}
+                  >
+                    <span className={`w-9 flex-shrink-0 text-left text-[12px] font-bold ${isSelected ? 'text-amber-600' : 'text-gray-400'}`}>
+                      {y}
+                    </span>
+                    <div className="flex-1 h-3 rounded-full bg-gray-100 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${isSelected ? 'bg-amber-500' : 'bg-amber-200'}`}
+                        style={{ width: `${widthPct}%` }}
+                      />
+                    </div>
+                    <span className={`flex-shrink-0 text-right text-[12px] font-bold whitespace-nowrap ${
+                      total > 0 ? (isSelected ? 'text-amber-600' : 'text-gray-600') : 'text-gray-300'}`}>
+                      {total > 0 ? signedNTD(total) : '$0'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {years.length > YEAR_COLLAPSE_LIMIT && (
+              <button
+                onClick={() => setYearsExpanded(!yearsExpanded)}
+                className="w-full flex items-center justify-center gap-1 pt-2 pb-1 text-[12px] font-semibold text-gray-400 active:opacity-70"
+              >
+                {yearsExpanded ? '收合' : `顯示更多（還有 ${hiddenYearCount} 年）`}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  className={yearsExpanded ? 'rotate-180' : ''}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
+
         {/* ── Monthly Bar Chart ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-4 pt-4 pb-3">
           <div className="flex items-center justify-between gap-2 mb-3">
-            <div className="flex items-center gap-0.5">
-              {years.length > 1 && (
-                <button
-                  onClick={() => setSelectedYear(years[yearIdx + 1])}
-                  disabled={yearIdx >= years.length - 1}
-                  className="w-6 h-6 flex items-center justify-center rounded-full active:bg-gray-100 disabled:opacity-25"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="15 18 9 12 15 6"/>
-                  </svg>
-                </button>
-              )}
-              <p className="text-[13px] font-semibold text-gray-500">{selectedYear} 月度股息</p>
-              {years.length > 1 && (
-                <button
-                  onClick={() => setSelectedYear(years[yearIdx - 1])}
-                  disabled={yearIdx <= 0}
-                  className="w-6 h-6 flex items-center justify-center rounded-full active:bg-gray-100 disabled:opacity-25"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 18 15 12 9 6"/>
-                  </svg>
-                </button>
-              )}
-            </div>
+            <p className="text-[13px] font-semibold text-gray-500">{selectedYear} 月度股息</p>
             <p className="text-[13px] font-bold text-amber-500">
               {selectedMonth !== null
                 ? `${selectedMonth + 1} 月股息 ${signedNTD(monthlyTotals[selectedMonth])}`
