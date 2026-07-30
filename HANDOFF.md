@@ -107,12 +107,12 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
 
 ## 未完成 / 待辦
 
-0. **Vercel token 短效問題**:歷史上多次因 CLI 登入核發的短效 token 失效導致部署
-   靜默失敗(7/4、7/6 各一次)。**2026-07-30 再次失效**(`c97ed3b` 首次部署 401
-   `token ... is not valid`),由使用者到 Vercel dashboard → Account Settings → Tokens
-   建立新 token(scope 選 team `Maryhou's projects`)、`gh secret set VERCEL_TOKEN`
-   更新後 `gh run rerun` 成功。**若這次建的是 No Expiration token,本項可視為永久解決;
-   若仍有期限,下次過期照同流程處理。** 每次 push 後仍用 `gh run list` 確認部署真的綠。
+0. ~~**Vercel token 短效問題**~~:**2026-07-30 永久解決**。歷史上多次因 CLI 登入核發的
+   短效 token 失效導致部署靜默失敗(7/4、7/6、7/30 各一次)。7/30 這次由使用者到
+   Vercel dashboard → Account Settings → Tokens 建立 **No Expiration** token
+   (scope = team `Maryhou's projects`)、`gh secret set VERCEL_TOKEN` 更新後部署成功。
+   token 不再過期,此問題不會再發生。**但每次 push 後仍應 `gh run list` 確認部署真的綠**
+   (歷史上 token 失效都是靜默的,養成確認習慣仍有價值)。
 1. **手機實測登入**:CSP 上線後,建議用手機以真實 Google 帳號完整登入一次確認
    (自動化驗證已涵蓋載入與登入起手流程,但完整 OAuth 流程需要真人)。
 2. **Vite 8 升級**(擱置):`npm audit` 剩 esbuild/vite 兩條,只影響本機 dev server,
