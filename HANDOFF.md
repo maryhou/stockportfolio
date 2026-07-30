@@ -1,6 +1,6 @@
 # HANDOFF — WealthTrack 投資日誌
 
-> 最後更新:2026-07-06。給下一個接手的人(或下一次 Claude session)的交接文件。
+> 最後更新:2026-07-30。給下一個接手的人(或下一次 Claude session)的交接文件。
 > 架構與目錄結構詳見 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
 ## 專案是什麼
@@ -83,6 +83,27 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
   退回只列「有紀錄的年份 + 今年」、不逐年填滿。
 - 已在 preview 以 2020–2026 七年假資料實測（先備份、後還原 localStorage）；
   tsc + 48 tests 通過。
+
+### 2026-07-30:分析頁圓餅圖互動化與 mobile 點擊優化
+
+分析頁(`ActivityView.tsx` 的 `PortfolioOverview`)投資組合圓餅圖(`DonutChart.tsx`)一系列 UI 優化,
+讓使用者一眼看出各檔占比、點擊即看個股明細:
+
+- **圖例顯示占比 %**:每檔圖例後加上占比(一位小數,`tabular-nums` 對齊)。
+  占比 = 該檔(持倉市值 + 已回收淨額)÷ 圓餅總和,與圓環比例完全一致。
+- **點擊區塊看明細**:`DonutChart` 新增 `interactive` 模式。點某個 slice → 其他 slice 淡化
+  (opacity 0.25),圓環中心改顯示該檔「檔名 / 占比% / 股數 / 目前市值」。
+  再點同一 slice、或點中心空白處即取消。明細列由 `Segment.rows`(選用欄位)帶入,
+  在 `ActivityView` 組成(股數 = 剩餘股數;目前市值 = 剩餘股數 × 現價,遵守隱藏金額開關)。
+- **圓環放大加粗**:`size` 180→220、`strokeWidth` 26→36,大區塊更好點、中心明細更好讀。
+- **圖例 ↔ 圓餅雙向連動**:選取狀態從 `DonutChart` 內部 state 提升到 `PortfolioOverview`
+  的 `donutActive`,以受控 props(`activeIndex` / `onActiveChange`)共用。
+  `DonutChart` 保留「未給 props 就用內部 state」的後備,不影響其他呼叫端。
+  切換「目前持倉 / 累積績效」分頁時會 `setDonutActive(null)` 重置(避免索引錯位)。
+- **mobile 點擊優化**:圖例改為按鈕並加大點擊區(`px-2.5 py-1.5` + 圓角),
+  選中時有灰色膠囊底色回饋(手機無 hover)。**細段(如 1.1% / 1.2%)弧角僅約 4°、
+  直接點圓餅很難中,圖例就是它們的可靠替代點擊路徑** —— 因此未再加 slice 隱形擴大熱區。
+- 已在 desktop 與 375px mobile viewport 實測點擊/連動/取消;tsc + 48 tests 通過。
 
 ## 未完成 / 待辦
 

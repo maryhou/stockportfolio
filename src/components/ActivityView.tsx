@@ -61,6 +61,7 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
   const [txFilter, setTxFilter] = useState<'all' | 'buy' | 'sell'>('all');
   const [portfolioView, setPortfolioView] = useState<'holding' | 'cumulative'>('holding');
   const [hideAmounts, setHideAmounts] = useState(false);
+  const [donutActive, setDonutActive] = useState<number | null>(null);
 
   const PORTFOLIO_TABS = [
     { key: 'holding'    as const, label: '目前持倉' },
@@ -109,10 +110,21 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
   const donutSegments = displayStocks
     .map((st, i) => {
       const rem = calcRemainingShares(st.buys, st.sells);
-      const val = rem * st.currentPrice + calcTotalNetProceeds(st.sells);
-      return { label: st.name, value: val, color: PALETTE[i % PALETTE.length] };
+      const marketValue = rem * st.currentPrice;
+      const val = marketValue + calcTotalNetProceeds(st.sells);
+      return {
+        label: st.name,
+        value: val,
+        color: PALETTE[i % PALETTE.length],
+        rows: [
+          { label: '股數', value: `${rem} 股` },
+          { label: '目前市值', value: hideAmounts ? '• • •' : formatNTD(marketValue) },
+        ],
+      };
     })
     .filter((s) => s.value > 0);
+
+  const donutTotal = donutSegments.reduce((s, seg) => s + seg.value, 0);
 
   const centerValue = totalHoldingValue + totalNetProceeds;
 
@@ -145,7 +157,7 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
           {PORTFOLIO_TABS.map((t) => (
             <button
               key={t.key}
-              onClick={() => setPortfolioView(t.key)}
+              onClick={() => { setPortfolioView(t.key); setDonutActive(null); }}
               className={`relative z-10 flex-1 py-2 rounded-xl text-sm font-semibold transition-colors duration-200 ${
                 portfolioView === t.key ? 'text-gray-800' : 'text-gray-400'
               }`}
@@ -205,17 +217,32 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
                   centerSub="總收付"
                   centerSub2="持倉 + 收付"
                   centerOffsetY={24}
-                  size={180}
-                  strokeWidth={26}
+                  size={220}
+                  strokeWidth={36}
+                  interactive
+                  activeIndex={donutActive}
+                  onActiveChange={setDonutActive}
                 />
               </div>
-              <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 mt-4">
-                {donutSegments.map((seg) => (
-                  <div key={seg.label} className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: seg.color }} />
-                    <span className="text-xs text-gray-500">{seg.label}</span>
-                  </div>
-                ))}
+              <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-1 mt-3">
+                {donutSegments.map((seg, i) => {
+                  const pct = donutTotal > 0 ? (seg.value / donutTotal) * 100 : 0;
+                  const selected = donutActive === i;
+                  const dimmed = donutActive !== null && !selected;
+                  return (
+                    <button
+                      key={seg.label}
+                      onClick={() => setDonutActive(selected ? null : i)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition ${
+                        dimmed ? 'opacity-40' : 'opacity-100'
+                      } ${selected ? 'bg-gray-100' : 'active:bg-gray-100'}`}
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: seg.color }} />
+                      <span className="text-xs text-gray-500">{seg.label}</span>
+                      <span className="text-xs font-semibold text-gray-700 tabular-nums">{pct.toFixed(1)}%</span>
+                    </button>
+                  );
+                })}
               </div>
             </>
           )}
