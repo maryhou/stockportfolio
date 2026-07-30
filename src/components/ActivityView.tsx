@@ -167,13 +167,6 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
           ))}
         </div>
 
-        {/* Description */}
-        <p className="text-[11px] text-gray-400 text-center -mt-1 px-1">
-          {portfolioView === 'holding'
-            ? '僅包含目前持有中的投資部分'
-            : '僅包含持倉中與已清倉的所有投資'}
-        </p>
-
         <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-1.5">
@@ -204,6 +197,11 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
               總損益 {hideAmounts ? '• • •' : `${totalPL > 0 ? '+' : ''}${formatNTD(totalPL)}`}
             </div>
           </div>
+          <p className="text-[11px] text-gray-400 mb-1.5">
+            {portfolioView === 'holding'
+              ? '僅包含目前持有中的投資部分'
+              : '僅包含持倉中與已清倉的所有投資'}
+          </p>
           <p className="text-2xl font-bold text-gray-800">
             {hideAmounts ? '$ • • • • • •' : formatNTD(totalInvested)}
           </p>
