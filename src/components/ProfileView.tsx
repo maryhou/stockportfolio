@@ -8,14 +8,14 @@ import {
   calcExactRealizedProfit,
   formatNTD,
 } from '../utils/calculations';
-import { parseStocksJson } from '../utils/validateImport';
+import { parsePortfolioJson, type PortfolioBackup } from '../utils/validateImport';
 import { SettingsIcon } from './icons/Icons';
 
 interface ProfileViewProps {
   stocks: Stock[];
   settings: AppSettings;
   onSettingsClick: () => void;
-  onImport: (stocks: Stock[]) => void;
+  onImport: (backup: PortfolioBackup) => void;
   onClearAll: () => void;
   currentUser: User | null;
   cloudSyncing: boolean;
@@ -66,7 +66,14 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
 
   // ── Export ─────────────────────────────────────────────────────────────────
   function handleExport() {
-    const blob = new Blob([JSON.stringify(stocks, null, 2)], { type: 'application/json' });
+    // Full backup: stocks (含買賣/股息) + settings (券商/稅率/預設匯費/主題)
+    const backup = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      stocks,
+      settings,
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
@@ -83,7 +90,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
-        onImport(parseStocksJson(ev.target?.result as string));
+        onImport(parsePortfolioJson(ev.target?.result as string));
       } catch {
         setImportError('匯入失敗：檔案格式不正確');
       }
@@ -373,7 +380,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
               </div>
               <div className="text-left">
                 <p className="text-sm font-semibold text-gray-800">匯出資料</p>
-                <p className="text-xs text-gray-400">下載 JSON 備份檔</p>
+                <p className="text-xs text-gray-400">完整備份:交易・股息・設定</p>
               </div>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -105,6 +105,24 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
   直接點圓餅很難中,圖例就是它們的可靠替代點擊路徑** —— 因此未再加 slice 隱形擴大熱區。
 - 已在 desktop 與 375px mobile viewport 實測點擊/連動/取消;tsc + 48 tests 通過。
 
+### 2026-07-30(續):匯出改為完整備份(含 settings)
+
+原本「匯出資料」只存 `stocks`(買/賣/股息都在,巢狀於各股票下),**但不含 settings**
+(券商清單、稅率、股息預設匯費、主題),還原到新裝置時設定會遺失。已改為完整備份:
+
+- **匯出**(`ProfileView.tsx` `handleExport`)格式改為
+  `{ version: 1, exportedAt, stocks, settings }`;卡片副標改「完整備份:交易・股息・設定」。
+- **匯入**新增 `parsePortfolioJson`(`validateImport.ts`),自動辨識兩種格式:
+  舊的**純陣列**(stocks-only)照舊支援;新的**物件格式**則一併驗證還原 settings。
+  settings 逐欄驗證(`parseSettings`/`parseBroker`:userName/taxRate 必填、brokers 至少一筆、
+  theme 限三值、dividendTransferFee 選填),格式錯誤丟 `設定格式錯誤`。舊的 `parseStocksJson`
+  保留不動(仍被測試使用)。
+- **App**(`App.tsx` onImport)匯入若帶 settings 就套用(setSettings + 存 localStorage + 雲端),
+  toast 顯示「資料與設定已匯入」;純 stocks 備份則顯示「資料已匯入」、設定不動。
+- 測試 48→61:新增 `parsePortfolioJson` 的新格式往返、舊陣列相容、settings 驗證拒絕案例。
+- **維護提醒**:改 `AppSettings` / `Broker` 型別時,記得同步 `parseSettings`/`parseBroker`
+  與測試(和 stocks 那條維護規則同理)。
+
 ## 未完成 / 待辦
 
 0. ~~**Vercel token 短效問題**~~:**2026-07-30 永久解決**。歷史上多次因 CLI 登入核發的
