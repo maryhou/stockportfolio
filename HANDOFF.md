@@ -107,16 +107,19 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
 
 ## 未完成 / 待辦
 
-0. **Vercel token 短效問題(2026-07-06 已復原,但會再發生)**:7/4 設定的
-   `VERCEL_TOKEN` 兩天內失效導致 `7abe91d` 部署失敗 —— CLI 登入核發的 token
-   是短效的。當天已由使用者 `npx vercel login` 重新登入、更新 GitHub secret 並
-   重跑成功,正式站已是新版。**若再發生**:同樣流程即可;一勞永逸的做法是到
-   Vercel dashboard → Account Settings → Tokens 建立 No Expiration token 取代。
+0. **Vercel token 短效問題**:歷史上多次因 CLI 登入核發的短效 token 失效導致部署
+   靜默失敗(7/4、7/6 各一次)。**2026-07-30 再次失效**(`c97ed3b` 首次部署 401
+   `token ... is not valid`),由使用者到 Vercel dashboard → Account Settings → Tokens
+   建立新 token(scope 選 team `Maryhou's projects`)、`gh secret set VERCEL_TOKEN`
+   更新後 `gh run rerun` 成功。**若這次建的是 No Expiration token,本項可視為永久解決;
+   若仍有期限,下次過期照同流程處理。** 每次 push 後仍用 `gh run list` 確認部署真的綠。
 1. **手機實測登入**:CSP 上線後,建議用手機以真實 Google 帳號完整登入一次確認
    (自動化驗證已涵蓋載入與登入起手流程,但完整 OAuth 流程需要真人)。
 2. **Vite 8 升級**(擱置):`npm audit` 剩 esbuild/vite 兩條,只影響本機 dev server,
    要升 Vite 8(breaking)才能清掉。
-3. **CI Node 20 deprecation 警告**:GitHub Actions 提示 actions 該升 Node 24,尚未處理。
+3. ~~**CI Node 20 deprecation 警告**~~:**2026-07-30 已處理** —— `deploy.yml` 的
+   `actions/checkout` 與 `actions/setup-node` 由 `@v4` 升到 `@v5`(改用 Node 24 執行),
+   清掉每次部署的 deprecation 警告。app 自身 build/test 仍用 `node-version: '20'`(與警告無關)。
 
 ## 已知問題(已決定暫不處理)
 
