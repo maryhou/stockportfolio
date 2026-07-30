@@ -719,9 +719,15 @@ export default function App() {
                 stocks={stocks}
                 settings={settings}
                 onSettingsClick={() => setShowSettings(true)}
-                onImport={(imported) => {
-                  update(imported);
-                  showToast('資料已匯入');
+                onImport={(backup) => {
+                  update(backup.stocks);
+                  if (backup.settings) {
+                    setSettings(backup.settings);
+                    setPreviewTheme(null);
+                    localStorage.setItem(SETTINGS_KEY, JSON.stringify(backup.settings));
+                    queueCloudSave({ settings: backup.settings });
+                  }
+                  showToast(backup.settings ? '資料與設定已匯入' : '資料已匯入');
                 }}
                 onClearAll={() => {
                   update([]);

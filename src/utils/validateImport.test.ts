@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { parseStocksJson } from './validateImport';
-import type { Stock } from '../types';
+import { parseStocksJson, parsePortfolioJson } from './validateImport';
+import type { Stock, AppSettings } from '../types';
 
 const validStock: Stock = {
   id: 's1',
@@ -70,5 +70,53 @@ describe('parseStocksJson', () => {
     ['non-boolean transferFeeExempt', JSON.stringify([{ ...validStock, dividends: [{ ...validStock.dividends![0], transferFeeExempt: 1 }] }])],
   ])('rejects %s', (_label, text) => {
     expect(() => parseStocksJson(text)).toThrow();
+  });
+});
+
+const validSettings: AppSettings = {
+  userName: 'Mary',
+  brokers: [{ id: 'default', name: '元大券商', feeRate: 0.001425, feeDiscount: 0.6 }],
+  taxRate: 0.003,
+  theme: 'default',
+  dividendTransferFee: 10,
+};
+
+describe('parsePortfolioJson', () => {
+  it('reads the full-backup format (stocks + settings)', () => {
+    const backup = { version: 1, exportedAt: '2026-07-30T00:00:00.000Z', stocks: [validStock], settings: validSettings };
+    expect(parsePortfolioJson(JSON.stringify(backup))).toEqual({ stocks: [validStock], settings: validSettings });
+  });
+
+  it('accepts a full backup with settings omitting optional fields', () => {
+    const minimal = { userName: 'A', brokers: validSettings.brokers, taxRate: 0.003 };
+    const backup = { stocks: [validStock], settings: minimal };
+    expect(parsePortfolioJson(JSON.stringify(backup))).toEqual({ stocks: [validStock], settings: minimal });
+  });
+
+  it('falls back to stocks-only when settings is absent from the object form', () => {
+    expect(parsePortfolioJson(JSON.stringify({ stocks: [validStock] }))).toEqual({ stocks: [validStock] });
+  });
+
+  it('still reads legacy bare-array exports (stocks only, no settings)', () => {
+    expect(parsePortfolioJson(JSON.stringify([validStock]))).toEqual({ stocks: [validStock] });
+  });
+
+  it('strips unknown keys from imported settings', () => {
+    const backup = { stocks: [], settings: { ...validSettings, hacked: true } };
+    const result = parsePortfolioJson(JSON.stringify(backup));
+    expect(result.settings && 'hacked' in result.settings).toBe(false);
+  });
+
+  it.each([
+    ['bad stocks in object form', JSON.stringify({ stocks: [{ id: 's1' }] })],
+    ['settings not an object', JSON.stringify({ stocks: [], settings: 42 })],
+    ['settings missing brokers', JSON.stringify({ stocks: [], settings: { userName: 'A', taxRate: 0.003 } })],
+    ['settings empty brokers', JSON.stringify({ stocks: [], settings: { userName: 'A', brokers: [], taxRate: 0.003 } })],
+    ['bad broker record', JSON.stringify({ stocks: [], settings: { userName: 'A', brokers: [{ id: 'x' }], taxRate: 0.003 } })],
+    ['invalid theme', JSON.stringify({ stocks: [], settings: { ...validSettings, theme: 'blue' } })],
+    ['taxRate as string', JSON.stringify({ stocks: [], settings: { ...validSettings, taxRate: '0.003' } })],
+    ['neither array nor stocks object', JSON.stringify({ foo: 1 })],
+  ])('rejects %s', (_label, text) => {
+    expect(() => parsePortfolioJson(text)).toThrow();
   });
 });

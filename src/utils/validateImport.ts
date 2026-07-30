@@ -9,7 +9,7 @@
  * Optional fields (dividends, brokerId, imported, exDate, healthFeeExempt,
  * transferFeeExempt, note) may be missing — older exports didn't have them.
  */
-import type { Stock, BuyTransaction, SellTransaction, DividendTransaction } from '../types';
+import type { Stock, BuyTransaction, SellTransaction, DividendTransaction, AppSettings, Broker } from '../types';
 
 function isObj(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -91,10 +91,66 @@ function parseStock(v: unknown): Stock | null {
   };
 }
 
-/** Parse exported portfolio JSON. Throws on any malformed record. */
+function parseBroker(v: unknown): Broker | null {
+  if (!isObj(v)) return null;
+  const { id, name, feeRate, feeDiscount } = v;
+  if (!isStr(id) || !isStr(name) || !isNum(feeRate) || !isNum(feeDiscount)) return null;
+  return { id, name, feeRate, feeDiscount };
+}
+
+function parseSettings(v: unknown): AppSettings | null {
+  if (!isObj(v)) return null;
+  const { userName, brokers, taxRate, theme, dividendTransferFee } = v;
+  if (!isStr(userName) || !isNum(taxRate)) return null;
+  const parsedBrokers = parseAll(brokers, parseBroker);
+  if (!parsedBrokers || parsedBrokers.length === 0) return null;
+  if (theme !== undefined && theme !== 'default' && theme !== 'neutral' && theme !== 'dark') return null;
+  if (dividendTransferFee !== undefined && !isNum(dividendTransferFee)) return null;
+  return {
+    userName, brokers: parsedBrokers, taxRate,
+    ...(theme !== undefined ? { theme } : {}),
+    ...(dividendTransferFee !== undefined ? { dividendTransferFee } : {}),
+  };
+}
+
+/** Parse exported portfolio JSON (stocks only). Throws on any malformed record. */
 export function parseStocksJson(text: string): Stock[] {
   const data: unknown = JSON.parse(text);
   const stocks = parseAll(data, parseStock);
   if (!stocks) throw new Error('格式錯誤');
   return stocks;
+}
+
+export interface PortfolioBackup {
+  stocks: Stock[];
+  settings?: AppSettings;
+}
+
+/**
+ * Parse a portfolio backup. Handles both formats:
+ *  - legacy: a bare array of stocks (settings not included)
+ *  - full backup: `{ version, exportedAt, stocks, settings }`
+ * Throws on any malformed record so junk never reaches state / Firestore.
+ */
+export function parsePortfolioJson(text: string): PortfolioBackup {
+  const data: unknown = JSON.parse(text);
+
+  // Legacy format: bare array of stocks
+  if (Array.isArray(data)) {
+    const stocks = parseAll(data, parseStock);
+    if (!stocks) throw new Error('格式錯誤');
+    return { stocks };
+  }
+
+  // Full-backup format: object with a stocks array (+ optional settings)
+  if (isObj(data) && Array.isArray(data.stocks)) {
+    const stocks = parseAll(data.stocks, parseStock);
+    if (!stocks) throw new Error('格式錯誤');
+    if (data.settings === undefined) return { stocks };
+    const settings = parseSettings(data.settings);
+    if (!settings) throw new Error('設定格式錯誤');
+    return { stocks, settings };
+  }
+
+  throw new Error('格式錯誤');
 }
