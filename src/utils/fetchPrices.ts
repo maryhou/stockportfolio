@@ -2,8 +2,10 @@
  * Fetch real-time (or previous-close) prices for Taiwan stocks.
  *
  * Production → Vercel Edge proxy at /api/prices → TWSE mis.twse.com.tw
- *   • z field = live price during trading hours (09:00–13:30 TST)
- *   • y field = previous close used outside trading hours
+ *   • z field = last matched trade, but mid-session it is often "-" (no match
+ *     in the current ~5 s snapshot), so we fall back to the best bid/ask
+ *     midpoint before ever using y — see pickPrice().
+ *   • y field = previous close, used only when the market is closed / no quotes
  * Development → direct TWSE call (usually works; CORS ignored by modern browsers
  *   when the server sends permissive headers, or fails silently in the poller).
  *
@@ -22,6 +24,48 @@ function timeoutSignal(ms: number): AbortSignal {
   const ctrl = new AbortController();
   setTimeout(() => ctrl.abort(), ms);
   return ctrl.signal;
+}
+
+/** A single row from the mis.twse getStockInfo response. */
+export interface MisItem {
+  c?: string; // stock code
+  z?: string; // last matched trade price ("-" when no match in this snapshot)
+  b?: string; // best 5 bid prices, "_"-joined (highest first)
+  a?: string; // best 5 ask prices, "_"-joined (lowest first)
+  y?: string; // previous close
+}
+
+const num = (s?: string): number => {
+  if (!s || s === '-') return NaN;
+  const n = parseFloat(s);
+  return n > 0 ? n : NaN;
+};
+
+/**
+ * Pick the most-current price from a mis row.
+ *
+ * The mis `z` (last trade) field is frequently "-" during trading hours — it
+ * only reflects a match inside the current ~5 s snapshot, so it goes blank
+ * whenever no trade lands in that window. Falling straight to `y` then shows
+ * *yesterday's close* mid-session, which can be off by many percent.
+ *
+ * Chain: last trade → best bid/ask midpoint (live intraday quote) → previous
+ * close (only when the market is truly closed and no quotes exist).
+ *
+ * NOTE: kept in sync with the identical helper in api/prices.ts.
+ */
+export function pickPrice(item: MisItem): number | null {
+  const z = num(item.z);
+  if (!isNaN(z)) return z;
+
+  const bid = num(item.b?.split('_')[0]);
+  const ask = num(item.a?.split('_')[0]);
+  if (!isNaN(bid) && !isNaN(ask)) return Math.round((bid + ask) * 50) / 100; // midpoint, 2dp
+  if (!isNaN(bid)) return bid;
+  if (!isNaN(ask)) return ask;
+
+  const y = num(item.y);
+  return isNaN(y) ? null : y;
 }
 
 export async function fetchStockPrices(
@@ -58,16 +102,14 @@ export async function fetchStockPrices(
 
   const json = (await res.json()) as {
     rtcode?: string;
-    msgArray?: Array<{ c?: string; z?: string; y?: string }>;
+    msgArray?: MisItem[];
   };
 
   const out: Record<string, number> = {};
   for (const item of json?.msgArray ?? []) {
     if (!item.c) continue;
-    const raw = item.z && item.z !== '-' ? item.z : item.y;
-    if (!raw || raw === '-') continue;
-    const price = parseFloat(raw);
-    if (!isNaN(price) && price > 0) out[item.c] = price;
+    const price = pickPrice(item);
+    if (price !== null) out[item.c] = price;
   }
   return out;
 }

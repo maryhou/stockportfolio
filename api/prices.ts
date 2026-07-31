@@ -21,6 +21,49 @@ const TWSE_URL = 'https://mis.twse.com.tw/stock/api/getStockInfo.jsp';
 const SYMBOL_RE = /^[0-9]{4,6}[A-Z]?[0-9]?$/;
 const MAX_SYMBOLS = 50;
 
+/** A single row from the mis.twse getStockInfo response. */
+interface MisItem {
+  c?: string; // stock code
+  z?: string; // last matched trade price ("-" when no match in this snapshot)
+  b?: string; // best 5 bid prices, "_"-joined (highest first)
+  a?: string; // best 5 ask prices, "_"-joined (lowest first)
+  y?: string; // previous close
+}
+
+const num = (s?: string): number => {
+  if (!s || s === '-') return NaN;
+  const n = parseFloat(s);
+  return n > 0 ? n : NaN;
+};
+
+/**
+ * Pick the most-current price from a mis row.
+ *
+ * The mis `z` (last trade) field is frequently "-" during trading hours — it
+ * only reflects a match inside the current ~5 s snapshot, so it goes blank
+ * whenever no trade lands in that window (observed empty for whole minutes,
+ * across every stock at once). Falling straight to `y` then shows *yesterday's
+ * close* mid-session, which can be off by many percent.
+ *
+ * Chain: last trade → best bid/ask midpoint (live intraday quote) → previous
+ * close (only when the market is truly closed and no quotes exist).
+ *
+ * NOTE: kept in sync with the identical helper in src/utils/fetchPrices.ts.
+ */
+function pickPrice(item: MisItem): number | null {
+  const z = num(item.z);
+  if (!isNaN(z)) return z;
+
+  const bid = num(item.b?.split('_')[0]);
+  const ask = num(item.a?.split('_')[0]);
+  if (!isNaN(bid) && !isNaN(ask)) return Math.round((bid + ask) * 50) / 100; // midpoint, 2dp
+  if (!isNaN(bid)) return bid;
+  if (!isNaN(ask)) return ask;
+
+  const y = num(item.y);
+  return isNaN(y) ? null : y;
+}
+
 export default async function handler(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
   const raw = searchParams.get('symbols') ?? '';
@@ -55,24 +98,15 @@ export default async function handler(request: Request): Promise<Response> {
 
     const data = (await res.json()) as {
       rtcode?: string;
-      msgArray?: Array<{
-        c?: string;  // stock code
-        z?: string;  // real-time price ("-" when market closed)
-        y?: string;  // previous close price
-      }>;
+      msgArray?: MisItem[];
     };
 
     const prices: Record<string, number> = {};
 
     for (const item of data?.msgArray ?? []) {
       if (!item.c) continue;
-
-      // Prefer live price (z), fall back to previous close (y) when market is closed
-      const raw = item.z && item.z !== '-' ? item.z : item.y;
-      if (!raw || raw === '-') continue;
-
-      const price = parseFloat(raw);
-      if (!isNaN(price) && price > 0) prices[item.c] = price;
+      const price = pickPrice(item);
+      if (price !== null) prices[item.c] = price;
     }
 
     // Return whatever we have — empty {} is fine (caller treats it as "no change")
