@@ -222,7 +222,7 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
                   onActiveChange={setDonutActive}
                 />
               </div>
-              <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-1 mt-3">
+              <div className="flex flex-wrap justify-start gap-x-1.5 gap-y-1 mt-3">
                 {donutSegments.map((seg, i) => {
                   const pct = donutTotal > 0 ? (seg.value / donutTotal) * 100 : 0;
                   const selected = donutActive === i;
