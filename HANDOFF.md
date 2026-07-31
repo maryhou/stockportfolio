@@ -153,6 +153,20 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
   **教訓**:任何「一個 tick 內對同一 state 連續多次 setState」都要用單次摺疊或 functional update,
   不要在迴圈裡呼叫讀取當前 state closure 的 handler。
 
+### 2026-07-31(續):現價來源標示 + 已公告未除息 ETF 配息
+
+- **現價盤中/收盤狀態標示**:延續當天的現價修復(z 空退中間價)。盤中現價可能是即時成交或
+  買賣中間價、收盤後是收盤價,使用者難分辨新鮮度。新增 [marketStatus.ts](src/utils/marketStatus.ts)
+  `getMarketStatus()`(TWSE 週一~五 09:00–13:30 台灣時區,`getTimezoneOffset` 校正故不分裝置時區)
+  與 [MarketStatusBadge.tsx](src/components/MarketStatusBadge.tsx):盤中「盤中·即時」(綠點)、
+  其餘「已收盤·收盤價」(灰)。放在首頁投組卡(`tone="onDark"`)與個股明細現價旁。
+  **未處理國定假日**(當天會誤顯示盤中,但價格不會變動,影響輕微;要精確需接假日行事曆)。3 測試。
+- **已公告未除息的 ETF 配息**(解掉下方「已知問題」那條):TWSE etfDiv 剛公告時金額欄為空,
+  舊解析整列跳過 → 使用者看不到。改為保留該列標 `cashPerShare: null`(待公告)+ 過濾髒年份,
+  抽出純函式 [parseEtfDivRows()](src/utils/fetchDividends.ts)。新增股息建議清單待公告列顯示
+  「金額尚未公告·點此帶入日期」、點選帶入除息/發放日但金額留空自填;自動估算批次匯入跳過待公告列。
+  `DividendRecord.cashPerShare` 型別改為 `number | null`。4 測試(共 79)。
+
 ## 未完成 / 待辦
 
 0. ~~**Vercel token 短效問題**~~:**2026-07-30 永久解決**。歷史上多次因 CLI 登入核發的
@@ -171,16 +185,14 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
 
 ## 已知問題(已決定暫不處理)
 
-### 已公告但未除息的 ETF 配息不會出現在建議清單(2026-07-04 診斷)
+### ~~已公告但未除息的 ETF 配息不會出現在建議清單~~(2026-07-04 診斷 → 2026-07-31 已修)
 
 - **現象**:使用者反應新增股息時看不到 006208 已公告的 2026 年配息(4.75,除息 7/16)。
 - **原因**:上市 ETF 股息來自 TWSE `etfDiv` API(`src/utils/fetchDividends.ts` 瀏覽器直查)。
   公告初期該 API 的「收益分配金額」欄位是 `null`(約除息日前後才補上),
   解析器遇到金額 NaN 會整列跳過。Yahoo 備援只有歷史除息日,也幫不上。
-- **決定**:先不修。TWSE 補上金額後,現有流程會自動撈到(無快取)。
-- **附註**:此 API 偶爾回傳髒資料(除息日年份出現「106年」「-1893年」),
-  同一查詢連打兩次結果可能不同。若未來要修,方向是:金額 null 的列保留並標示
-  「金額尚未公告」讓使用者自填 + 丟棄年份不合理的列。
+- **✅ 已修(2026-07-31)**:金額 null 的列改為保留並標記 `cashPerShare: null`(待公告),
+  建議清單顯示「金額尚未公告·點此帶入日期」讓使用者自填;同時過濾髒年份。詳見上方 2026-07-31 條目。
 - **快速確認法**:`curl "https://www.twse.com.tw/rwd/zh/ETF/etfDiv?stkNo=<代號>&startDate=<YYYYMM01>&endDate=<YYYYMM01>&response=json"` 看金額欄。
 
 ## 維護規則(改壞會靜默出事的地方)
