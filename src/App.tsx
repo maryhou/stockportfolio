@@ -2,12 +2,13 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useStockPoller } from './hooks/useStockPoller';
 import { usePullToRefresh } from './hooks/usePullToRefresh';
 import { subscribeToAuth, loadCloudData, saveCloudData, signInWithGoogle, signOutUser, type User, type UserCloudData } from './lib/firebase';
-import type { Stock, ViewName, BuyTransaction, SellTransaction, AppNotification, AppSettings, AppTheme } from './types';
+import type { Stock, ViewName, BuyTransaction, SellTransaction, DividendTransaction, AppNotification, AppSettings, AppTheme } from './types';
 import { DEFAULT_SETTINGS, DEFAULT_BROKER } from './types';
 import { INITIAL_STOCKS } from './data/initialData';
 import { INITIAL_NOTIFICATIONS } from './data/initialNotifications';
 import { fetchStockPrices } from './utils/fetchPrices';
 import { fetchStockHistory } from './utils/fetchHistory';
+import { mergeImportedDividends } from './utils/mergeDividends';
 import BottomNav from './components/BottomNav';
 import SideNav from './components/SideNav';
 import HomeView from './components/HomeView';
@@ -595,7 +596,7 @@ export default function App() {
     showToast('交易記錄已更新');
   }
 
-  function handleSaveDividend(stockId: string, dividend: import('./types').DividendTransaction) {
+  function handleSaveDividend(stockId: string, dividend: DividendTransaction) {
     update(stocks.map((s) => {
       if (s.id !== stockId) return s;
       const existing = s.dividends ?? [];
@@ -606,6 +607,16 @@ export default function App() {
       return { ...s, dividends };
     }));
     showToast('股息記錄已儲存');
+  }
+
+  // Batch import (自動估算) — fold every item into ONE update. Looping the
+  // single-save handler read the same stale `stocks` closure per call and each
+  // setStocks clobbered the previous, so only the last dividend survived (a
+  // toast still fired per item, so it looked like all saved). See mergeDividends.
+  function handleImportDividends(items: { stockId: string; dividend: DividendTransaction }[]) {
+    if (items.length === 0) return;
+    update(mergeImportedDividends(stocks, items));
+    showToast(`已匯入 ${items.length} 筆股息`);
   }
 
   function handleDeleteDividend(stockId: string, dividendId: string) {
@@ -690,6 +701,7 @@ export default function App() {
                 settings={settings}
                 onBack={() => setView('home')}
                 onSaveDividend={handleSaveDividend}
+                onImportDividends={handleImportDividends}
                 onDeleteDividend={handleDeleteDividend}
                 onRefresh={handleRefreshAll}
               />
