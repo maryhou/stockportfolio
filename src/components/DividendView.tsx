@@ -47,12 +47,13 @@ interface DividendViewProps {
   settings: AppSettings;
   onBack: () => void;
   onSaveDividend: (stockId: string, dividend: DividendTransaction) => void;
+  onImportDividends: (items: { stockId: string; dividend: DividendTransaction }[]) => void;
   onDeleteDividend: (stockId: string, dividendId: string) => void;
   onRefresh: () => Promise<void>;
 }
 
 export default function DividendView({
-  stocks, settings, onBack, onSaveDividend, onDeleteDividend, onRefresh,
+  stocks, settings, onBack, onSaveDividend, onImportDividends, onDeleteDividend, onRefresh,
 }: DividendViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const ptrState = usePullToRefresh(scrollRef, onRefresh);
@@ -170,7 +171,9 @@ export default function DividendView({
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto pb-32 lg:pb-10">
         <PullToRefreshIndicator state={ptrState} color="#f59e0b" />
-        <div className="px-4 pt-4 space-y-4">
+        <div className="px-4 pt-4 space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-5 lg:items-start lg:max-w-5xl lg:mx-auto lg:pt-6">
+        {/* ── Left column: summary + charts (sticky on desktop so filters stay in view) ── */}
+        <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
         {/* ── Hero Card ── */}
         <div className="rounded-2xl overflow-hidden shadow-md" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}>
           <div className="px-5 pt-5 pb-4">
@@ -204,7 +207,7 @@ export default function DividendView({
 
         {/* ── Stock filter chips ── */}
         {dividendStocks.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-0.5">
+          <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-0.5 lg:mx-0 lg:px-0">
             <button
               onClick={() => setStockFilter(null)}
               className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors
@@ -313,7 +316,10 @@ export default function DividendView({
             })}
           </div>
         </div>
+        </div>{/* end left column */}
 
+        {/* ── Right column: record list ── */}
+        <div className="space-y-4">
         {/* ── Dividend List ── */}
         {allDividends.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -394,6 +400,7 @@ export default function DividendView({
             )}
           </div>
         )}
+        </div>{/* end right column */}
         </div>{/* end inner px-4 pt-4 */}
       </div>
 
@@ -403,7 +410,7 @@ export default function DividendView({
           stocks={stocks}
           settings={settings}
           onConfirm={(items) => {
-            items.forEach((item) => onSaveDividend(item.stockId, item.dividend));
+            onImportDividends(items.map((item) => ({ stockId: item.stockId, dividend: item.dividend })));
             setShowImport(false);
           }}
           onClose={() => setShowImport(false)}
