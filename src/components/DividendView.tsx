@@ -527,7 +527,8 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
   // Shares default to the holdings on that ex-date, so back-filling
   // dividends of sold-out stocks gets the right share count.
   function applySuggestion(rec: DividendRecord) {
-    setAmtPerShare(String(rec.cashPerShare));
+    // 金額尚未公告（null）時留空，讓使用者從收益分配通知書自行填入
+    setAmtPerShare(rec.cashPerShare != null ? String(rec.cashPerShare) : '');
     setExDate(rec.date);
     setDate(rec.payDate ?? rec.date);
     setHealthFeeManual(false); // 金額換了，手動覆寫的健保費已失效，回到自動計算
@@ -623,10 +624,14 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
               {suggestions.length > 0 ? (
                 <div className="flex flex-col gap-2">
                   {suggestions.slice(0, 5).map((rec) => {
-                    const previewGross  = calcDividendGross(rec.cashPerShare, parseInt(sharesStr) || 0);
+                    const cps           = rec.cashPerShare;
+                    const pending       = cps == null; // 金額尚未公告
+                    const previewGross  = cps != null ? calcDividendGross(cps, parseInt(sharesStr) || 0) : 0;
                     const previewHealth = healthExempt ? 0 : calcDividendHealthInsurance(previewGross);
                     const previewNet    = calcDividendNet(previewGross, previewHealth, transferFeeNum);
-                    const isActive      = amtPerShare === String(rec.cashPerShare) && date === (rec.payDate ?? rec.date);
+                    const isActive      = pending
+                      ? exDate === rec.date && date === (rec.payDate ?? rec.date)
+                      : amtPerShare === String(cps) && date === (rec.payDate ?? rec.date);
                     return (
                       <button
                         key={rec.date}
@@ -638,9 +643,15 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
                           <p className="text-[10px] font-medium text-gray-400">
                             {rec.payDate ? `除息 ${rec.date} · 發放 ${rec.payDate}` : rec.date}
                           </p>
-                          <p className="text-sm font-bold text-gray-800">每股 ${rec.cashPerShare}</p>
+                          {pending ? (
+                            <p className="text-sm font-bold text-amber-500">金額尚未公告 · 點此帶入日期</p>
+                          ) : (
+                            <p className="text-sm font-bold text-gray-800">每股 ${cps}</p>
+                          )}
                         </div>
-                        {parseInt(sharesStr) > 0 && (
+                        {pending ? (
+                          <span className="text-[10px] font-semibold text-amber-500 whitespace-nowrap ml-2">待填金額</span>
+                        ) : parseInt(sharesStr) > 0 && (
                           <p className={`text-sm font-bold ${isActive ? 'text-amber-500' : 'text-gray-400'}`}>
                             +{formatNTD(previewNet)}
                           </p>
@@ -989,6 +1000,9 @@ function ImportDividendSheet({ stocks, settings, onConfirm, onClose }: ImportDiv
         const records = await fetchStockDividends(stock.symbol);
 
         for (const rec of records) {
+          // 金額尚未公告的配息無法試算淨額，批次匯入時略過（改由「新增」逐筆自填）
+          if (rec.cashPerShare == null) continue;
+
           // rec.date = ex-dividend date (配息資格以除息日持股計算)
           const refDate = rec.date;
           const payDate = rec.payDate ?? rec.date;

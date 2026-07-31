@@ -20,7 +20,7 @@ function timeoutSignal(ms: number): AbortSignal {
 export interface DividendRecord {
   date: string;        // exact ex-dividend date "YYYY-MM-DD"
   payDate?: string;    // actual payment date "YYYY-MM-DD" (TWSE/TPEx ETF sources only)
-  cashPerShare: number;
+  cashPerShare: number | null; // null = ex-date announced but 收益分配金額 not published yet
 }
 
 /** "115年04月23日" or "115/04/23" → "2026-04-23" */
@@ -43,20 +43,38 @@ async function fetchTwseEtfDivDirect(symbol: string): Promise<DividendRecord[]> 
     if (!res.ok) return [];
     const data = (await res.json()) as { status?: string; data?: string[][] };
     if (data.status !== 'ok' || !Array.isArray(data.data)) return [];
-
-    const out: DividendRecord[] = [];
-    for (const row of data.data) {
-      // row = [代號, 簡稱, 除息交易日, 基準日, 收益分配發放日, 金額, …]
-      const exDate = rocToISO(row[2] ?? '');
-      const payDate = rocToISO(row[4] ?? '');
-      const cash = parseFloat(row[5] ?? '');
-      if (!exDate || isNaN(cash) || cash <= 0) continue;
-      out.push({ date: exDate, ...(payDate ? { payDate } : {}), cashPerShare: cash });
-    }
-    return out.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);
+    return parseEtfDivRows(data.data, now);
   } catch {
     return [];
   }
+}
+
+/**
+ * Parse TWSE etfDiv `data` rows → DividendRecords. Exported for testing.
+ * row = [代號, 簡稱, 除息交易日, 基準日, 收益分配發放日, 金額, …]
+ *
+ * - Drops rows whose ex-date year is outside a sane window (the API occasionally
+ *   emits dirty ROC dates like 「106年」 or even 「-1893年」).
+ * - Keeps rows whose amount is not yet published (empty/0 near announcement) as
+ *   cashPerShare=null, so the suggestion list can still surface the ex-date and
+ *   let the user fill in the amount by hand.
+ */
+export function parseEtfDivRows(rows: string[][], now: Date = new Date()): DividendRecord[] {
+  const minYear = now.getFullYear() - 4;
+  const maxYear = now.getFullYear() + 1;
+
+  const out: DividendRecord[] = [];
+  for (const row of rows) {
+    const exDate = rocToISO(row[2] ?? '');
+    if (!exDate) continue;
+    const exYear = parseInt(exDate.slice(0, 4));
+    if (exYear < minYear || exYear > maxYear) continue;
+    const payDate = rocToISO(row[4] ?? '');
+    const cash = parseFloat(row[5] ?? '');
+    const cashPerShare = !isNaN(cash) && cash > 0 ? cash : null;
+    out.push({ date: exDate, ...(payDate ? { payDate } : {}), cashPerShare });
+  }
+  return out.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);
 }
 
 export async function fetchStockDividends(symbol: string): Promise<DividendRecord[]> {
