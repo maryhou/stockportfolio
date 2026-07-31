@@ -139,6 +139,20 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
   共 61→67 tests。已用 Node 對 live API 實跑驗證(2330 2205→2382.5 等)。
 - 中間價會出現 .5(如 2382.5),非合法 tick,但為盤中估值,遠比昨收準確;可接受。
 
+### 2026-07-31(續):股息頁 desktop 分欄 + 自動估算匯入多筆 bug
+
+- **Desktop 版面分左右**([DividendView.tsx](src/components/DividendView.tsx)):原本單欄在 desktop
+  全寬拉伸。`lg:` 以上改成兩欄 grid —— 左欄(總覽卡+歷年股息+月度股息)`lg:sticky lg:top-6`
+  捲動時固定,右欄=股息紀錄清單。mobile 完全不動(維持 `space-y-4` 單欄堆疊)。
+- **匯入多筆只存一筆 bug**:使用者反應「自動估算」一次匯入多筆,toast 跳了 N 次成功但頁面只多一筆。
+  根因:匯入 `onConfirm` 用 `items.forEach(onSaveDividend)`,每次 `handleSaveDividend` 都讀
+  **同一份舊的 `stocks` closure**、各自 `setStocks` 互相覆蓋,只剩最後一筆(toast 每筆都觸發故看似全存)。
+  修法:新增 [mergeDividends.ts](src/utils/mergeDividends.ts) `mergeImportedDividends()` 把整批一次
+  摺疊進 stocks,`handleImportDividends`(App.tsx)只呼叫一次 `update()`,toast 改「已匯入 N 筆」。
+  回歸測試 [mergeDividends.test.ts](src/utils/mergeDividends.test.ts) 5 例(含 0056/006208/00919 三檔情境)。
+  **教訓**:任何「一個 tick 內對同一 state 連續多次 setState」都要用單次摺疊或 functional update,
+  不要在迴圈裡呼叫讀取當前 state closure 的 handler。
+
 ## 未完成 / 待辦
 
 0. ~~**Vercel token 短效問題**~~:**2026-07-30 永久解決**。歷史上多次因 CLI 登入核發的
