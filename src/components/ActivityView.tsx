@@ -12,6 +12,7 @@ import {
   formatPrice,
 } from '../utils/calculations';
 import DonutChart from './DonutChart';
+import MarketStatusBadge from './MarketStatusBadge';
 import { TargetIcon, TrendUpIcon, TrendDownIcon, RefreshIcon, EditIcon, InfoCircleIcon } from './icons/Icons';
 import EditTransactionModal from './EditTransactionModal';
 
@@ -654,7 +655,10 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <div>
-            <p className="text-xs text-gray-400 mb-1">目前股價</p>
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="text-xs text-gray-400">目前股價</p>
+              <MarketStatusBadge />
+            </div>
             <p className="text-base font-bold text-gray-800">{formatPrice(stock.currentPrice)}</p>
             {lastUpdated && (
               <p className="text-[10px] text-gray-400 mt-0.5">已更新 {fmtTime(lastUpdated)}</p>

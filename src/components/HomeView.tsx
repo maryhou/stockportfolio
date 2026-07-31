@@ -13,6 +13,7 @@ import {
 import { BellIcon, SearchIcon } from './icons/Icons';
 import DividendCard from './DividendCard';
 import SwipeableRow from './SwipeableRow';
+import MarketStatusBadge from './MarketStatusBadge';
 
 interface HomeViewProps {
   stocks: Stock[];
@@ -191,16 +192,19 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
         {/* Top: label + value + sparkline */}
         <div className="p-5 pb-4">
           <div className="flex items-center justify-between mb-3">
-            <button
-              onClick={() => setShowPortfolioInfo(true)}
-              className="flex items-center gap-1.5 active:opacity-70 transition-opacity"
-            >
-              <p className="text-sm text-white/70 font-medium">投資組合價值</p>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/>
-                <circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.45)" stroke="none"/>
-              </svg>
-            </button>
+            <div className="flex items-center gap-2 min-w-0">
+              <button
+                onClick={() => setShowPortfolioInfo(true)}
+                className="flex items-center gap-1.5 active:opacity-70 transition-opacity"
+              >
+                <p className="text-sm text-white/70 font-medium">投資組合價值</p>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/>
+                  <circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.45)" stroke="none"/>
+                </svg>
+              </button>
+              <MarketStatusBadge tone="onDark" />
+            </div>
             <button
               onClick={() => setIsAmountHidden(!isAmountHidden)}
               className="opacity-60 hover:opacity-90 active:opacity-90 transition-opacity"
