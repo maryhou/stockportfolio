@@ -1,6 +1,6 @@
 # HANDOFF — WealthTrack 投資日誌
 
-> 最後更新:2026-07-30。給下一個接手的人(或下一次 Claude session)的交接文件。
+> 最後更新:2026-08-03。給下一個接手的人(或下一次 Claude session)的交接文件。
 > 架構與目錄結構詳見 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
 ## 專案是什麼
@@ -10,7 +10,7 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
 
 - 正式站:https://mystockportfolio.vercel.app
 - 本機開發:`npm run dev`(port 5174)
-- 測試:`npm test`(Vitest,45 tests)/ 型別:`npx tsc --noEmit`
+- 測試:`npm test`(Vitest,82 tests)/ 型別:`npx tsc --noEmit`
 
 ## 部署(重要)
 
@@ -166,6 +166,30 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
   抽出純函式 [parseEtfDivRows()](src/utils/fetchDividends.ts)。新增股息建議清單待公告列顯示
   「金額尚未公告·點此帶入日期」、點選帶入除息/發放日但金額留空自填;自動估算批次匯入跳過待公告列。
   `DividendRecord.cashPerShare` 型別改為 `number | null`。4 測試(共 79)。
+
+### 2026-08-03:股息「配息調整」欄位
+
+**問題**:app 用「每股配息 × 持有股數」快速估算應得股息,但 ETF 實際發放是各所得類別
+(如 財產交易所得 76、股利所得 54C)**分別四捨五入後加總**,與估算常差 ±1 元
+(實例:0050 每股 0.6 × 46 = 27.6→估 28,實發 20+7=27)。無 API 可查各類別占比,需人工對帳。
+
+- **資料模型**:`DividendTransaction` 新增選用 `dividendAdjustment?: number`(帶正負號的元;
+  為 0 時不寫入,維持 Firestore 乾淨,與 healthFeeExempt 等既有慣例一致)。
+- **計算**([calculations.ts](src/utils/calculations.ts)):`calcDividendNet` 加選用第 4 參數
+  `adjustment = 0` → `max(0, gross − health − transfer + adjustment)`。**套在最終 net、不動 gross**,
+  刻意不干擾健保費/匯費那套免扣+手動覆寫邏輯(那塊最敏感)。新增 `formatSignedNTD`(顯示 +/−)。
+- **兩個入口**([DividendView.tsx](src/components/DividendView.tsx)):
+  1. **明細 modal**:費用列下方一個可直接編輯的小輸入框,**失焦(onBlur)即重算存檔**(Enter 在
+     headless 瀏覽器不一定觸發 blur,但點別處會;onBlur 是可靠 commit 路徑)。存檔重構成
+     `rebuildAndSave`,`toggleFee` 與 `commitAdjustment` 共用,確保切費用/改調整時**互相保留對方的值**。
+  2. **新增/編輯 sheet**:「配息調整(元)」正式輸入欄 + 試算多一條「配息調整」線。
+- **說明 modal**:明細 modal 的「配息調整」label 右邊有資訊 i 圖示,點開說明(琥珀 i 圖示 +
+  沿用 app 既有 說明 modal 樣式,`z-[210]` 疊在 bottom sheet 之上,點背景關閉)。
+- **匯入驗證**([validateImport.ts](src/utils/validateImport.ts)):逐欄驗證 `dividendAdjustment`
+  (非 number 拒絕)。**維護規則**:此欄與 `calcDividendNet` 的 adjustment 參數需保持同步。
+- 測試 79→82(calcDividendNet 配息調整、validateImport 往返 + 拒絕案例)。
+  已在 mobile viewport 實測:明細改值即時重算/存檔乾淨、切匯費保留調整、編輯 sheet 帶入與試算、
+  說明 modal 開關(先備份、後還原 localStorage)。tsc + 82 tests 通過。
 
 ## 未完成 / 待辦
 

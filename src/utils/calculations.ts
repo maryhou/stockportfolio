@@ -24,8 +24,15 @@ export function calcDividendGross(amountPerShare: number, shares: number): numbe
   return Math.round(amountPerShare * shares);
 }
 
-export function calcDividendNet(gross: number, healthFee: number, transferFee: number): number {
-  return Math.max(0, gross - healthFee - transferFee);
+// adjustment 為帶正負號的配息調整（元）：ETF 實際發放是各所得類別分別四捨五入後加總，
+// 與「每股×股數」估算常差 ±1 元。使用者從收益分配通知書填入差額，讓實際入帳一致。
+export function calcDividendNet(
+  gross: number,
+  healthFee: number,
+  transferFee: number,
+  adjustment = 0,
+): number {
+  return Math.max(0, gross - healthFee - transferFee + adjustment);
 }
 
 export function calcTotalDividendNet(dividends: DividendTransaction[]): number {
@@ -146,6 +153,11 @@ export function formatNTD(amount: number): string {
 
 export function formatNumber(n: number): string {
   return new Intl.NumberFormat('zh-TW').format(n);
+}
+
+/** Signed NTD, e.g. +NT$2 / -NT$1（0 也顯示 +）。用於配息調整這類帶正負的金額。 */
+export function formatSignedNTD(amount: number): string {
+  return `${amount < 0 ? '-' : '+'}${formatNTD(Math.abs(amount))}`;
 }
 
 /**

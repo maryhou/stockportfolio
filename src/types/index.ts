@@ -38,6 +38,7 @@ export interface DividendTransaction {
   healthFeeExempt?: boolean;  // true = 使用者設定此筆免扣健保補充費（如資本利得配息）
   transferFee: number;       // 匯款手續費
   transferFeeExempt?: boolean; // true = 使用者設定此筆免扣匯款手續費（如入帳銀行為該檔保管銀行）
+  dividendAdjustment?: number; // 配息調整（帶正負號的元）：每股×股數估算與實際發放的差額微調；未設定 = 0
   netAmount: number;         // 實際入帳
   note?: string;
 }

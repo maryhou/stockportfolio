@@ -97,6 +97,14 @@ describe('股息金額計算', () => {
     expect(calcDividendNet(5, 0, 10)).toBe(0);
   });
 
+  it('calcDividendNet 套用配息調整（正/負，不為負）', () => {
+    // 每股 0.6 × 46 = 27.6 → 估算 28，實際發放 27（20 財產交易 + 7 股利）
+    expect(calcDividendNet(28, 0, 0, -1)).toBe(27);
+    expect(calcDividendNet(1000, 0, 10, 5)).toBe(995);   // 估算偏低，補回 +5
+    expect(calcDividendNet(10, 0, 0, -50)).toBe(0);       // 負調整過大仍夾在 0
+    expect(calcDividendNet(28, 0, 0)).toBe(28);           // 預設 0，行為不變
+  });
+
   it('calcTotalDividendNet 加總 netAmount', () => {
     expect(calcTotalDividendNet([dividend({ netAmount: 990 }), dividend({ id: 'd2', netAmount: 1500 })])).toBe(2490);
   });

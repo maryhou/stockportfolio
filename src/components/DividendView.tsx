@@ -19,6 +19,7 @@ import {
   HEALTH_INSURANCE_THRESHOLD,
   HEALTH_INSURANCE_RATE,
   formatNTD,
+  formatSignedNTD,
 } from '../utils/calculations';
 
 const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
@@ -501,6 +502,9 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
   // 健保費預設依 2.11% 公式自動算；使用者改過欄位就轉手動、不再自動重算
   const [healthFeeManual, setHealthFeeManual] = useState(() => !!editDividend && isHealthFeeManual(editDividend));
   const [healthFeeStr,    setHealthFeeStr]    = useState(editDividend ? String(editDividend.healthInsuranceFee) : '');
+  const [adjustStr,      setAdjustStr]      = useState(
+    editDividend?.dividendAdjustment ? String(editDividend.dividendAdjustment) : ''
+  );
   const [note,           setNote]           = useState(editDividend?.note ?? '');
 
   // Yahoo Finance quick-fill suggestions
@@ -555,7 +559,8 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
   const gross          = calcDividendGross(amtPerShareNum, sharesNum);
   const autoHealthFee  = calcDividendHealthInsurance(gross);
   const healthFee      = healthExempt ? 0 : healthFeeManual ? (parseInt(healthFeeStr) || 0) : autoHealthFee;
-  const net            = calcDividendNet(gross, healthFee, transferFeeNum);
+  const adjustNum      = Math.trunc(parseFloat(adjustStr) || 0);
+  const net            = calcDividendNet(gross, healthFee, transferFeeNum, adjustNum);
   const canSave        = stockId && amtPerShareNum > 0 && sharesNum > 0 && date && exDate;
 
   function handleSave() {
@@ -572,6 +577,7 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
       ...(healthExempt ? { healthFeeExempt: true } : {}),
       transferFee:       transferFeeNum,
       ...(transferExempt ? { transferFeeExempt: true } : {}),
+      ...(adjustNum !== 0 ? { dividendAdjustment: adjustNum } : {}),
       netAmount:         net,
       ...(note ? { note } : {}),
     };
@@ -766,6 +772,22 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
             )}
           </div>
 
+          {/* Dividend adjustment — signed reconciliation delta */}
+          <div>
+            <label className="label">配息調整（元）</label>
+            <input
+              type="number"
+              className="input"
+              placeholder="例：-1"
+              value={adjustStr}
+              onChange={(e) => setAdjustStr(e.target.value)}
+              step="1"
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              實際入帳與試算差 ±1 元時微調（可負）。ETF 各所得類別分別進位，加總常與每股估算不同。
+            </p>
+          </div>
+
           {/* Note */}
           <div>
             <label className="label">備註（選填）</label>
@@ -797,6 +819,9 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
                 exemptHint={TRANSFER_EXEMPT_HINT}
                 onToggle={() => setTransferExempt(!transferExempt)}
               />
+              {adjustNum !== 0 && (
+                <Row label="配息調整" value={formatSignedNTD(adjustNum)} valueClass="text-gray-600" />
+              )}
               <div className="border-t border-amber-200 pt-2 mt-1">
                 <Row label="實際入帳" value={`+${formatNTD(net)}`} valueClass="text-amber-600 font-bold text-base" />
               </div>
@@ -834,10 +859,40 @@ interface DividendDetailModalProps {
 function DividendDetailModal({ stock, dividend: d, defaultTransferFee, onSave, onEdit, onDelete, onClose }: DividendDetailModalProps) {
   const sheetRef = useRef<BottomSheetHandle>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showAdjustInfo, setShowAdjustInfo] = useState(false);
+  const [adjustStr, setAdjustStr] = useState(d.dividendAdjustment ? String(d.dividendAdjustment) : '');
+  // props 更新（存檔後父層回傳新的 d）時，同步輸入框顯示值
+  useEffect(() => {
+    setAdjustStr(d.dividendAdjustment ? String(d.dividendAdjustment) : '');
+  }, [d.dividendAdjustment]);
+
+  // 逐欄重建乾淨的 DividendTransaction 再存。
+  // d 來自列表展開（帶有 stockId 等額外欄位），直接 spread 會把垃圾欄位寫進 Firestore。
+  // 傳入要覆蓋的欄位（費用免扣切換 / 配息調整），其餘保留 d 的現值。
+  function rebuildAndSave(overrides: {
+    healthInsuranceFee: number; healthFeeExempt: boolean;
+    transferFee: number; transferFeeExempt: boolean;
+    dividendAdjustment: number;
+  }) {
+    const { healthInsuranceFee, healthFeeExempt, transferFee, transferFeeExempt, dividendAdjustment } = overrides;
+    onSave({
+      id:                 d.id,
+      date:               d.date,
+      ...(d.exDate ? { exDate: d.exDate } : {}),
+      amountPerShare:     d.amountPerShare,
+      shares:             d.shares,
+      grossAmount:        d.grossAmount,
+      healthInsuranceFee,
+      ...(healthFeeExempt ? { healthFeeExempt: true } : {}),
+      transferFee,
+      ...(transferFeeExempt ? { transferFeeExempt: true } : {}),
+      ...(dividendAdjustment !== 0 ? { dividendAdjustment } : {}),
+      netAmount:          calcDividendNet(d.grossAmount, healthInsuranceFee, transferFee, dividendAdjustment),
+      ...(d.note ? { note: d.note } : {}),
+    });
+  }
 
   // 切換此筆費用的扣 / 免扣，重算後立即存檔。
-  // d 來自列表展開（帶有 stockId 等額外欄位），必須逐欄重建乾淨物件再存，
-  // 否則多餘欄位會被寫進 Firestore。
   function toggleFee(which: 'health' | 'transfer') {
     const healthExempt   = which === 'health'   ? !(d.healthFeeExempt ?? false)   : (d.healthFeeExempt ?? false);
     const transferExempt = which === 'transfer' ? !(d.transferFeeExempt ?? false) : (d.transferFeeExempt ?? false);
@@ -847,23 +902,26 @@ function DividendDetailModal({ stock, dividend: d, defaultTransferFee, onSave, o
       : d.healthInsuranceFee;
     // 免扣時存 0；從免扣勾回時原值已是 0，回填設定的預設匯費
     const transferFee = transferExempt ? 0 : (d.transferFeeExempt ? defaultTransferFee : d.transferFee);
-    onSave({
-      id:                 d.id,
-      date:               d.date,
-      ...(d.exDate ? { exDate: d.exDate } : {}),
-      amountPerShare:     d.amountPerShare,
-      shares:             d.shares,
-      grossAmount:        d.grossAmount,
-      healthInsuranceFee: healthFee,
-      ...(healthExempt ? { healthFeeExempt: true } : {}),
-      transferFee,
-      ...(transferExempt ? { transferFeeExempt: true } : {}),
-      netAmount:          calcDividendNet(d.grossAmount, healthFee, transferFee),
-      ...(d.note ? { note: d.note } : {}),
+    rebuildAndSave({
+      healthInsuranceFee: healthFee, healthFeeExempt: healthExempt,
+      transferFee, transferFeeExempt: transferExempt,
+      dividendAdjustment: d.dividendAdjustment ?? 0,
+    });
+  }
+
+  // 配息調整輸入框失焦 / 送出時存檔（值有變才存，避免無謂寫入）
+  function commitAdjustment() {
+    const next = Math.trunc(parseFloat(adjustStr) || 0);
+    if (next === (d.dividendAdjustment ?? 0)) return;
+    rebuildAndSave({
+      healthInsuranceFee: d.healthInsuranceFee, healthFeeExempt: d.healthFeeExempt ?? false,
+      transferFee: d.transferFee, transferFeeExempt: d.transferFeeExempt ?? false,
+      dividendAdjustment: next,
     });
   }
 
   return (
+    <>
     <BottomSheet ref={sheetRef} onClose={onClose} zBackdrop="z-[199]" zSheet="z-[200]">
       <div className="px-4 pb-10">
         {/* Header */}
@@ -910,6 +968,33 @@ function DividendDetailModal({ stock, dividend: d, defaultTransferFee, onSave, o
             exemptHint={TRANSFER_EXEMPT_HINT}
             onToggle={() => toggleFee('transfer')}
           />
+          {/* 配息調整：可直接微調，讓實際入帳與收益分配通知書一致 */}
+          <div className="flex items-center justify-between gap-2">
+            <button
+              onClick={() => setShowAdjustInfo(true)}
+              className="flex items-center gap-1 flex-shrink-0 active:opacity-70"
+            >
+              <span className="text-xs text-gray-500">配息調整</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/>
+                <circle cx="12" cy="8" r="1" fill="#9ca3af" stroke="none"/>
+              </svg>
+            </button>
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                inputMode="numeric"
+                step="1"
+                className="w-20 text-right text-sm bg-white border border-gray-200 rounded-lg px-2 py-1 focus:border-amber-400 focus:outline-none"
+                placeholder="0"
+                value={adjustStr}
+                onChange={(e) => setAdjustStr(e.target.value)}
+                onBlur={commitAdjustment}
+                onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+              />
+              <span className="text-xs text-gray-400">元</span>
+            </div>
+          </div>
           <div className="border-t border-gray-200 pt-3">
             <Row label="實際入帳" value={`+${formatNTD(d.netAmount)}`} valueClass="text-amber-500 font-bold text-base" />
           </div>
@@ -957,6 +1042,49 @@ function DividendDetailModal({ stock, dividend: d, defaultTransferFee, onSave, o
         </div>
       </div>
     </BottomSheet>
+
+    {/* 配息調整 說明 modal（需疊在 bottom sheet 之上，故 z-[210]） */}
+    {showAdjustInfo && (
+      <div
+        className="fixed inset-0 z-[210] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+        onClick={() => setShowAdjustInfo(false)}
+      >
+        <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/>
+                  <circle cx="12" cy="8" r="1" fill="white" stroke="none"/>
+                </svg>
+              </div>
+              <h3 className="text-base font-bold text-gray-800">配息調整 說明</h3>
+            </div>
+            <button
+              onClick={() => setShowAdjustInfo(false)}
+              className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 active:bg-gray-200"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            當實際入帳與試算金額不同時，可輸入正負值進行微調。
+          </p>
+          <div className="bg-amber-50 rounded-2xl px-4 py-3 mt-3">
+            <p className="text-xs text-amber-700 font-medium mb-1.5">為什麼會不同</p>
+            <p className="text-sm text-amber-900 leading-relaxed">
+              ETF 配息依不同所得類別（如 54C、76）分別計算並進位，加總後可能與「每股配息 × 持有股數」的試算結果差 ±1 元。
+            </p>
+          </div>
+          <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
+            實際金額請以銀行入帳明細或收益分配通知書為準。
+          </p>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
