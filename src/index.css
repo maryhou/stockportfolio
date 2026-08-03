@@ -136,6 +136,14 @@
 [data-theme="dark"] .text-violet-600  { color: rgb(94  164 224); } /* → steel-blue (primary-600) */
 [data-theme="dark"] .text-violet-700  { color: rgb(140 196 236); } /* → steel-blue (primary-700) */
 
+/* ── Safe-area helpers (iOS notch / status bar) ──────────────────────────── */
+/* On desktop / non-notched devices env() resolves to 0, so these collapse    */
+/* back to their plain padding values — no regression.                        */
+@layer utilities {
+  .pt-safe-6 { padding-top: calc(env(safe-area-inset-top) + 1.5rem); }
+  .pt-safe-3 { padding-top: calc(env(safe-area-inset-top) + 0.75rem); }
+}
+
 @layer base {
   * {
     -webkit-tap-highlight-color: transparent;

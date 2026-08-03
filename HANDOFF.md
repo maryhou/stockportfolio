@@ -194,6 +194,27 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
   已在 mobile viewport 實測:編輯 sheet 帶入與試算、明細唯讀列有/無值顯示、切匯費保留調整、
   說明 modal 開關(先備份、後還原 localStorage)。tsc + 82 tests 通過。
 
+### 2026-08-03(續):iOS safe-area(瀏海/狀態列)頂端間距
+
+**問題**:手機上所有頁面標題與右上角按鈕貼著狀態列,尤其股息頁右上「自動估算/新增」兩顆按鈕
+被時間/電量壓到讀不清。根因:`index.html` viewport meta 缺 `viewport-fit=cover`
+(所以 `env(safe-area-inset-top)` 永遠回傳 0),各頁頂端只用固定 `pt-6`(24px)不足以避開狀態列。
+
+- **[index.html](index.html)**:viewport 加 `viewport-fit=cover`,啟用 `env(safe-area-inset-*)`。
+- **[index.css](src/index.css)**:`@layer utilities` 新增 `.pt-safe-6`
+  = `calc(env(safe-area-inset-top) + 1.5rem)`、`.pt-safe-3`(env + 0.75rem,備用)。
+  **無瀏海裝置/桌機 env()=0 → 值等於原本 pt-6/pt-3,零回歸**;iOS 才自動多推瀏海高度。
+- 各頁最上層容器 `pt-6` → `pt-safe-6`:HomeView、HoldingsView、ActivityView(3 個 render 分支)、
+  ProfileView、NotificationsView、DividendView 標題列(白底列會延伸進瀏海區)。
+- **[SearchOverlay.tsx](src/components/SearchOverlay.tsx)**:全螢幕 `fixed inset-0` 覆蓋層,
+  原本硬寫 `pt-12`(48px)瞎猜狀態列高度 → 改 `pt-safe-6`,不同機型精準避開。
+- **盤點結果**:只有 SearchOverlay 是頂端貼齊的覆蓋層需處理;底部彈出面板
+  (AddTransactionSheet/EditTransactionModal/SettingsSheet/BottomSheet)貼底、
+  置中彈窗(OnboardingModal/AppLock)置中,皆不碰狀態列。
+- 已在 mobile viewport 實測(桌機 env=0,`.pt-safe-6` 實測 24px 確認 class 生效且無回歸;
+  真實瀏海效果需 iOS 裝置才顯現)。**維護規則**:新增頂端貼齊的頁面/覆蓋層,頂 padding 一律用
+  `pt-safe-*` 而非固定 `pt-N`。
+
 ## 未完成 / 待辦
 
 0. ~~**Vercel token 短效問題**~~:**2026-07-30 永久解決**。歷史上多次因 CLI 登入核發的

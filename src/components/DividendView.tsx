@@ -140,7 +140,7 @@ export default function DividendView({
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* ── Header ── */}
-      <div className="flex items-center gap-3 px-4 pt-6 pb-3 bg-white border-b border-gray-100">
+      <div className="flex items-center gap-3 px-4 pt-safe-6 pb-3 bg-white border-b border-gray-100">
         <button onClick={onBack} className="w-9 h-9 rounded-full flex items-center justify-center active:bg-gray-100 transition-colors -ml-1">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700">
             <polyline points="15 18 9 12 15 6"/>

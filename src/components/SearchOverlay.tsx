@@ -157,7 +157,7 @@ export default function SearchOverlay({ stocks, onStockClick, onClose }: SearchO
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Search bar ── */}
-        <div className="flex items-center gap-3 px-4 pt-12 pb-3 bg-white border-b border-gray-100
+        <div className="flex items-center gap-3 px-4 pt-safe-6 pb-3 bg-white border-b border-gray-100
                         md:pt-5 md:pb-4 md:px-5">
           <div className="flex-1 flex items-center gap-2.5 bg-gray-100 rounded-2xl px-3.5 py-2.5">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

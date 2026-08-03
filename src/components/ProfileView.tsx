@@ -101,7 +101,7 @@ export default function ProfileView({ stocks, settings, onSettingsClick, onImpor
   }
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full">
+    <div className="flex flex-col gap-5 px-5 pt-safe-6 pb-32 lg:pb-10 lg:px-8 w-full">
       {/* Header */}
       <div className="flex items-center justify-end">
         <button

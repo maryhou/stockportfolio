@@ -166,7 +166,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
   ]).sort((a, b) => b.date.localeCompare(a.date) || b.key.localeCompare(a.key)).slice(0, 10);
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full">
+    <div className="flex flex-col gap-5 px-5 pt-safe-6 pb-32 lg:pb-10 lg:px-8 w-full">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

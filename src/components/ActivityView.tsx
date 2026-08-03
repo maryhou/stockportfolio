@@ -76,7 +76,7 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
 
   if (stocks.length === 0) {
     return (
-      <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full">
+      <div className="flex flex-col gap-5 px-5 pt-safe-6 pb-32 lg:pb-10 lg:px-8 w-full">
         <h2 className="text-xl font-bold text-gray-800">投資分析</h2>
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-3">
@@ -138,7 +138,7 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
     .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full">
+    <div className="flex flex-col gap-5 px-5 pt-safe-6 pb-32 lg:pb-10 lg:px-8 w-full">
       <h2 className="text-xl font-bold text-gray-800">投資分析</h2>
 
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[360px_1fr] lg:gap-6 lg:items-start">
@@ -465,7 +465,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
   const todayChangePct = todayChangePerShare !== null && prevClose ? (todayChangePerShare / prevClose) * 100 : null;
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10 lg:px-8 w-full">
+    <div className="flex flex-col gap-5 px-5 pt-safe-6 pb-32 lg:pb-10 lg:px-8 w-full">
       {/* Stock header */}
       <div className="flex items-center gap-3">
         <button

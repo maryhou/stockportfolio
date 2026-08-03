@@ -36,7 +36,7 @@ export default function HoldingsView({ stocks, onStockClick }: HoldingsViewProps
   });
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-6 pb-32 lg:pb-10">
+    <div className="flex flex-col gap-5 px-5 pt-safe-6 pb-32 lg:pb-10">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-800">持倉列表</h2>
         {filter === 'closed'
