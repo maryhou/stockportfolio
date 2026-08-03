@@ -860,15 +860,10 @@ function DividendDetailModal({ stock, dividend: d, defaultTransferFee, onSave, o
   const sheetRef = useRef<BottomSheetHandle>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showAdjustInfo, setShowAdjustInfo] = useState(false);
-  const [adjustStr, setAdjustStr] = useState(d.dividendAdjustment ? String(d.dividendAdjustment) : '');
-  // props 更新（存檔後父層回傳新的 d）時，同步輸入框顯示值
-  useEffect(() => {
-    setAdjustStr(d.dividendAdjustment ? String(d.dividendAdjustment) : '');
-  }, [d.dividendAdjustment]);
 
   // 逐欄重建乾淨的 DividendTransaction 再存。
   // d 來自列表展開（帶有 stockId 等額外欄位），直接 spread 會把垃圾欄位寫進 Firestore。
-  // 傳入要覆蓋的欄位（費用免扣切換 / 配息調整），其餘保留 d 的現值。
+  // 傳入要覆蓋的欄位（費用免扣切換），其餘保留 d 的現值（含配息調整——只在編輯頁改）。
   function rebuildAndSave(overrides: {
     healthInsuranceFee: number; healthFeeExempt: boolean;
     transferFee: number; transferFeeExempt: boolean;
@@ -906,17 +901,6 @@ function DividendDetailModal({ stock, dividend: d, defaultTransferFee, onSave, o
       healthInsuranceFee: healthFee, healthFeeExempt: healthExempt,
       transferFee, transferFeeExempt: transferExempt,
       dividendAdjustment: d.dividendAdjustment ?? 0,
-    });
-  }
-
-  // 配息調整輸入框失焦 / 送出時存檔（值有變才存，避免無謂寫入）
-  function commitAdjustment() {
-    const next = Math.trunc(parseFloat(adjustStr) || 0);
-    if (next === (d.dividendAdjustment ?? 0)) return;
-    rebuildAndSave({
-      healthInsuranceFee: d.healthInsuranceFee, healthFeeExempt: d.healthFeeExempt ?? false,
-      transferFee: d.transferFee, transferFeeExempt: d.transferFeeExempt ?? false,
-      dividendAdjustment: next,
     });
   }
 
@@ -968,33 +952,22 @@ function DividendDetailModal({ stock, dividend: d, defaultTransferFee, onSave, o
             exemptHint={TRANSFER_EXEMPT_HINT}
             onToggle={() => toggleFee('transfer')}
           />
-          {/* 配息調整：可直接微調，讓實際入帳與收益分配通知書一致 */}
-          <div className="flex items-center justify-between gap-2">
-            <button
-              onClick={() => setShowAdjustInfo(true)}
-              className="flex items-center gap-1 flex-shrink-0 active:opacity-70"
-            >
-              <span className="text-xs text-gray-500">配息調整</span>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/>
-                <circle cx="12" cy="8" r="1" fill="#9ca3af" stroke="none"/>
-              </svg>
-            </button>
-            <div className="flex items-center gap-1">
-              <input
-                type="number"
-                inputMode="numeric"
-                step="1"
-                className="w-20 text-right text-sm bg-white border border-gray-200 rounded-lg px-2 py-1 focus:border-amber-400 focus:outline-none"
-                placeholder="0"
-                value={adjustStr}
-                onChange={(e) => setAdjustStr(e.target.value)}
-                onBlur={commitAdjustment}
-                onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-              />
-              <span className="text-xs text-gray-400">元</span>
+          {/* 配息調整：唯讀顯示，只在有值時出現；label 旁 i 可看說明，要修改請進編輯頁 */}
+          {!!d.dividendAdjustment && (
+            <div className="flex items-center justify-between gap-2">
+              <button
+                onClick={() => setShowAdjustInfo(true)}
+                className="flex items-center gap-1 flex-1 text-left active:opacity-70"
+              >
+                <span className="text-xs text-gray-500">配息調整</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/>
+                  <circle cx="12" cy="8" r="1" fill="#9ca3af" stroke="none"/>
+                </svg>
+              </button>
+              <span className="text-sm text-gray-600">{formatSignedNTD(d.dividendAdjustment)}</span>
             </div>
-          </div>
+          )}
           <div className="border-t border-gray-200 pt-3">
             <Row label="實際入帳" value={`+${formatNTD(d.netAmount)}`} valueClass="text-amber-500 font-bold text-base" />
           </div>
@@ -1070,7 +1043,7 @@ function DividendDetailModal({ stock, dividend: d, defaultTransferFee, onSave, o
             </button>
           </div>
           <p className="text-sm text-gray-600 leading-relaxed">
-            當實際入帳與試算金額不同時，可輸入正負值進行微調。
+            當實際入帳與試算金額不同時，可在編輯頁輸入正負值進行微調。
           </p>
           <div className="bg-amber-50 rounded-2xl px-4 py-3 mt-3">
             <p className="text-xs text-amber-700 font-medium mb-1.5">為什麼會不同</p>

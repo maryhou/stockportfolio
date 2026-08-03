@@ -178,17 +178,20 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
 - **計算**([calculations.ts](src/utils/calculations.ts)):`calcDividendNet` 加選用第 4 參數
   `adjustment = 0` → `max(0, gross − health − transfer + adjustment)`。**套在最終 net、不動 gross**,
   刻意不干擾健保費/匯費那套免扣+手動覆寫邏輯(那塊最敏感)。新增 `formatSignedNTD`(顯示 +/−)。
-- **兩個入口**([DividendView.tsx](src/components/DividendView.tsx)):
-  1. **明細 modal**:費用列下方一個可直接編輯的小輸入框,**失焦(onBlur)即重算存檔**(Enter 在
-     headless 瀏覽器不一定觸發 blur,但點別處會;onBlur 是可靠 commit 路徑)。存檔重構成
-     `rebuildAndSave`,`toggleFee` 與 `commitAdjustment` 共用,確保切費用/改調整時**互相保留對方的值**。
-  2. **新增/編輯 sheet**:「配息調整(元)」正式輸入欄 + 試算多一條「配息調整」線。
-- **說明 modal**:明細 modal 的「配息調整」label 右邊有資訊 i 圖示,點開說明(琥珀 i 圖示 +
-  沿用 app 既有 說明 modal 樣式,`z-[210]` 疊在 bottom sheet 之上,點背景關閉)。
+- **編輯只在編輯頁,明細唯讀**(經使用者測試後定案)([DividendView.tsx](src/components/DividendView.tsx)):
+  - **新增/編輯 sheet**:「配息調整(元)」正式輸入欄 + 試算多一條「配息調整」線 —— 唯一可修改的入口。
+  - **第一層明細 modal**:唯讀。只在 `dividendAdjustment` 非 0 時顯示一條純文字「配息調整 ±$X」列
+    (label 旁有資訊 i,值為 0 或不存在時整列隱藏,保持乾淨)。
+    - **一度做過**明細內可直接編輯的小輸入框(onBlur 存檔),使用者測試後覺得第一層應保持唯讀、
+      乾淨清楚,故拿掉輸入框改純文字。`commitAdjustment` 已移除;`rebuildAndSave` 保留
+      (仍被 `toggleFee` 使用,切費用時會保留既有的 `dividendAdjustment`)。
+- **說明 modal**:明細唯讀列的「配息調整」label 右邊有資訊 i,點開說明(琥珀 i 圖示 +
+  沿用 app 既有 說明 modal 樣式,`z-[210]` 疊在 bottom sheet 之上,點背景關閉;
+  文案指引「可在編輯頁輸入正負值微調」+ ETF 各所得類別分別進位的原因)。
 - **匯入驗證**([validateImport.ts](src/utils/validateImport.ts)):逐欄驗證 `dividendAdjustment`
   (非 number 拒絕)。**維護規則**:此欄與 `calcDividendNet` 的 adjustment 參數需保持同步。
 - 測試 79→82(calcDividendNet 配息調整、validateImport 往返 + 拒絕案例)。
-  已在 mobile viewport 實測:明細改值即時重算/存檔乾淨、切匯費保留調整、編輯 sheet 帶入與試算、
+  已在 mobile viewport 實測:編輯 sheet 帶入與試算、明細唯讀列有/無值顯示、切匯費保留調整、
   說明 modal 開關(先備份、後還原 localStorage)。tsc + 82 tests 通過。
 
 ## 未完成 / 待辦
