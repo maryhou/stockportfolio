@@ -62,8 +62,8 @@ export default function ProfileView({ stocks, settings, onOpenPreferences, onOpe
 
   // ── Settings display ───────────────────────────────────────────────────────
   const avatarLetter = settings.userName.charAt(0).toUpperCase();
-  // 字體放大時,2 欄並排會把大數字(如 +$2,719,608)切掉 → 改上下堆疊,
-  // 讓每個數字佔整卡寬度,年長者看得清、不跑版。
+  // 字體放大時,窄的 mobile 版 2 欄並排會把大數字(如 +$2,719,608)切掉 → 改上下堆疊。
+  // 但只在 mobile(< md)堆疊;md 以上內容變寬、2 欄放得下,維持原設計(見 JSX 的 md: 類別)。
   const stackStats = settings.fontScale === 'large' || settings.fontScale === 'xlarge';
 
   // ── Export ─────────────────────────────────────────────────────────────────
@@ -118,9 +118,10 @@ export default function ProfileView({ stocks, settings, onOpenPreferences, onOpe
       {/* ── 我的投資成績 ────────────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
         <p className="text-sm font-bold text-gray-800 mb-4">我的投資成績</p>
-        <div className={stackStats ? 'flex flex-col gap-3' : 'flex'}>
+        {/* 放大字體時「只在 mobile(< md,內容被限寬 430px)」堆疊;md 以上內容變寬、仍維持 2 欄。 */}
+        <div className={stackStats ? 'flex flex-col gap-3 md:flex-row md:gap-0' : 'flex'}>
           {/* 總損益 */}
-          <div className={stackStats ? 'min-w-0' : 'flex-1 pr-4'}>
+          <div className={stackStats ? 'min-w-0 md:flex-1 md:pr-4' : 'flex-1 pr-4'}>
             <button onClick={() => setShowPLInfo(true)} className="flex items-center gap-1 mb-2 active:opacity-60 transition-opacity">
               <p className="text-xs text-gray-400">總損益</p>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -135,10 +136,10 @@ export default function ProfileView({ stocks, settings, onOpenPreferences, onOpe
             </p>
           </div>
 
-          <div className={stackStats ? 'h-px bg-gray-100' : 'w-px bg-gray-100 my-1 flex-shrink-0'} />
+          <div className={stackStats ? 'h-px bg-gray-100 md:h-auto md:w-px md:my-1 md:flex-shrink-0' : 'w-px bg-gray-100 my-1 flex-shrink-0'} />
 
           {/* 累積報酬率 */}
-          <div className={stackStats ? 'min-w-0' : 'flex-1 pl-4'}>
+          <div className={stackStats ? 'min-w-0 md:flex-1 md:pl-4' : 'flex-1 pl-4'}>
             <button onClick={() => setShowReturnInfo(true)} className="flex items-center gap-1 mb-2 active:opacity-60 transition-opacity">
               <p className="text-xs text-gray-400">累積報酬率</p>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

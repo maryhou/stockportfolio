@@ -250,6 +250,10 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
   + `whitespace-nowrap tabular-nums`,欄位加 `min-w-0`。**永遠一行、放不下自動縮小而非藏位數**(理財 App
   不截字/不縮寫)。實測 16px 與 20px 皆不 overflow(最寬 +$2,719,608 在 111px 欄內佔 87~91px)。
   用 vw 故這三格不隨字體設定等比放大,但 rem 下限讓它仍會微幅變大且保證不跑版。
+  - **後續(同日):堆疊只在 mobile 生效**。原本 `stackStats` 一律上下堆疊,但桌機/平板寬螢幕(內容變寬)
+    根本放得下 2 欄,堆疊反而浪費空間。改為堆疊類別都加 `md:` 還原成 2 欄(`md:flex-row`、
+    `md:flex-1`、分隔線 `md:w-px` 等);對齊容器自身的 `max-w-[430px] md:max-w-full` 斷點。
+    實測:375px+特大=堆疊、1000px+特大=2 欄(rootFontSize 20px 下 flexDirection 仍為 row)。
 - **代號改放名稱上方(垂直堆疊)防跑版**([ActivityView.tsx](src/components/ActivityView.tsx)):
   `StockSummaryRow`(分析頁個股列)與 `TradeTileRow`(交易紀錄列)原本股名與代號**並排**
   (`名稱 <span> 代號`),字體放大時中文股名換行、代號被夾在中間 → 版面亂(如「群益台/灣精選 00919/高息」)。
