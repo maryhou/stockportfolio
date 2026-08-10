@@ -881,8 +881,8 @@ function RecentItem({ symbol, name, type, date, shares, amount, profit, onClick 
         </span>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[0.625rem] text-gray-400 leading-none mb-0.5">{symbol}</p>
-        <p className="text-sm font-semibold text-gray-800">{name}</p>
+        <p className="text-xs text-gray-400 leading-none mb-0.5">{symbol}</p>
+        <p className="text-base font-semibold text-gray-800">{name}</p>
         <p className="text-xs text-gray-400">{date} · {shares} 股</p>
       </div>
       <div className="text-right">
