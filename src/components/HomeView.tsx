@@ -18,7 +18,7 @@ import MarketStatusBadge from './MarketStatusBadge';
 // Hero 卡底部三欄金額:欄寬只有卡片 1/3,完整 NT$ 數字(如 +$2,719,608)在 text-sm 下會溢出被圓角切掉。
 // 改用流動字級(依螢幕寬縮放,非 rem)+ whitespace-nowrap,永遠一行、放不下就縮小而不藏位數。
 // 用 vw 而非 rem = 這三格不隨「字體大小」設定放大(它們本來就塞不下),但保證不跑版。
-const STAT_VALUE_FONT: React.CSSProperties = { fontSize: 'clamp(0.6875rem, 3.2vw, 0.875rem)' };
+const STAT_VALUE_FONT: React.CSSProperties = { fontSize: 'clamp(0.75rem, 3.5vw, 1rem)' };
 
 interface HomeViewProps {
   stocks: Stock[];
@@ -259,7 +259,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
         <div>
           <div className="flex">
             {/* 已實現損益 */}
-            <div className="flex-1 min-w-0 pt-3 pb-3.5 px-3">
+            <div className="flex-1 min-w-0 pt-3 pb-3.5 px-2">
               <button
                 onClick={() => setShowRealizedInfo(true)}
                 className="flex items-center gap-1 mb-1.5 active:opacity-70 transition-opacity"
@@ -277,7 +277,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
             <div className="w-px bg-white/15 my-3 flex-shrink-0" />
 
             {/* 累積總損益 */}
-            <div className="flex-1 min-w-0 pt-3 pb-3.5 px-3">
+            <div className="flex-1 min-w-0 pt-3 pb-3.5 px-2">
               <button
                 onClick={() => setShowCumulativeInfo(true)}
                 className="flex items-center gap-1 mb-1.5 active:opacity-70 transition-opacity"
@@ -295,7 +295,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
             <div className="w-px bg-white/15 my-3 flex-shrink-0" />
 
             {/* 總回收金額 */}
-            <div className="flex-1 min-w-0 pt-3 pb-3.5 px-3">
+            <div className="flex-1 min-w-0 pt-3 pb-3.5 px-2">
               <button
                 onClick={() => setShowProceedsInfo(true)}
                 className="flex items-center gap-1 mb-1.5 active:opacity-70 transition-opacity"
