@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import type { Stock, AppSettings, BuyTransaction, SellTransaction } from '../types';
+import type { Stock, AppSettings, AppFontScale, BuyTransaction, SellTransaction } from '../types';
 import EditTransactionModal from './EditTransactionModal';
 import {
   calcAvgCost,
@@ -8,6 +8,7 @@ import {
   calcTotalNetProceeds,
   calcTotalInvested,
   formatNTD,
+  formatAmount,
   formatPrice,
 } from '../utils/calculations';
 import { BellIcon, SearchIcon } from './icons/Icons';
@@ -18,7 +19,15 @@ import MarketStatusBadge from './MarketStatusBadge';
 // Hero 卡底部三欄金額:欄寬只有卡片 1/3,完整 NT$ 數字(如 +$2,719,608)在 text-sm 下會溢出被圓角切掉。
 // 改用流動字級(依螢幕寬縮放,非 rem)+ whitespace-nowrap,永遠一行、放不下就縮小而不藏位數。
 // 用 vw 而非 rem = 這三格不隨「字體大小」設定放大(它們本來就塞不下),但保證不跑版。
-const STAT_VALUE_FONT: React.CSSProperties = { fontSize: 'clamp(0.75rem, 3.5vw, 1rem)' };
+// 底部三欄金額字級。clamp(下限rem, 3.9vw, 上限rem):
+//   - rem 下限/上限 → 隨「字體大小」設定(根 font-size)一起放大
+//   - 中間 3.9vw   → 依螢幕寬度防溢出(窄 3 欄時把最寬金額壓住不跑版)
+// 手機放大時版面轉 2/1 欄、欄變寬,rem 下限即把金額頂上去;桌機維持 3 欄則由 rem 上限封頂。
+const STAT_VALUE_FONT_BY_SCALE: Record<AppFontScale, React.CSSProperties> = {
+  normal: { fontSize: 'clamp(0.75rem, 3.9vw, 1.125rem)' },
+  large:  { fontSize: 'clamp(0.9375rem, 3.9vw, 1.375rem)' },
+  xlarge: { fontSize: 'clamp(1.125rem, 3.9vw, 1.5rem)' },
+};
 
 interface HomeViewProps {
   stocks: Stock[];
@@ -170,6 +179,15 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
     })),
   ]).sort((a, b) => b.date.localeCompare(a.date) || b.key.localeCompare(a.key)).slice(0, 10);
 
+  // 底部三欄:預設 3 欄 grid;窄螢幕(mobile)字體放大時自動減欄避免擠壓/截字
+  // 大 → 2 欄、特大 → 1 欄;md 以上寬螢幕一律維持 3 欄。卡片高度隨欄數自動撐開。
+  const fontScale = settings.fontScale ?? 'normal';
+  const metricsGridCols =
+    fontScale === 'xlarge' ? 'grid-cols-1 md:grid-cols-3'
+    : fontScale === 'large' ? 'grid-cols-2 md:grid-cols-3'
+    : 'grid-cols-3';
+  const STAT_VALUE_FONT = STAT_VALUE_FONT_BY_SCALE[fontScale];
+
   return (
     <div className="flex flex-col gap-5 px-5 pt-safe-6 pb-32 lg:pb-10 lg:px-8 w-full">
       {/* Header */}
@@ -255,55 +273,51 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
           </div>
         </div>
 
-        {/* Bottom: 3-col stats */}
+        {/* Bottom: 3-col stats — 響應式 grid,窄螢幕字體放大時減欄(見 metricsGridCols) */}
         <div>
-          <div className="flex">
+          <div className={`grid ${metricsGridCols} gap-x-2`} style={{ padding: '0 10px' }}>
             {/* 已實現損益 */}
-            <div className="flex-1 min-w-0 pt-3 pb-3.5 px-2">
+            <div className="min-w-0 pt-3 pb-3.5 px-2">
               <button
                 onClick={() => setShowRealizedInfo(true)}
                 className="flex items-center gap-1 mb-1.5 active:opacity-70 transition-opacity"
               >
-                <p className="text-[0.625rem] text-white/60 leading-none">已實現損益</p>
+                <p className="text-xs text-white/60 leading-none">已實現損益</p>
               </button>
               <p className={`font-bold leading-none whitespace-nowrap tabular-nums ${realizedProfit === 0 ? 'text-white/80' : realizedProfit > 0 ? 'text-red-400' : 'text-emerald-300'}`} style={STAT_VALUE_FONT}>
-                {isAmountHidden ? '• • •' : `${realizedProfit > 0 ? '+' : ''}${formatNTD(realizedProfit)}`}
+                {isAmountHidden ? '• • •' : `${realizedProfit > 0 ? '+' : ''}${formatAmount(realizedProfit)}`}
               </p>
               <p className="text-[0.625rem] text-white/50 mt-1 leading-none">
                 ({realizedReturn > 0 ? '+' : ''}{realizedReturn.toFixed(2)}%)
               </p>
             </div>
 
-            <div className="w-px bg-white/15 my-3 flex-shrink-0" />
-
             {/* 累積總損益 */}
-            <div className="flex-1 min-w-0 pt-3 pb-3.5 px-2">
+            <div className="min-w-0 pt-3 pb-3.5 px-2">
               <button
                 onClick={() => setShowCumulativeInfo(true)}
                 className="flex items-center gap-1 mb-1.5 active:opacity-70 transition-opacity"
               >
-                <p className="text-[0.625rem] text-white/60 leading-none">累積總損益</p>
+                <p className="text-xs text-white/60 leading-none">累積總損益</p>
               </button>
               <p className={`font-bold leading-none whitespace-nowrap tabular-nums ${cumulativePL === 0 ? 'text-white/80' : cumulativePL > 0 ? 'text-red-400' : 'text-emerald-300'}`} style={STAT_VALUE_FONT}>
-                {isAmountHidden ? '• • •' : `${cumulativePL > 0 ? '+' : ''}${formatNTD(cumulativePL)}`}
+                {isAmountHidden ? '• • •' : `${cumulativePL > 0 ? '+' : ''}${formatAmount(cumulativePL)}`}
               </p>
               <p className="text-[0.625rem] text-white/50 mt-1 leading-none">
                 ({cumulativeReturn > 0 ? '+' : ''}{cumulativeReturn.toFixed(2)}%)
               </p>
             </div>
 
-            <div className="w-px bg-white/15 my-3 flex-shrink-0" />
-
             {/* 總回收金額 */}
-            <div className="flex-1 min-w-0 pt-3 pb-3.5 px-2">
+            <div className="min-w-0 pt-3 pb-3.5 px-2">
               <button
                 onClick={() => setShowProceedsInfo(true)}
                 className="flex items-center gap-1 mb-1.5 active:opacity-70 transition-opacity"
               >
-                <p className="text-[0.625rem] text-white/60 leading-none">總回收金額</p>
+                <p className="text-xs text-white/60 leading-none">總回收金額</p>
               </button>
               <p className="font-bold text-white leading-none whitespace-nowrap tabular-nums" style={STAT_VALUE_FONT}>
-                {isAmountHidden ? '• • •' : formatNTD(totalProceeds)}
+                {isAmountHidden ? '• • •' : formatAmount(totalProceeds)}
               </p>
             </div>
           </div>

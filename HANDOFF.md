@@ -1,6 +1,6 @@
 # HANDOFF — WealthTrack 投資日誌
 
-> 最後更新:2026-08-03。給下一個接手的人(或下一次 Claude session)的交接文件。
+> 最後更新:2026-08-10。給下一個接手的人(或下一次 Claude session)的交接文件。
 > 架構與目錄結構詳見 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
 ## 專案是什麼
@@ -329,6 +329,34 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
 - `NotificationsView` 的 `TYPE_CONFIG` 改 export 供 modal 重用;卡片一律可點(移除 isClickable 閘門)。
 - App:`notificationDetail` state;`handleNotificationClick` 開 modal、`handleNotificationAction` 導覽。
 - 已實測:系統公告開全文、到價通知開 CTA 並成功跳到個股頁。
+
+### 2026-08-10(續):首頁 Hero 三欄金額響應式 + 隨字體放大 + 去 $
+
+首頁 Hero 卡底部三欄(已實現損益／累積總損益／總回收金額)一系列優化
+([HomeView.tsx](src/components/HomeView.tsx)),核心是「大數字 + 字體放大」下不跑版又要放得夠大:
+
+- **容器左右 padding**:三欄外層加 `style={{ padding: '0 10px' }}`(固定 px、不隨字體縮放),
+  讓左右緣與上方「投資組合價值/大金額」對齊。
+- **響應式欄數(依 `settings.fontScale`,`metricsGridCols`)**:從原本 flex+直線分隔改成 grid,
+  窄螢幕字體放大時自動減欄避免擠壓 —— **標準→3 欄、大→2 欄、特大→1 欄**;`md:` 以上寬螢幕
+  一律 `md:grid-cols-3`。移除原 `w-px` 直線分隔(在 2/1 欄或換行會亂),改用 `gap-x-2`。
+  卡片無固定高度,grid 換行時**高度自動撐開**、不截字/不重疊。
+- **標籤隨字體放大**:三個標籤 `text-[0.625rem]`(10px)→ `text-xs`(rem,會隨字體設定放大)。
+- **金額隨字體放大且防溢出(`STAT_VALUE_FONT_BY_SCALE`)**:金額字級改成依 `fontScale` 分級的 clamp,
+  **`clamp(下限rem, 3.9vw, 上限rem)`** —— rem 下限/上限隨根字級放大、中間 3.9vw 依螢幕寬防溢出:
+  - normal `clamp(0.75rem, 3.9vw, 1.125rem)` / large `clamp(0.9375rem, 3.9vw, 1.375rem)` /
+    xlarge `clamp(1.125rem, 3.9vw, 1.5rem)`。
+  - 手機放大→版面轉 2/1 欄、欄變寬,rem 下限把金額頂大;桌機維持 3 欄、vw 大則由 rem 上限封頂不爆欄。
+  - **實測 6 組合(標準/大/特大 × 手機 375/桌機 768)最寬 `+$2,719,608` 皆有餘裕不截字**
+    (最緊是手機標準 3 欄,欄僅 ~100px、金額 14.6px 留 ~4px)。
+- **三欄金額去掉 `$`**(僅這三欄,其他 UI 不動):金額本身已很長,去 $ 更乾淨、更利於放大。
+  新增 [calculations.ts](src/utils/calculations.ts) `formatAmount()`(= formatNTD 的整數化千分位但不帶符號,
+  `maximumFractionDigits: 0`)。**注意**:別用現成 `formatNumber`(未整數化,會跑出 `+2,719,608.2` 小數)。
+  正負號(+/−)與隱藏金額(`• • •`)邏輯不變。
+- **維護規則重申**:此三欄的文字一律用 rem/clamp(要隨字體放大);裝飾/固定間距(如那個 10px padding)
+  才用 px。改此區版面時 `metricsGridCols` 與 `STAT_VALUE_FONT_BY_SCALE` 要一起想「手機減欄 vs 桌機 3 欄」兩種寬度。
+- 已在 preview 實測(mobile 375 標準/大/特大、desktop/768 3 欄)並用 span 量測防截字;tsc + 83 tests 通過。
+- **附帶**:`.claude/launch.json` dev server 固定 5174 加 `--strictPort`(埠被佔用直接報錯、不靜默漂移)。
 
 ## 未完成 / 待辦
 

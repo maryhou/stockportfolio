@@ -155,6 +155,14 @@ export function formatNumber(n: number): string {
   return new Intl.NumberFormat('zh-TW').format(n);
 }
 
+// 與 formatNTD 相同的整數化千分位,但不帶貨幣符號($)。
+// 用於首頁 Hero 三欄金額(金額本身已很長,省去 $ 讓視覺更乾淨、更好支援字體放大)。
+export function formatAmount(amount: number): string {
+  return new Intl.NumberFormat('zh-TW', {
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
 /** Signed NTD, e.g. +NT$2 / -NT$1（0 也顯示 +）。用於配息調整這類帶正負的金額。 */
 export function formatSignedNTD(amount: number): string {
   return `${amount < 0 ? '-' : '+'}${formatNTD(Math.abs(amount))}`;
