@@ -306,6 +306,16 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
   tsc + 83 tests 通過。(驗證途中瀏覽器自動化誤點過 儲存,把 fontScale='large' 存進 localStorage,
   已手動清回原狀——非程式 bug。)
 
+### 2026-08-10(續):更新內容 modal + 系統公告
+
+- **通知中心公告**([App.tsx](src/App.tsx) `SYSTEM_ANNOUNCEMENTS`):新增本次優化兩則系統公告
+  (字體大小、股票搜尋),既有使用者下次開啟由 `loadNotifications` 注入一次。
+- **更新內容 modal**([WhatsNewModal.tsx](src/components/WhatsNewModal.tsx)):每個版本首次開啟主動彈一次,
+  列出本版重點 + 「立即調整字體大小」CTA(關閉並開 `偏好設定`)。版本控制:`APP_VERSION`(現 `2026.08.10`)
+  對 `stock-tracker-last-seen-version`(localStorage);既有使用者(有資料)且版本不符才彈,全新使用者
+  只標記版本不打擾 onboarding。**改版規則:① 更新 `APP_VERSION` ② 改寫 `WHATS_NEW` 內容
+  ③(如需公告)在 `SYSTEM_ANNOUNCEMENTS` 加一則新 id。** 已實測:彈出、CTA 跳偏好設定、關閉後重載不再彈。
+
 ## 未完成 / 待辦
 
 0. ~~**Vercel token 短效問題**~~:**2026-07-30 永久解決**。歷史上多次因 CLI 登入核發的

@@ -21,6 +21,7 @@ import SettingsSheet, { type SettingsSection } from './components/SettingsSheet'
 import ToastContainer, { type ToastData } from './components/Toast';
 import PullToRefreshIndicator from './components/PullToRefreshIndicator';
 import OnboardingModal from './components/OnboardingModal';
+import WhatsNewModal, { type WhatsNewItem } from './components/WhatsNewModal';
 import SearchOverlay, { pushRecentId } from './components/SearchOverlay';
 import DividendView from './components/DividendView';
 import AppLock from './components/AppLock';
@@ -28,6 +29,15 @@ import { isBiometricEnabled } from './utils/biometric';
 
 const STORAGE_KEY  = 'stock-tracker-data';
 const ONBOARD_KEY  = 'stock-tracker-onboarded';
+const WHATS_NEW_KEY = 'stock-tracker-last-seen-version';
+
+/** 更新內容 modal。改版時:①更新 APP_VERSION ②改寫 WHATS_NEW 為該版重點。 */
+const APP_VERSION = '2026.08.10';
+const WHATS_NEW: WhatsNewItem[] = [
+  { title: '字體大小調整', desc: '可放大整個介面的文字,長輩看得更清楚。標準／大／特大三段隨你選。' },
+  { title: '搜尋更聰明', desc: '剛上市的新股會自動帶出名稱;主動式 ETF 代號(如 00991A)也能正常搜尋。' },
+  { title: '設定更好找', desc: '設定分成「偏好設定」與「券商設定」兩個入口,一目了然。' },
+];
 const NOTIF_KEY    = 'stock-tracker-notifications';
 const SETTINGS_KEY = 'stock-tracker-settings';
 // Set while local stock changes haven't been confirmed written to Firestore,
@@ -202,6 +212,7 @@ export default function App() {
   const [view, setView] = useState<ViewName>('home');
   const [showAdd, setShowAdd] = useState(false);
   const [settingsSection, setSettingsSection] = useState<SettingsSection | null>(null);
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [isLocked, setIsLocked] = useState(() => {
     if (!isBiometricEnabled()) return false;
@@ -565,6 +576,27 @@ export default function App() {
     document.documentElement.style.fontSize = `${FONT_SCALE_PX[scale]}px`;
   }, [previewFontScale, settings.fontScale]);
 
+  // ── 更新內容 modal:每個版本首次開啟彈一次 ────────────────────────────────
+  // 既有使用者(有資料)且尚未看過此版 → 彈;全新使用者只標記版本、不打擾其 onboarding。
+  useEffect(() => {
+    if (localStorage.getItem(WHATS_NEW_KEY) === APP_VERSION) return;
+    const isExistingUser = !!localStorage.getItem(SETTINGS_KEY) || !!localStorage.getItem(STORAGE_KEY);
+    if (isExistingUser && !showOnboarding) {
+      setShowWhatsNew(true);
+    } else {
+      localStorage.setItem(WHATS_NEW_KEY, APP_VERSION);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function dismissWhatsNew() {
+    localStorage.setItem(WHATS_NEW_KEY, APP_VERSION);
+    setShowWhatsNew(false);
+  }
+  function whatsNewAdjustFont() {
+    dismissWhatsNew();
+    setSettingsSection('preferences');
+  }
+
   useEffect(() => {
     if (initialFetchDone.current || stocks.length === 0) return;
     initialFetchDone.current = true;
@@ -824,6 +856,14 @@ export default function App() {
         <OnboardingModal
           onComplete={handleOnboardingComplete}
           onGoogleSignIn={handleSignIn}
+        />
+      )}
+
+      {showWhatsNew && (
+        <WhatsNewModal
+          items={WHATS_NEW}
+          onAdjustFont={whatsNewAdjustFont}
+          onClose={dismissWhatsNew}
         />
       )}
     </div>
