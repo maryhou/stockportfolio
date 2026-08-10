@@ -37,6 +37,22 @@ const STOCKS_DIRTY_KEY = 'stock-tracker-stocks-dirty';
 /** System announcements injected once per ID — add new entries here for future updates. */
 const SYSTEM_ANNOUNCEMENTS: import('./types').AppNotification[] = [
   {
+    id: 'sys-v7-font-size',
+    type: 'system',
+    title: '新功能:字體大小調整',
+    description: '可放大整個介面的文字,長輩看得更清楚。設定已分為「偏好設定」與「券商設定」;字體大小在「我的」→「偏好設定」裡,可選 標準／大／特大。',
+    time: '系統公告',
+    read: false,
+  },
+  {
+    id: 'sys-v7-stock-search',
+    type: 'system',
+    title: '功能優化:股票搜尋',
+    description: '新增交易時,剛上市的新股(例如 009826)會自動帶出股票名稱;主動式 ETF 代號(例如 00991A)也修正為可正常搜尋。',
+    time: '系統公告',
+    read: false,
+  },
+  {
     id: 'sys-v6-dividend-month-filter',
     type: 'system',
     title: '功能更新：股息月度篩選',
