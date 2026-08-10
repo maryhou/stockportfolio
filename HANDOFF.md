@@ -284,8 +284,8 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
   - AddTransactionSheet:輸入變動時 debounce 450ms 觸發查名(seq guard 防舊結果覆蓋),
     dropdown 顯示「線上查詢中…」spinner、查到就變一列可點的建議、查不到顯示
     「查無此代號的線上資料,可直接在下方手動輸入名稱」的 fallback 提示。
-  - 已實測:dev 因 CORS 走 fallback(直接 fetch mis 回 Failed to fetch 已確認);prod 路徑靠 curl 驗證
-    /api 邏輯與 mis 回傳。**待辦:merge 後在正式站用 009826 實測 /api/lookup 端到端。**
+  - 已實測:dev 因 CORS 走 fallback(直接 fetch mis 回 Failed to fetch 已確認);
+    **正式站端到端已驗證:`GET /api/lookup?symbol=009826` → `{"code":"009826","name":"貝萊德世界股票"}`。**
 - tsc + 82→83 tests 通過(新增 fontScale 驗證測試)。
 
 ### 2026-08-10(續):設定頁拆成兩個 modal(推線前優化,同一 branch)
