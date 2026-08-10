@@ -15,6 +15,11 @@ import DividendCard from './DividendCard';
 import SwipeableRow from './SwipeableRow';
 import MarketStatusBadge from './MarketStatusBadge';
 
+// Hero 卡底部三欄金額:欄寬只有卡片 1/3,完整 NT$ 數字(如 +$2,719,608)在 text-sm 下會溢出被圓角切掉。
+// 改用流動字級(依螢幕寬縮放,非 rem)+ whitespace-nowrap,永遠一行、放不下就縮小而不藏位數。
+// 用 vw 而非 rem = 這三格不隨「字體大小」設定放大(它們本來就塞不下),但保證不跑版。
+const STAT_VALUE_FONT: React.CSSProperties = { fontSize: 'clamp(0.6875rem, 3.2vw, 0.875rem)' };
+
 interface HomeViewProps {
   stocks: Stock[];
   settings: AppSettings;
@@ -235,7 +240,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
                 {isAmountHidden ? '$ • • • • • •' : formatNTD(totalCurrentValue)}
               </p>
               {todayPortfolioChange !== null && todayPortfolioPct !== null && (
-                <div className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full bg-white/20 text-white whitespace-nowrap">
+                <div className="mt-2 inline-flex items-center gap-1 text-[0.6875rem] font-medium px-2.5 py-1 rounded-full bg-white/20 text-white whitespace-nowrap">
                   今日 {isAmountHidden ? '• • •' : `${todayPortfolioChange >= 0 ? '+' : ''}${formatNTD(todayPortfolioChange)}`}
                   {' '}({todayPortfolioPct >= 0 ? '+' : ''}{todayPortfolioPct.toFixed(2)}%)
                 </div>
@@ -254,17 +259,17 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
         <div>
           <div className="flex">
             {/* 已實現損益 */}
-            <div className="flex-1 pt-3 pb-3.5 px-3">
+            <div className="flex-1 min-w-0 pt-3 pb-3.5 px-3">
               <button
                 onClick={() => setShowRealizedInfo(true)}
                 className="flex items-center gap-1 mb-1.5 active:opacity-70 transition-opacity"
               >
-                <p className="text-[10px] text-white/60 leading-none">已實現損益</p>
+                <p className="text-[0.625rem] text-white/60 leading-none">已實現損益</p>
               </button>
-              <p className={`text-sm font-bold leading-none ${realizedProfit === 0 ? 'text-white/80' : realizedProfit > 0 ? 'text-red-400' : 'text-emerald-300'}`}>
+              <p className={`font-bold leading-none whitespace-nowrap tabular-nums ${realizedProfit === 0 ? 'text-white/80' : realizedProfit > 0 ? 'text-red-400' : 'text-emerald-300'}`} style={STAT_VALUE_FONT}>
                 {isAmountHidden ? '• • •' : `${realizedProfit > 0 ? '+' : ''}${formatNTD(realizedProfit)}`}
               </p>
-              <p className="text-[10px] text-white/50 mt-1 leading-none">
+              <p className="text-[0.625rem] text-white/50 mt-1 leading-none">
                 ({realizedReturn > 0 ? '+' : ''}{realizedReturn.toFixed(2)}%)
               </p>
             </div>
@@ -272,17 +277,17 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
             <div className="w-px bg-white/15 my-3 flex-shrink-0" />
 
             {/* 累積總損益 */}
-            <div className="flex-1 pt-3 pb-3.5 px-3">
+            <div className="flex-1 min-w-0 pt-3 pb-3.5 px-3">
               <button
                 onClick={() => setShowCumulativeInfo(true)}
                 className="flex items-center gap-1 mb-1.5 active:opacity-70 transition-opacity"
               >
-                <p className="text-[10px] text-white/60 leading-none">累積總損益</p>
+                <p className="text-[0.625rem] text-white/60 leading-none">累積總損益</p>
               </button>
-              <p className={`text-sm font-bold leading-none ${cumulativePL === 0 ? 'text-white/80' : cumulativePL > 0 ? 'text-red-400' : 'text-emerald-300'}`}>
+              <p className={`font-bold leading-none whitespace-nowrap tabular-nums ${cumulativePL === 0 ? 'text-white/80' : cumulativePL > 0 ? 'text-red-400' : 'text-emerald-300'}`} style={STAT_VALUE_FONT}>
                 {isAmountHidden ? '• • •' : `${cumulativePL > 0 ? '+' : ''}${formatNTD(cumulativePL)}`}
               </p>
-              <p className="text-[10px] text-white/50 mt-1 leading-none">
+              <p className="text-[0.625rem] text-white/50 mt-1 leading-none">
                 ({cumulativeReturn > 0 ? '+' : ''}{cumulativeReturn.toFixed(2)}%)
               </p>
             </div>
@@ -290,14 +295,14 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
             <div className="w-px bg-white/15 my-3 flex-shrink-0" />
 
             {/* 總回收金額 */}
-            <div className="flex-1 pt-3 pb-3.5 px-3">
+            <div className="flex-1 min-w-0 pt-3 pb-3.5 px-3">
               <button
                 onClick={() => setShowProceedsInfo(true)}
                 className="flex items-center gap-1 mb-1.5 active:opacity-70 transition-opacity"
               >
-                <p className="text-[10px] text-white/60 leading-none">總回收金額</p>
+                <p className="text-[0.625rem] text-white/60 leading-none">總回收金額</p>
               </button>
-              <p className="text-sm font-bold text-white leading-none">
+              <p className="font-bold text-white leading-none whitespace-nowrap tabular-nums" style={STAT_VALUE_FONT}>
                 {isAmountHidden ? '• • •' : formatNTD(totalProceeds)}
               </p>
             </div>
@@ -511,7 +516,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
                 ))}
               </div>
             </div>
-            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">此數值會隨市場即時股價變動</p>
+            <p className="text-[0.6875rem] text-gray-400 mt-4 pt-4 border-t border-gray-100">此數值會隨市場即時股價變動</p>
           </div>
         </div>
       )}
@@ -554,7 +559,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
                 </div>
               </div>
             </div>
-            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">僅統計已完成賣出的交易，持倉中的損益不計入</p>
+            <p className="text-[0.6875rem] text-gray-400 mt-4 pt-4 border-t border-gray-100">僅統計已完成賣出的交易，持倉中的損益不計入</p>
           </div>
         </div>
       )}
@@ -597,7 +602,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
                 </div>
               </div>
             </div>
-            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">此為整體投資組合的完整損益指標</p>
+            <p className="text-[0.6875rem] text-gray-400 mt-4 pt-4 border-t border-gray-100">此為整體投資組合的完整損益指標</p>
           </div>
         </div>
       )}
@@ -641,7 +646,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
                 </div>
               )}
             </div>
-            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">與損益不同，此為實際回到帳戶的現金總額</p>
+            <p className="text-[0.6875rem] text-gray-400 mt-4 pt-4 border-t border-gray-100">與損益不同，此為實際回到帳戶的現金總額</p>
           </div>
         </div>
       )}
@@ -714,7 +719,7 @@ function StockCard({ stock, onClick, carousel = false, marketHistory }: { stock:
       }`}
     >
       {/* Code badge */}
-      <span className="inline-flex items-center bg-primary-100 text-primary-600 text-[11px] font-bold rounded-full px-2.5 py-0.5 mb-2">
+      <span className="inline-flex items-center bg-primary-100 text-primary-600 text-[0.6875rem] font-bold rounded-full px-2.5 py-0.5 mb-2">
         {stock.symbol}
       </span>
 
@@ -725,7 +730,7 @@ function StockCard({ stock, onClick, carousel = false, marketHistory }: { stock:
           <p className={`text-xl font-bold leading-tight mt-1 ${isZero ? 'text-gray-800' : isUp ? 'text-red-500' : 'text-emerald-600'}`}>
             {isUp ? '+' : ''}{formatNTD(displayPL)}
           </p>
-          <p className={`text-[11px] font-medium mt-0.5 ${isZero ? 'text-gray-600' : isUp ? 'text-red-400' : 'text-emerald-500'}`}>
+          <p className={`text-[0.6875rem] font-medium mt-0.5 ${isZero ? 'text-gray-600' : isUp ? 'text-red-400' : 'text-emerald-500'}`}>
             {isZero ? '0%' : `${isUp ? '+' : ''}${displayPct.toFixed(2)}%`}
           </p>
         </div>
@@ -737,40 +742,40 @@ function StockCard({ stock, onClick, carousel = false, marketHistory }: { stock:
         {remaining === 0 ? (
           <>
             <div>
-              <p className="text-[10px] text-gray-400">已實現損益</p>
+              <p className="text-[0.625rem] text-gray-400">已實現損益</p>
               <p className={`text-xs font-semibold ${realizedProfit > 0 ? 'text-red-500' : realizedProfit < 0 ? 'text-emerald-600' : 'text-gray-700'}`}>
                 {realizedProfit > 0 ? '+' : ''}{formatNTD(realizedProfit)}
               </p>
             </div>
             <div>
-              <p className="text-[10px] text-gray-400">總投入</p>
+              <p className="text-[0.625rem] text-gray-400">總投入</p>
               <p className="text-xs font-semibold text-gray-700">{formatNTD(invested)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-gray-400">總回收</p>
+              <p className="text-[0.625rem] text-gray-400">總回收</p>
               <p className="text-xs font-semibold text-gray-700">{formatNTD(netProceeds)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-gray-400">狀態</p>
-              <span className="inline-block text-[10px] font-semibold bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded-full">已清倉</span>
+              <p className="text-[0.625rem] text-gray-400">狀態</p>
+              <span className="inline-block text-[0.625rem] font-semibold bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded-full">已清倉</span>
             </div>
           </>
         ) : (
           <>
             <div>
-              <p className="text-[10px] text-gray-400">成本</p>
+              <p className="text-[0.625rem] text-gray-400">成本</p>
               <p className="text-xs font-semibold text-gray-700">{formatPrice(avgCost)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-gray-400">現價</p>
+              <p className="text-[0.625rem] text-gray-400">現價</p>
               <p className="text-xs font-semibold text-gray-700">{formatPrice(stock.currentPrice)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-gray-400">股數</p>
+              <p className="text-[0.625rem] text-gray-400">股數</p>
               <p className="text-xs font-semibold text-gray-700">{remaining} 股</p>
             </div>
             <div>
-              <p className="text-[10px] text-gray-400">持有市值</p>
+              <p className="text-[0.625rem] text-gray-400">持有市值</p>
               <p className="text-xs font-semibold text-gray-700">{formatNTD(holdingVal)}</p>
             </div>
           </>
@@ -801,12 +806,12 @@ function StockListRow({ stock, onClick }: { stock: Stock; onClick: () => void })
       className="w-full flex items-center gap-3 px-4 py-3 text-left border-b border-gray-50 last:border-b-0 active:bg-gray-50 transition-colors"
     >
       <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-        <span className="text-[9px] font-bold text-primary-600 leading-tight text-center px-0.5">{stock.symbol}</span>
+        <span className="text-[0.5625rem] font-bold text-primary-600 leading-tight text-center px-0.5">{stock.symbol}</span>
       </div>
 
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-gray-800 truncate">{stock.name}</p>
-        <p className="text-[10px] text-gray-400 mt-0.5 truncate">
+        <p className="text-[0.625rem] text-gray-400 mt-0.5 truncate">
           {isClosed
             ? `${stock.symbol} · 已清倉`
             : `${stock.symbol} · ${remaining} 股 · ${formatPrice(stock.currentPrice)}`}
@@ -817,7 +822,7 @@ function StockListRow({ stock, onClick }: { stock: Stock; onClick: () => void })
         <p className={`text-sm font-bold ${isZero ? 'text-gray-700' : isUp ? 'text-red-500' : 'text-emerald-600'}`}>
           {isUp ? '+' : ''}{formatNTD(displayPL)}
         </p>
-        <p className={`text-[10px] font-medium mt-0.5 ${isZero ? 'text-gray-400' : isUp ? 'text-red-400' : 'text-emerald-500'}`}>
+        <p className={`text-[0.625rem] font-medium mt-0.5 ${isZero ? 'text-gray-400' : isUp ? 'text-red-400' : 'text-emerald-500'}`}>
           {isZero ? '0.00%' : `${isUp ? '+' : ''}${displayPct.toFixed(2)}%`}
         </p>
       </div>
@@ -876,7 +881,7 @@ function RecentItem({ symbol, name, type, date, shares, amount, profit, onClick 
         </span>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] text-gray-400 leading-none mb-0.5">{symbol}</p>
+        <p className="text-[0.625rem] text-gray-400 leading-none mb-0.5">{symbol}</p>
         <p className="text-sm font-semibold text-gray-800">{name}</p>
         <p className="text-xs text-gray-400">{date} · {shares} 股</p>
       </div>

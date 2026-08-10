@@ -31,7 +31,7 @@ export default function BottomNav({ active, onNavigate, onAddClick }: BottomNavP
       }`}
     >
       <Icon size={22} />
-      <span className="text-[10px] font-medium">{label}</span>
+      <span className="text-[0.625rem] font-medium">{label}</span>
       {active === view && (
         <span className="absolute bottom-0 w-5 h-0.5 rounded-full bg-primary-600" />
       )}

@@ -39,7 +39,7 @@ export default function SideNav({ active, onNavigate, onAddClick, hasUnread, use
           </div>
           <div>
             <p className="text-sm font-bold text-gray-800">投資日誌</p>
-            <p className="text-[10px] text-gray-400">Stock Portfolio</p>
+            <p className="text-[0.625rem] text-gray-400">Stock Portfolio</p>
           </div>
         </div>
       </div>

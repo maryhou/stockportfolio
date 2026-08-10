@@ -4,15 +4,21 @@ import { calcAvgCost, calcFee, calcTax, calcRemainingShares, formatNTD, formatNu
 import { CloseIcon } from './icons/Icons';
 import BottomSheet, { type BottomSheetHandle } from './BottomSheet';
 import twStocksRaw from '../data/twStocks.json';
+import { lookupStockName } from '../utils/lookupStock';
 
 interface TwStock { code: string; name: string }
 const TW_STOCKS = twStocksRaw as TwStock[];
 
+// 看起來像完整股號(4~6 碼數字 + 選用大寫尾碼 + 選用數字),值得對線上即時查名。
+const CODE_LIKE_RE = /^[0-9]{4,6}[A-Za-z]?[0-9]?$/;
+
 function searchTwStocks(query: string): TwStock[] {
   if (!query || query.length < 1) return [];
-  const q = query.toLowerCase();
+  const q = query.trim().toLowerCase();
+  // 代號比對需大小寫不敏感:主動式 ETF 代號帶大寫尾碼(如 00991A、00403A),
+  // query 已轉小寫,故 code 也要轉小寫才對得起來(否則打完整的 00991A 會找不到)。
   return TW_STOCKS
-    .filter(s => s.code.startsWith(q) || s.name.includes(query))
+    .filter(s => s.code.toLowerCase().startsWith(q) || s.name.includes(query.trim()))
     .slice(0, 8);
 }
 
@@ -59,7 +65,11 @@ export default function AddTransactionSheet({
   const [suggestions, setSuggestions] = useState<TwStock[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [nameLocked, setNameLocked] = useState(false);
+  const [looking, setLooking] = useState(false);      // 線上查名進行中
+  const [lookupMiss, setLookupMiss] = useState(false); // 線上也查不到
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lookupSeq = useRef(0); // 防止較舊的非同步結果覆蓋較新的輸入
 
   // Broker selection — defaults to first broker
   const [brokerId, setBrokerId] = useState(settings.brokers[0]?.id ?? '');
@@ -119,16 +129,51 @@ export default function AddTransactionSheet({
     return () => document.removeEventListener('mousedown', handle);
   }, []);
 
+  // Cancel any pending online lookup on unmount
+  useEffect(() => () => { if (lookupTimer.current) clearTimeout(lookupTimer.current); }, []);
+
   function handleSymbolChange(val: string) {
     setNewSymbol(val);
     if (!nameLocked) setNewName('');
     setNameLocked(false);
+
+    // 取消任何待處理的線上查名
+    if (lookupTimer.current) clearTimeout(lookupTimer.current);
+    lookupSeq.current++;
+    setLooking(false);
+    setLookupMiss(false);
+
     const results = searchTwStocks(val);
     setSuggestions(results);
     setShowSuggestions(results.length > 0);
+
+    // 本地清單查不到、但輸入像完整股號 → 對線上即時查名(剛上市的新股不在靜態清單)。
+    const code = val.trim();
+    if (results.length === 0 && CODE_LIKE_RE.test(code)) {
+      setLooking(true);
+      setShowSuggestions(true);
+      const seq = lookupSeq.current;
+      lookupTimer.current = setTimeout(async () => {
+        const found = await lookupStockName(code);
+        if (seq !== lookupSeq.current) return; // 已被更新的輸入取代
+        setLooking(false);
+        if (found) {
+          setSuggestions([{ code: found.code, name: found.name }]);
+          setShowSuggestions(true);
+        } else {
+          setSuggestions([]);
+          setLookupMiss(true);
+          setShowSuggestions(false);
+        }
+      }, 450);
+    }
   }
 
   function selectSuggestion(s: TwStock) {
+    if (lookupTimer.current) clearTimeout(lookupTimer.current);
+    lookupSeq.current++;
+    setLooking(false);
+    setLookupMiss(false);
     setNewSymbol(s.code);
     setNewName(s.name);
     setNameLocked(true);
@@ -286,10 +331,10 @@ export default function AddTransactionSheet({
                         placeholder="輸入股票代號（如：2330）"
                         value={newSymbol}
                         onChange={(e) => handleSymbolChange(e.target.value)}
-                        onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                        onFocus={() => (suggestions.length > 0 || looking) && setShowSuggestions(true)}
                       />
                       {nameLocked && newName && (
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] bg-primary-100 text-primary-700 font-semibold px-2 py-0.5 rounded-full">
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[0.6875rem] bg-primary-100 text-primary-700 font-semibold px-2 py-0.5 rounded-full">
                           {newName}
                         </span>
                       )}
@@ -301,7 +346,7 @@ export default function AddTransactionSheet({
                       ← 返回
                     </button>
                   </div>
-                  {showSuggestions && suggestions.length > 0 && (
+                  {showSuggestions && (suggestions.length > 0 || looking) && (
                     <div className="absolute top-full left-0 right-10 mt-1 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden">
                       {suggestions.map((s) => (
                         <button
@@ -313,9 +358,23 @@ export default function AddTransactionSheet({
                           <span className="text-xs text-gray-400 font-mono">{s.code}</span>
                         </button>
                       ))}
+                      {looking && suggestions.length === 0 && (
+                        <div className="px-4 py-2.5 flex items-center gap-2 text-xs text-gray-400">
+                          <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
+                            <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                          </svg>
+                          線上查詢股票名稱中…
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
+                {lookupMiss && !nameLocked && (
+                  <p className="text-[0.6875rem] text-gray-400 pl-1 -mt-1">
+                    查無此代號的線上資料,可直接在下方手動輸入名稱。
+                  </p>
+                )}
                 {!nameLocked && newSymbol && (
                   <input
                     className="input"
@@ -424,7 +483,7 @@ export default function AddTransactionSheet({
                       highlight
                     />
                     <div className="mt-1 pt-1 border-t border-blue-100">
-                      <p className="text-[10px] text-blue-400">後續新增的買賣交易將以此成本為基礎計算損益</p>
+                      <p className="text-[0.625rem] text-blue-400">後續新增的買賣交易將以此成本為基礎計算損益</p>
                     </div>
                   </>
                 ) : txType === 'buy' ? (
@@ -444,11 +503,11 @@ export default function AddTransactionSheet({
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs text-gray-500">交易稅</span>
                         {detectedBondETF ? (
-                          <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">債券ETF 免稅</span>
+                          <span className="text-[0.625rem] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">債券ETF 免稅</span>
                         ) : detectedETF ? (
-                          <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">ETF 0.1%</span>
+                          <span className="text-[0.625rem] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">ETF 0.1%</span>
                         ) : (
-                          <span className="text-[10px] font-semibold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">股票 0.3%</span>
+                          <span className="text-[0.625rem] font-semibold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">股票 0.3%</span>
                         )}
                       </div>
                       <span className="text-xs font-semibold text-gray-700">{tax > 0 ? '-' : ''}{formatNTD(tax)}</span>

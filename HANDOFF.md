@@ -215,6 +215,97 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
   真實瀏海效果需 iOS 裝置才顯現)。**維護規則**:新增頂端貼齊的頁面/覆蓋層,頂 padding 一律用
   `pt-safe-*` 而非固定 `pt-N`。
 
+### 2026-08-10:字體大小(無障礙)+ 股票搜尋修正 + 設定重整(branch `feature/font-size-and-search-fixes` → merged to main)
+
+一次處理使用者多項回報。以下 ①②③ 為最初三項,後續(設定拆分、px→rem、色條、防跑版三處、代號上移、
+成績卡堆疊)見本節末尾各條:
+
+**① 字體太小 → 新增「字體大小」設定(年長使用者)**
+- 型別([types/index.ts](src/types/index.ts)):新增 `AppFontScale = 'normal' | 'large' | 'xlarge'`、
+  `AppSettings.fontScale?`、常數 `FONT_SCALE_PX = { normal:16, large:18, xlarge:20 }`(根 px)。
+- 套用([App.tsx](src/App.tsx)):useEffect 依 `previewFontScale ?? settings.fontScale ?? 'normal'`
+  設 `document.documentElement.style.fontSize`。**Tailwind 皆用 rem,故改根 font-size = 整個 UI 等比放大**。
+  跟主題一樣有即時預覽:`previewFontScale` state + 傳 `onFontScalePreview` 給 SettingsSheet;
+  存檔/匯入時 `setPreviewFontScale(null)` 清預覽,關閉設定則回退預覽(`handleClose`)。
+- UI([SettingsSheet.tsx](src/components/SettingsSheet.tsx)):「字體大小」區三顆按鈕(標準/大/特大),
+  各自用 inline `fontSize` 顯示放大後的「A」預覽,點擊即時預覽。**注意**:`handleSave` 原本重建
+  settings 物件時漏掉 `dividendTransferFee`(存設定會把它清成 undefined 的隱性 bug),此次一併補回保留。
+- 匯入驗證([validateImport.ts](src/utils/validateImport.ts)):`parseSettings` 新增 `fontScale` 逐欄驗證
+  (限三值)。**維護規則**:動 `AppSettings`/`AppFontScale` 要同步這裡與測試。
+- 已在 mobile viewport 實測:點特大 → 根 font-size 16→20px、整個 UI 放大、按鈕高亮;關閉回退 16px。
+- **px→rem 補漏(2026-08-10 續)**:根 font-size 縮放**只影響 rem 文字**;全專案原有 **136 個
+  `text-[Npx]` 寫死像素**(9~13px 的小標籤/badge/hint,15 檔),放大時完全不動 —— 恰好是年長者最需要
+  放大的小字(例:首頁個股卡的股號 `text-[11px]`)。已用腳本全部轉成等值 rem:
+  `10px→0.625rem`、`11px→0.6875rem`、`9→0.5625`、`12→0.75`、`13→0.8125`(base 16px,標準大小下
+  像素完全相同、零視覺回歸;放大時才跟著變大)。實測股號 badge:標準 11px、特大 13.75px。
+  **維護規則**:新增文字一律用 Tailwind 標準級距(text-xs/sm/…,皆 rem)或 `text-[x.xxxrem]`,
+  **不要用 `text-[Npx]`**,否則不會隨字體大小設定放大。(icon 的 svg width/height 仍是 px,暫不隨放大,
+  影響輕微;要一起放大需另外處理。)
+- **反向原則:裝飾元素的尺寸「不該」隨字體放大**。個股明細列(`StockSummaryRow`)左側的彩色色條原本
+  `w-2.5`(rem)會隨字體變粗、浪費空間 —— 已把**寬度**改成固定 `w-[10px]`(高度 `h-10` 保留、仍隨列高)。
+  **規則**:文字用 rem(要放大);純裝飾的粗細/固定尺寸用 px(不要放大)。
+- **首頁 Hero 卡底部三欄金額防跑版**([HomeView.tsx](src/components/HomeView.tsx)):三欄等寬 `flex-1`
+  塞完整 NT$ 金額,7~8 位數(如 `+$2,719,608`)在 `text-sm` 下就會溢出、被卡片 `rounded-3xl overflow-hidden`
+  圓角切掉(字體放大後更嚴重)。改法:值改用流動字級 `STAT_VALUE_FONT = clamp(0.6875rem, 3.2vw, 0.875rem)`
+  + `whitespace-nowrap tabular-nums`,欄位加 `min-w-0`。**永遠一行、放不下自動縮小而非藏位數**(理財 App
+  不截字/不縮寫)。實測 16px 與 20px 皆不 overflow(最寬 +$2,719,608 在 111px 欄內佔 87~91px)。
+  用 vw 故這三格不隨字體設定等比放大,但 rem 下限讓它仍會微幅變大且保證不跑版。
+- **代號改放名稱上方(垂直堆疊)防跑版**([ActivityView.tsx](src/components/ActivityView.tsx)):
+  `StockSummaryRow`(分析頁個股列)與 `TradeTileRow`(交易紀錄列)原本股名與代號**並排**
+  (`名稱 <span> 代號`),字體放大時中文股名換行、代號被夾在中間 → 版面亂(如「群益台/灣精選 00919/高息」)。
+  兩者都改成**代號在上(text-xs 灰)、名稱在下(text-sm 粗)** 垂直堆疊,左欄加 `min-w-0`、右側金額 `flex-shrink-0`。
+  這樣不論字體大小都各佔一行、不互相擠。已在特大實測兩者皆正常。
+  **規則**:列表同時要顯示代號+中文名時,用上下堆疊而非並排(中文名放大會換行擠壞並排版面)。
+- **「我的投資成績」卡:字體放大時 2 欄→上下堆疊**([ProfileView.tsx](src/components/ProfileView.tsx)):
+  總損益/累積報酬率原本 2 欄並排(各半卡寬),特大時 `+$2,719,608`、`+88.74%`(text-xl)被切掉。
+  依 `settings.fontScale` 判斷:`stackStats = fontScale===large||xlarge` → true 時 `flex-col`(各佔整卡寬、
+  分隔線改水平),normal 維持 2 欄。實測特大堆疊不切字、標準維持原 2 欄。
+  **這是「依字體大小改版面」的範例**:大數字在窄欄放不下時,與其縮字(年長者看不到),不如放大模式改上下排。
+- **關於字體大小自動存檔**:已用「清除 fontScale → reload → 靜置 20 秒(含 15 秒輪詢週期)零操作」實測,
+  值維持 (unset)、16px 不變 —— **確認沒有自動/週期性存 settings 的 bug**(輪詢只存 stocks)。
+  存 settings 只發生在:onboarding、儲存按鈕、匯入、雲端登入還原。驗證期間 localStorage 一度殘留
+  xlarge 純粹是瀏覽器自動化誤點「儲存」造成,非程式問題。
+
+**② 打完整股號帶 A 尾碼搜不到(00991A、00403A)**([AddTransactionSheet.tsx](src/components/AddTransactionSheet.tsx))
+- 根因:`searchTwStocks` 把 query `toLowerCase()`,卻用未轉小寫的 `code.startsWith(q)` 比對。
+  主動式 ETF 代號含大寫尾碼(`00991A`),`"00991A".startsWith("00991a")` = **false** → 純數字搜得到、
+  一打到 A 就消失。修法:`code.toLowerCase().startsWith(q)`(大小寫不敏感)。實測 00991A 已帶出「主動復華未來50」。
+
+**③ 剛上市新股搜不到 / 擔心現價撈不到(009826)**
+- **現價本來就 OK**:價格走 symbol 查 TWSE/TPEx,不依賴 [twStocks.json](src/data/twStocks.json)。
+  curl mis API 確認 009826 有現價(y=10.22、買賣報價)。使用者看到的只是**搜尋(名稱)撈不到**——
+  twStocks.json 是靜態快照,上市不到一週的新股不在裡面。
+- 修法:本地清單查無、但輸入像完整股號時,對**線上即時查名**。mis `getStockInfo` 的 `n` 欄一上市就有名稱
+  (009826 = 「貝萊德世界股票」)。
+  - 新增 [api/lookup.ts](api/lookup.ts) edge proxy(`GET /api/lookup?symbol=` → `{code,name}`),
+    複用 mis + 同一組股號 regex(**維護規則**:regex 與 api/prices、api/history、api/dividends 保持一致)。
+  - 新增 [lookupStock.ts](src/utils/lookupStock.ts) `lookupStockName()`:prod 走同源 `/api/lookup`,
+    dev 直連 mis(**dev 會被 CORS 擋是正常的**,同 fetchPrices)。永不 throw,查無回 null。
+  - AddTransactionSheet:輸入變動時 debounce 450ms 觸發查名(seq guard 防舊結果覆蓋),
+    dropdown 顯示「線上查詢中…」spinner、查到就變一列可點的建議、查不到顯示
+    「查無此代號的線上資料,可直接在下方手動輸入名稱」的 fallback 提示。
+  - 已實測:dev 因 CORS 走 fallback(直接 fetch mis 回 Failed to fetch 已確認);prod 路徑靠 curl 驗證
+    /api 邏輯與 mis 回傳。**待辦:merge 後在正式站用 009826 實測 /api/lookup 端到端。**
+- tsc + 82→83 tests 通過(新增 fontScale 驗證測試)。
+
+### 2026-08-10(續):設定頁拆成兩個 modal(推線前優化,同一 branch)
+
+使用者反應「偏好設定」全塞在一個 modal 裡找不到東西。改成像「資料管理」的可探索列表:
+- **[ProfileView.tsx](src/components/ProfileView.tsx)**:移除右上角齒輪(舊的隱藏入口)與原本獨立的
+  「費用計算說明」卡。新增小標題「個人設定」區(白底卡、兩列、風格同 資料管理):
+  - **偏好設定**(sliders icon)→ 開 preferences modal:個人(使用者名稱)・介面主題・字體大小・隱私。
+  - **券商設定**(百分比 icon,琥珀)→ 開 broker modal:券商費率・交易稅・費用計算說明。
+- **[SettingsSheet.tsx](src/components/SettingsSheet.tsx)**:同一元件加 `section: 'preferences' | 'broker'`
+  prop(export `SettingsSection`),用 `{section === ...}` 分別 render 兩組;標題隨 section 切換。
+  **費用計算說明搬進 broker modal**(改用當前編輯中的 brokers/taxRateInput 即時計算,取代原 ProfileView 靜態卡)。
+  **存檔邏輯不變** —— state 對所有欄位都從 settings 初始化,任一 modal 存檔都保留另一組欄位(無資料遺失)。
+- **[App.tsx](src/App.tsx)**:`showSettings: boolean` → `settingsSection: SettingsSection | null`;
+  ProfileView props `onSettingsClick` → `onOpenPreferences` / `onOpenBrokerSettings`。
+- **注意**:只有「儲存設定」按鈕會存檔(`onSave` 唯一呼叫點),預覽/關閉都不存(關閉會 revert 主題+字體預覽)。
+- 已在 mobile viewport 實測:個人設定兩列、兩 modal 內容分組正確、字體預覽仍即時、關閉回退;
+  tsc + 83 tests 通過。(驗證途中瀏覽器自動化誤點過 儲存,把 fontScale='large' 存進 localStorage,
+  已手動清回原狀——非程式 bug。)
+
 ## 未完成 / 待辦
 
 0. ~~**Vercel token 短效問題**~~:**2026-07-30 永久解決**。歷史上多次因 CLI 登入核發的

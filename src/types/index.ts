@@ -58,13 +58,25 @@ export type ViewName = 'home' | 'activity' | 'holdings' | 'profile' | 'notificat
 
 export type AppTheme = 'default' | 'neutral' | 'dark';
 
+// 字體大小（無障礙）：normal = 標準、large = 大、xlarge = 特大。
+// 以根 <html> font-size 縮放整個 UI（Tailwind 皆用 rem，故等比放大）。
+export type AppFontScale = 'normal' | 'large' | 'xlarge';
+
 export interface AppSettings {
   userName: string;
   brokers: Broker[];    // replaces old brokerName / feeRate / feeDiscount
   taxRate: number;      // universal across brokers, e.g. 0.003 (= 0.3%)
   theme?: AppTheme;
+  fontScale?: AppFontScale; // 介面字體大小，未設定 = normal
   dividendTransferFee?: number; // 匯款手續費預設值，default 10
 }
+
+// 根 font-size(px)對應表。瀏覽器預設 16px = 標準;放大時整個 rem-based UI 等比變大。
+export const FONT_SCALE_PX: Record<AppFontScale, number> = {
+  normal: 16,
+  large: 18,
+  xlarge: 20,
+};
 
 export const DEFAULT_BROKER: Broker = {
   id: 'default',

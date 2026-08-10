@@ -135,13 +135,13 @@ function HoldingCard({ stock, onClick }: { stock: Stock; onClick: () => void }) 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-            <span className="text-[11px] font-bold text-primary-600 leading-tight text-center">
+            <span className="text-[0.6875rem] font-bold text-primary-600 leading-tight text-center">
               {stock.symbol}
             </span>
           </div>
           <div>
             <p className="text-sm font-semibold text-gray-800">{stock.name}</p>
-            <span className={`inline-block text-[9px] font-medium px-1.5 py-0.5 rounded-full mt-0.5 ${
+            <span className={`inline-block text-[0.5625rem] font-medium px-1.5 py-0.5 rounded-full mt-0.5 ${
               isClosed ? 'bg-gray-100 text-gray-400' : 'bg-primary-100 text-primary-600'
             }`}>
               {isClosed ? '已清倉' : '持倉中'}
@@ -162,12 +162,12 @@ function HoldingCard({ stock, onClick }: { stock: Stock; onClick: () => void }) 
       {/* Stats row */}
       <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-3 gap-2 text-center">
         <div>
-          <p className="text-[10px] text-gray-400">平均成本</p>
+          <p className="text-[0.625rem] text-gray-400">平均成本</p>
           <p className="text-xs font-semibold text-gray-600">{formatPrice(avgCost)}</p>
         </div>
 
         <div>
-          <p className="text-[10px] text-gray-400">剩餘股數</p>
+          <p className="text-[0.625rem] text-gray-400">剩餘股數</p>
           <p className={`text-base font-bold leading-tight ${isClosed ? 'text-gray-400' : 'text-primary-600'}`}>
             {remaining}
           </p>
@@ -175,14 +175,14 @@ function HoldingCard({ stock, onClick }: { stock: Stock; onClick: () => void }) 
 
         {isClosed ? (
           <div>
-            <p className="text-[10px] text-gray-400">總回收金額</p>
+            <p className="text-[0.625rem] text-gray-400">總回收金額</p>
             <p className="text-xs font-semibold text-gray-600">{formatNTD(netProceeds)}</p>
           </div>
         ) : (
           <div>
-            <p className="text-[10px] text-gray-400">目前市值</p>
+            <p className="text-[0.625rem] text-gray-400">目前市值</p>
             <p className="text-xs font-semibold text-gray-600">{formatNTD(currentHoldingValue)}</p>
-            <p className="text-[9px] text-gray-400">${formatNumber(stock.currentPrice)}/股</p>
+            <p className="text-[0.5625rem] text-gray-400">${formatNumber(stock.currentPrice)}/股</p>
           </div>
         )}
       </div>

@@ -104,7 +104,7 @@ export default function DonutChart({
               {((active.value / total) * 100).toFixed(1)}%
             </span>
             {active.rows?.map((row, i) => (
-              <span key={row.label} className={`text-[11px] text-gray-500 leading-tight whitespace-nowrap ${i === 0 ? 'mt-1' : ''}`}>
+              <span key={row.label} className={`text-[0.6875rem] text-gray-500 leading-tight whitespace-nowrap ${i === 0 ? 'mt-1' : ''}`}>
                 {row.label} <span className="font-semibold text-gray-700 tabular-nums">{row.value}</span>
               </span>
             ))}
@@ -113,7 +113,7 @@ export default function DonutChart({
           <>
             <span className="text-xl font-bold text-gray-800 leading-tight">{centerLabel}</span>
             <span className="text-xs font-medium text-gray-600 mt-1">{centerSub}</span>
-            {centerSub2 && <span className="text-[10px] text-gray-400 mt-0.5">{centerSub2}</span>}
+            {centerSub2 && <span className="text-[0.625rem] text-gray-400 mt-0.5">{centerSub2}</span>}
           </>
         )}
       </div>

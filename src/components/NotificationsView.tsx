@@ -164,7 +164,7 @@ function SwipeableItem({
             {n.title}
           </p>
           <p className="text-xs text-gray-400 mt-0.5 leading-relaxed line-clamp-2">{n.description}</p>
-          <p className="text-[10px] text-gray-300 mt-1.5">{n.time}</p>
+          <p className="text-[0.625rem] text-gray-300 mt-1.5">{n.time}</p>
         </div>
 
         {/* Unread dot */}

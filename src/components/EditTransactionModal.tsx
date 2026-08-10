@@ -117,7 +117,7 @@ export default function EditTransactionModal({
           {/* Read-only stock info */}
           <div className="flex items-center gap-3 mb-5 p-3 bg-gray-50 rounded-2xl">
             <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-              <span className="text-[11px] font-bold text-primary-600">{stock.symbol}</span>
+              <span className="text-[0.6875rem] font-bold text-primary-600">{stock.symbol}</span>
             </div>
             <div className="flex-1">
               <p className="text-sm font-semibold text-gray-800">{stock.name}</p>
@@ -187,7 +187,7 @@ export default function EditTransactionModal({
               <label className="label">手續費</label>
               <div className="relative">
                 <input type="text" className="input bg-gray-50 text-gray-400 cursor-default" value="0" readOnly />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-blue-400">已含在均價中</span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[0.6875rem] text-blue-400">已含在均價中</span>
               </div>
             </div>
           ) : (
@@ -220,7 +220,7 @@ export default function EditTransactionModal({
                       highlight
                     />
                     <div className="mt-1 pt-1 border-t border-blue-100">
-                      <p className="text-[10px] text-blue-400">後續新增的買賣交易將以此成本為基礎計算損益</p>
+                      <p className="text-[0.625rem] text-blue-400">後續新增的買賣交易將以此成本為基礎計算損益</p>
                     </div>
                   </>
                 ) : isBuy ? (
@@ -237,11 +237,11 @@ export default function EditTransactionModal({
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs text-gray-500">交易稅</span>
                         {detectedBondETF ? (
-                          <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">債券ETF 免稅</span>
+                          <span className="text-[0.625rem] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">債券ETF 免稅</span>
                         ) : detectedETF ? (
-                          <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">ETF 0.1%</span>
+                          <span className="text-[0.625rem] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">ETF 0.1%</span>
                         ) : (
-                          <span className="text-[10px] font-semibold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">股票 0.3%</span>
+                          <span className="text-[0.625rem] font-semibold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">股票 0.3%</span>
                         )}
                       </div>
                       <span className="text-xs font-semibold text-gray-700">{tax > 0 ? '-' : ''}{formatNTD(tax)}</span>

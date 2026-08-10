@@ -46,20 +46,20 @@ export default function DividendCard({ stocks, onClick }: DividendCardProps) {
         </div>
 
         <div className="min-w-0">
-          <p className="text-[11px] text-gray-400 mb-0.5 font-medium">本月股息收益</p>
+          <p className="text-[0.6875rem] text-gray-400 mb-0.5 font-medium">本月股息收益</p>
           {hasData ? (
             <>
               <p className="text-xl font-bold text-amber-500 leading-tight">
                 +{formatNTD(thisMonthTotal)}
               </p>
-              <p className="text-[11px] text-gray-400 mt-0.5">
+              <p className="text-[0.6875rem] text-gray-400 mt-0.5">
                 {thisMonthCount > 0 ? `共 ${thisMonthCount} 筆股息紀錄` : '本月尚無紀錄'}
               </p>
             </>
           ) : (
             <>
               <p className="text-xl font-bold text-gray-300 leading-tight">$0</p>
-              <p className="text-[11px] text-gray-300 mt-0.5">新增第一筆股息 →</p>
+              <p className="text-[0.6875rem] text-gray-300 mt-0.5">新增第一筆股息 →</p>
             </>
           )}
         </div>
@@ -71,11 +71,11 @@ export default function DividendCard({ stocks, onClick }: DividendCardProps) {
       {/* Right — 今年 */}
       <div className="flex-shrink-0 text-right flex flex-col justify-between">
         <div>
-          <p className="text-[11px] text-gray-400 mb-0.5 font-medium">今年</p>
+          <p className="text-[0.6875rem] text-gray-400 mb-0.5 font-medium">今年</p>
           <p className="text-xl font-bold text-gray-800 leading-tight">
             {hasData ? `+${formatNTD(thisYearTotal)}` : '$0'}
           </p>
-          <p className="text-[11px] text-gray-400 mt-0.5">
+          <p className="text-[0.6875rem] text-gray-400 mt-0.5">
             {yieldPct > 0 ? `年化殖利率 ${yieldPct.toFixed(2)}%` : '年化殖利率 —'}
           </p>
         </div>

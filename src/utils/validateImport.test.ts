@@ -87,6 +87,7 @@ const validSettings: AppSettings = {
   brokers: [{ id: 'default', name: '元大券商', feeRate: 0.001425, feeDiscount: 0.6 }],
   taxRate: 0.003,
   theme: 'default',
+  fontScale: 'large',
   dividendTransferFee: 10,
 };
 
@@ -123,6 +124,7 @@ describe('parsePortfolioJson', () => {
     ['settings empty brokers', JSON.stringify({ stocks: [], settings: { userName: 'A', brokers: [], taxRate: 0.003 } })],
     ['bad broker record', JSON.stringify({ stocks: [], settings: { userName: 'A', brokers: [{ id: 'x' }], taxRate: 0.003 } })],
     ['invalid theme', JSON.stringify({ stocks: [], settings: { ...validSettings, theme: 'blue' } })],
+    ['invalid fontScale', JSON.stringify({ stocks: [], settings: { ...validSettings, fontScale: 'huge' } })],
     ['taxRate as string', JSON.stringify({ stocks: [], settings: { ...validSettings, taxRate: '0.003' } })],
     ['neither array nor stocks object', JSON.stringify({ foo: 1 })],
   ])('rejects %s', (_label, text) => {

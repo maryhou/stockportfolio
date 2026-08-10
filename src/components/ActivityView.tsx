@@ -198,7 +198,7 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
               總損益 {hideAmounts ? '• • •' : `${totalPL > 0 ? '+' : ''}${formatNTD(totalPL)}`}
             </div>
           </div>
-          <p className="text-[11px] text-gray-400 mb-1.5">
+          <p className="text-[0.6875rem] text-gray-400 mb-1.5">
             {portfolioView === 'holding'
               ? '僅包含目前持有中的投資部分'
               : '僅包含持倉中與已清倉的所有投資'}
@@ -322,14 +322,16 @@ function StockSummaryRow({ stock, color, onClick }: { stock: Stock; color: strin
       onClick={onClick}
       className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left w-full flex items-center gap-3 active:scale-[0.99] transition-transform"
     >
-      <div className="w-2.5 h-10 rounded-full flex-shrink-0" style={{ background: color }} />
+      {/* 裝飾用色條:寬度固定 px、不隨字體大小放大(否則會變粗、浪費空間);高度仍隨列高 */}
+      <div className="w-[10px] h-10 rounded-full flex-shrink-0" style={{ background: color }} />
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-sm font-semibold text-gray-800">{stock.name}</span>
-            <span className="text-xs text-gray-400 ml-2">{stock.symbol}</span>
+        <div className="flex items-start justify-between gap-2">
+          {/* 代號在上、名稱在下:字體放大時兩者垂直堆疊,不會像原本並排時互相擠到跑版 */}
+          <div className="min-w-0">
+            <p className="text-xs text-gray-400 leading-tight">{stock.symbol}</p>
+            <p className="text-sm font-semibold text-gray-800 leading-tight">{stock.name}</p>
           </div>
-          <div className="text-right">
+          <div className="text-right flex-shrink-0">
             <p className={`text-sm font-bold ${displayPL >= 0 ? 'text-red-500' : 'text-emerald-600'}`}>
               {displayPL > 0 ? '+' : ''}{formatNTD(displayPL)}
             </p>
@@ -340,17 +342,17 @@ function StockSummaryRow({ stock, color, onClick }: { stock: Stock; color: strin
         </div>
         <div className="mt-1.5 grid grid-cols-3 gap-2">
           <div>
-            <p className="text-[10px] text-gray-400">平均成本</p>
+            <p className="text-[0.625rem] text-gray-400">平均成本</p>
             <p className="text-xs font-semibold text-gray-600">{formatPrice(avgCost)}</p>
           </div>
           <div>
-            <p className="text-[10px] text-gray-400">剩餘股數</p>
+            <p className="text-[0.625rem] text-gray-400">剩餘股數</p>
             <p className={`text-xs font-semibold ${isClosed ? 'text-gray-400' : 'text-primary-600'}`}>
               {isClosed ? '已清倉' : `${remaining} 股`}
             </p>
           </div>
           <div>
-            <p className="text-[10px] text-gray-400">目前股價</p>
+            <p className="text-[0.625rem] text-gray-400">目前股價</p>
             <p className="text-xs font-semibold text-gray-600">{formatPrice(stock.currentPrice)}</p>
           </div>
         </div>
@@ -371,13 +373,12 @@ function TradeTileRow({ stockName, stockSymbol, type, date, shares, price, amoun
         <span className={`text-xs font-bold ${type === 'buy' ? 'text-primary-600' : 'text-emerald-600'}`}>{type === 'buy' ? '買' : '賣'}</span>
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm font-semibold text-gray-800">{stockName}</span>
-          <span className="text-xs text-gray-400">{stockSymbol}</span>
-        </div>
-        <p className="text-xs text-gray-400">{date} · {formatNumber(price)} × {shares} 股</p>
+        {/* 代號在上、名稱在下:字體放大時不會像並排時互相擠到換行跑版 */}
+        <p className="text-xs text-gray-400 leading-tight">{stockSymbol}</p>
+        <p className="text-sm font-semibold text-gray-800 leading-tight">{stockName}</p>
+        <p className="text-xs text-gray-400 mt-0.5">{date} · {formatNumber(price)} × {shares} 股</p>
       </div>
-      <div className="text-right">
+      <div className="text-right flex-shrink-0">
         <p className="text-sm font-semibold text-gray-700">
           {type === 'sell' ? '' : '-'}{formatNTD(amount)}
         </p>
@@ -479,7 +480,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
         </button>
         <div>
           <h2 className="text-xl font-bold text-gray-800">{stock.name}</h2>
-          <span className="inline-flex items-center bg-primary-100 text-primary-600 text-[11px] font-bold rounded-full px-2.5 py-0.5 mt-1">
+          <span className="inline-flex items-center bg-primary-100 text-primary-600 text-[0.6875rem] font-bold rounded-full px-2.5 py-0.5 mt-1">
             {stock.symbol}
           </span>
         </div>
@@ -504,7 +505,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
               </svg>
             </button>
             {todayChangeTotal !== null && todayChangePct !== null && (
-              <div className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-white/20 text-white whitespace-nowrap">
+              <div className="text-[0.6875rem] font-medium px-2.5 py-1 rounded-full bg-white/20 text-white whitespace-nowrap">
                 今日 {todayChangeTotal >= 0 ? '+' : ''}{formatNTD(todayChangeTotal)} ({todayChangePct >= 0 ? '+' : ''}{todayChangePct.toFixed(2)}%)
               </div>
             )}
@@ -561,13 +562,13 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
             {/* Top-left: 已清倉→總回收金額 / 持倉→已實現損益 */}
             {isClosed ? (
               <div className="pt-[9px] pb-1.5 px-4">
-                <p className="text-[11px] text-white/60 mb-0.5">總回收金額</p>
+                <p className="text-[0.6875rem] text-white/60 mb-0.5">總回收金額</p>
                 <p className="text-lg font-bold text-white">{formatNTD(netProceeds)}</p>
               </div>
             ) : (
               <div className="pt-[9px] pb-1.5 px-4">
                 <button onClick={() => setShowRealizedInfo(true)} className="flex items-center gap-1 active:opacity-70 transition-opacity mb-0.5">
-                  <span className="text-[11px] text-white/60">已實現損益</span>
+                  <span className="text-[0.6875rem] text-white/60">已實現損益</span>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="rgba(255,255,255,0.35)"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.35)" stroke="none" /></svg>
                 </button>
                 <p className={`text-lg font-bold ${realizedProfit === 0 ? 'text-white/80' : realizedProfit > 0 ? 'text-red-400' : 'text-emerald-300'}`}>
@@ -578,13 +579,13 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
             {/* Top-right: 已清倉→持有天數 / 持倉→未實現損益 */}
             {isClosed ? (
               <div className="pt-[9px] pb-1.5 px-4">
-                <p className="text-[11px] text-white/60 mb-0.5">持有天數</p>
+                <p className="text-[0.6875rem] text-white/60 mb-0.5">持有天數</p>
                 <p className="text-lg font-bold text-white">{holdingDays} 天</p>
               </div>
             ) : (
               <div className="pt-[9px] pb-1.5 px-4">
                 <button onClick={() => setShowUnrealizedInfo(true)} className="flex items-center gap-1 active:opacity-70 transition-opacity mb-0.5">
-                  <span className="text-[11px] text-white/60">未實現損益</span>
+                  <span className="text-[0.6875rem] text-white/60">未實現損益</span>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="rgba(255,255,255,0.35)"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.35)" stroke="none" /></svg>
                 </button>
                 <p className={`text-lg font-bold ${unrealizedPL === 0 ? 'text-white/80' : unrealizedPL > 0 ? 'text-red-400' : 'text-emerald-300'}`}>
@@ -595,7 +596,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
             {/* Bottom-left: 總投入成本（所有情況相同） */}
             <div className="pt-1.5 pb-[9px] px-4">
               <button onClick={() => setShowInvestedInfo(true)} className="flex items-center gap-1 active:opacity-70 transition-opacity mb-0.5">
-                <span className="text-[11px] text-white/60">總投入成本(含手續費)</span>
+                <span className="text-[0.6875rem] text-white/60">總投入成本(含手續費)</span>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="rgba(255,255,255,0.35)"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.35)" stroke="none" /></svg>
               </button>
               <p className="text-base font-bold text-white">{formatNTD(totalInvested)}</p>
@@ -603,7 +604,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
             {/* Bottom-right: 已清倉→時間區間 / 持倉→目前市值 */}
             {isClosed ? (
               <div className="pt-1.5 pb-[9px] px-4">
-                <p className="text-[11px] text-white/60 mb-0.5">時間區間</p>
+                <p className="text-[0.6875rem] text-white/60 mb-0.5">時間區間</p>
                 <p className="text-xs font-bold text-white whitespace-nowrap">
                   {firstBuyDate ? fmtShort(firstBuyDate) : '—'}<span className="text-white/60">-</span>{lastSellDate ? fmtShort(lastSellDate) : '—'}
                 </p>
@@ -611,7 +612,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
             ) : (
               <div className="pt-1.5 pb-[9px] px-4">
                 <button onClick={() => setShowMarketValInfo(true)} className="flex items-center gap-1 active:opacity-70 transition-opacity mb-0.5">
-                  <span className="text-[11px] text-white/60">目前市值</span>
+                  <span className="text-[0.6875rem] text-white/60">目前市值</span>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="rgba(255,255,255,0.35)"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><circle cx="12" cy="8" r="1" fill="rgba(255,255,255,0.35)" stroke="none" /></svg>
                 </button>
                 <p className="text-base font-bold text-white">{formatNTD(currentHoldingValue)}</p>
@@ -648,7 +649,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
             aria-label="更新股價"
           >
             {lastUpdated && (
-              <span className="text-[10px]">最後更新 {fmtTime(lastUpdated)}</span>
+              <span className="text-[0.625rem]">最後更新 {fmtTime(lastUpdated)}</span>
             )}
             <RefreshIcon size={13} className={isRefreshing ? 'animate-spin' : ''} />
           </button>
@@ -661,7 +662,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
             </div>
             <p className="text-base font-bold text-gray-800">{formatPrice(stock.currentPrice)}</p>
             {lastUpdated && (
-              <p className="text-[10px] text-gray-400 mt-0.5">已更新 {fmtTime(lastUpdated)}</p>
+              <p className="text-[0.625rem] text-gray-400 mt-0.5">已更新 {fmtTime(lastUpdated)}</p>
             )}
           </div>
           <div>
@@ -773,7 +774,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
                       <div>
                         <p className="text-sm font-semibold text-gray-800">成交價 ${formatNumber((tx as SellTransaction).price)} × {(tx as SellTransaction).shares} 股</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <p className="text-[11px] text-gray-400">{(tx as SellTransaction).date}</p>
+                          <p className="text-[0.6875rem] text-gray-400">{(tx as SellTransaction).date}</p>
                           <BrokerTag brokerId={(tx as SellTransaction).brokerId} brokers={settings.brokers} />
                         </div>
                       </div>
@@ -819,7 +820,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
                             {isImported ? `均價 $${formatNumber(buyTx.price)} × ${buyTx.shares} 股` : `成交價 $${formatNumber(buyTx.price)} × ${buyTx.shares} 股`}
                           </p>
                           <div className="flex items-center gap-1.5 mt-0.5">
-                            <p className="text-[11px] text-gray-400">{buyTx.date}</p>
+                            <p className="text-[0.6875rem] text-gray-400">{buyTx.date}</p>
                             <BrokerTag brokerId={buyTx.brokerId} brokers={settings.brokers} />
                           </div>
                         </div>
@@ -906,7 +907,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
                 </div>
               </div>
             </div>
-            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
+            <p className="text-[0.6875rem] text-gray-400 mt-4 pt-4 border-t border-gray-100">
               僅統計已完成賣出的交易，反映實際已鎖定的獲利或虧損，不含目前持倉的未實現部分
             </p>
           </div>
@@ -952,7 +953,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
                 </div>
               </div>
             </div>
-            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
+            <p className="text-[0.6875rem] text-gray-400 mt-4 pt-4 border-t border-gray-100">
               確保「已實現損益 ＋ 未實現損益 ＝ 總損益」恆成立
             </p>
           </div>
@@ -999,7 +1000,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
                 </div>
               </div>
             </div>
-            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
+            <p className="text-[0.6875rem] text-gray-400 mt-4 pt-4 border-t border-gray-100">
               含手續費確保損益計算準確，避免低估實際成本
             </p>
           </div>
@@ -1045,7 +1046,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
                 </div>
               </div>
             </div>
-            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
+            <p className="text-[0.6875rem] text-gray-400 mt-4 pt-4 border-t border-gray-100">
               反映目前持倉的即時估值，用於計算未實現損益與總損益
             </p>
           </div>
@@ -1108,7 +1109,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
                     </div>
                   </div>
                 </div>
-                <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
+                <p className="text-[0.6875rem] text-gray-400 mt-4 pt-4 border-t border-gray-100">
                   僅統計已完成賣出的交易，反映實際已鎖定的獲利或虧損
                 </p>
               </>
@@ -1145,7 +1146,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
                     </div>
                   </div>
                 </div>
-                <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
+                <p className="text-[0.6875rem] text-gray-400 mt-4 pt-4 border-t border-gray-100">
                   此公式確保「已實現損益 ＋ 未實現損益 ＝ 總損益」恆成立
                 </p>
               </>
@@ -1239,7 +1240,7 @@ function StatCard({ label, value, sub, accent, tooltip }: { label: string; value
         )}
       </div>
       <p className={`text-base font-bold ${accentClass[accent] ?? 'text-gray-700'}`}>{value}</p>
-      <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>
+      <p className="text-[0.625rem] text-gray-400 mt-0.5">{sub}</p>
     </div>
   );
 }
@@ -1247,7 +1248,7 @@ function StatCard({ label, value, sub, accent, tooltip }: { label: string; value
 function MiniStat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div>
-      <p className="text-[10px] text-gray-400">{label}</p>
+      <p className="text-[0.625rem] text-gray-400">{label}</p>
       <p className={`text-xs font-semibold ${highlight ? 'text-emerald-600' : 'text-gray-600'}`}>{value}</p>
     </div>
   );
@@ -1258,7 +1259,7 @@ function BrokerTag({ brokerId, brokers }: { brokerId?: string; brokers: Broker[]
   const name = brokers.find((b) => b.id === brokerId)?.name;
   if (!name) return null;
   return (
-    <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full leading-none">
+    <span className="text-[0.625rem] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full leading-none">
       {name}
     </span>
   );

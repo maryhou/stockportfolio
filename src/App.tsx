@@ -2,8 +2,8 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useStockPoller } from './hooks/useStockPoller';
 import { usePullToRefresh } from './hooks/usePullToRefresh';
 import { subscribeToAuth, loadCloudData, saveCloudData, signInWithGoogle, signOutUser, type User, type UserCloudData } from './lib/firebase';
-import type { Stock, ViewName, BuyTransaction, SellTransaction, DividendTransaction, AppNotification, AppSettings, AppTheme } from './types';
-import { DEFAULT_SETTINGS, DEFAULT_BROKER } from './types';
+import type { Stock, ViewName, BuyTransaction, SellTransaction, DividendTransaction, AppNotification, AppSettings, AppTheme, AppFontScale } from './types';
+import { DEFAULT_SETTINGS, DEFAULT_BROKER, FONT_SCALE_PX } from './types';
 import { INITIAL_STOCKS } from './data/initialData';
 import { INITIAL_NOTIFICATIONS } from './data/initialNotifications';
 import { fetchStockPrices } from './utils/fetchPrices';
@@ -17,7 +17,7 @@ import HoldingsView from './components/HoldingsView';
 import ProfileView from './components/ProfileView';
 import NotificationsView from './components/NotificationsView';
 import AddTransactionSheet from './components/AddTransactionSheet';
-import SettingsSheet from './components/SettingsSheet';
+import SettingsSheet, { type SettingsSection } from './components/SettingsSheet';
 import ToastContainer, { type ToastData } from './components/Toast';
 import PullToRefreshIndicator from './components/PullToRefreshIndicator';
 import OnboardingModal from './components/OnboardingModal';
@@ -185,7 +185,7 @@ export default function App() {
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
   const [view, setView] = useState<ViewName>('home');
   const [showAdd, setShowAdd] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [settingsSection, setSettingsSection] = useState<SettingsSection | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [isLocked, setIsLocked] = useState(() => {
     if (!isBiometricEnabled()) return false;
@@ -205,6 +205,7 @@ export default function App() {
     return true;
   });
   const [previewTheme, setPreviewTheme] = useState<AppTheme | null>(null);
+  const [previewFontScale, setPreviewFontScale] = useState<AppFontScale | null>(null);
   const [selectedStockId, setSelectedStockId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const toastId = useRef(0);
@@ -432,7 +433,8 @@ export default function App() {
 
   function handleSaveSettings(s: AppSettings) {
     setSettings(s);
-    setPreviewTheme(null);  // clear preview; settings.theme now drives the real value
+    setPreviewTheme(null);      // clear preview; settings.theme now drives the real value
+    setPreviewFontScale(null);  // clear preview; settings.fontScale now drives the real value
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
     queueCloudSave({ settings: s });
     showToast('設定已儲存');
@@ -540,6 +542,13 @@ export default function App() {
 
   // Initial price fetch — run once after mount so prices aren't stale on first load
   const initialFetchDone = useRef(false);
+  // ── 字體大小(無障礙)──────────────────────────────────────────────────────
+  // 以根 <html> font-size 縮放整個 rem-based UI。previewFontScale 讓設定頁即時預覽。
+  useEffect(() => {
+    const scale = previewFontScale ?? settings.fontScale ?? 'normal';
+    document.documentElement.style.fontSize = `${FONT_SCALE_PX[scale]}px`;
+  }, [previewFontScale, settings.fontScale]);
+
   useEffect(() => {
     if (initialFetchDone.current || stocks.length === 0) return;
     initialFetchDone.current = true;
@@ -730,12 +739,14 @@ export default function App() {
               <ProfileView
                 stocks={stocks}
                 settings={settings}
-                onSettingsClick={() => setShowSettings(true)}
+                onOpenPreferences={() => setSettingsSection('preferences')}
+                onOpenBrokerSettings={() => setSettingsSection('broker')}
                 onImport={(backup) => {
                   update(backup.stocks);
                   if (backup.settings) {
                     setSettings(backup.settings);
                     setPreviewTheme(null);
+                    setPreviewFontScale(null);
                     localStorage.setItem(SETTINGS_KEY, JSON.stringify(backup.settings));
                     queueCloudSave({ settings: backup.settings });
                   }
@@ -769,12 +780,14 @@ export default function App() {
             />
           )}
 
-          {showSettings && (
+          {settingsSection && (
             <SettingsSheet
               settings={settings}
+              section={settingsSection}
               onSave={handleSaveSettings}
               onThemePreview={setPreviewTheme}
-              onClose={() => setShowSettings(false)}
+              onFontScalePreview={setPreviewFontScale}
+              onClose={() => setSettingsSection(null)}
             />
           )}
         </div>

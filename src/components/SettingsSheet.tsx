@@ -5,16 +5,28 @@ import {
   registerBiometric,
   disableBiometric,
 } from '../utils/biometric';
-import type { AppSettings, Broker, AppTheme } from '../types';
+import type { AppSettings, Broker, AppTheme, AppFontScale } from '../types';
+import { FONT_SCALE_PX } from '../types';
 import { CloseIcon } from './icons/Icons';
 import BottomSheet, { type BottomSheetHandle } from './BottomSheet';
 
+// 設定拆成兩個 modal:偏好設定(個人/主題/字體/隱私)與券商設定(券商費率/交易稅/費用說明)。
+export type SettingsSection = 'preferences' | 'broker';
+
 interface SettingsSheetProps {
   settings: AppSettings;
+  section: SettingsSection;
   onSave: (s: AppSettings) => void;
   onThemePreview: (t: AppTheme) => void;
+  onFontScalePreview: (f: AppFontScale) => void;
   onClose: () => void;
 }
+
+const FONT_SCALE_OPTIONS: { key: AppFontScale; label: string; sample: string; hint: string }[] = [
+  { key: 'normal', label: '標準', sample: 'A', hint: '預設大小' },
+  { key: 'large',  label: '大',   sample: 'A', hint: '放大約 12%' },
+  { key: 'xlarge', label: '特大', sample: 'A', hint: '放大約 25%' },
+];
 
 type EditMode = { kind: 'none' } | { kind: 'edit'; broker: Broker } | { kind: 'new' };
 
@@ -22,13 +34,14 @@ function emptyBrokerForm() {
   return { name: '', feeRateInput: '0.1425', feeDiscountInput: '60' };
 }
 
-export default function SettingsSheet({ settings, onSave, onThemePreview, onClose }: SettingsSheetProps) {
+export default function SettingsSheet({ settings, section, onSave, onThemePreview, onFontScalePreview, onClose }: SettingsSheetProps) {
   const sheetRef = useRef<BottomSheetHandle>(null);
   const [userName,     setUserName]     = useState(settings.userName);
   const [taxRateInput, setTaxRateInput] = useState(String(+(settings.taxRate * 100).toPrecision(6)));
   const [brokers,      setBrokers]      = useState<Broker[]>([...settings.brokers]);
   const [editMode,     setEditMode]     = useState<EditMode>({ kind: 'none' });
   const [theme,        setTheme]        = useState<AppTheme>(settings.theme ?? 'default');
+  const [fontScale,    setFontScale]    = useState<AppFontScale>(settings.fontScale ?? 'normal');
   const [bioEnabled,   setBioEnabled]   = useState(() => isBiometricEnabled());
   const [bioLoading,   setBioLoading]   = useState(false);
   const [bioError,     setBioError]     = useState('');
@@ -77,6 +90,7 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
   // Revert the live preview and close without saving
   function handleClose() {
     onThemePreview(settings.theme ?? 'default');
+    onFontScalePreview(settings.fontScale ?? 'normal');
     onClose();
   }
 
@@ -87,6 +101,10 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
         brokers: brokers.length > 0 ? brokers : settings.brokers,
         taxRate: parseFloat(taxRateInput) / 100 || settings.taxRate,
         theme,
+        fontScale,
+        ...(settings.dividendTransferFee !== undefined
+          ? { dividendTransferFee: settings.dividendTransferFee }
+          : {}),
       });
       onClose();
     });
@@ -115,19 +133,26 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
     <BottomSheet ref={sheetRef} onClose={handleClose} zBackdrop="z-40" zSheet="z-50">
         <div className="px-5 pb-10">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-gray-800">偏好設定</h2>
+            <h2 className="text-lg font-bold text-gray-800">{section === 'broker' ? '券商設定' : '偏好設定'}</h2>
             <button onClick={() => sheetRef.current?.close()} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
               <CloseIcon size={16} className="text-gray-500" />
             </button>
           </div>
 
-          {/* 個人 */}
-          <SectionLabel>個人</SectionLabel>
-          <div className="mb-5">
-            <label className="label">使用者名稱</label>
-            <input className="input" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="Mary" />
-          </div>
+          {/* ── 偏好設定:個人 ── */}
+          {section === 'preferences' && (
+            <>
+              <SectionLabel>個人</SectionLabel>
+              <div className="mb-5">
+                <label className="label">使用者名稱</label>
+                <input className="input" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="Mary" />
+              </div>
+            </>
+          )}
 
+          {/* ── 券商設定:券商費率 + 交易稅 + 費用計算說明 ── */}
+          {section === 'broker' && (
+          <>
           {/* 券商管理 */}
           <SectionLabel>券商費率</SectionLabel>
           <div className="flex flex-col gap-2 mb-3">
@@ -213,9 +238,36 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
             </div>
-            <p className="text-[11px] text-gray-400 mt-1 pl-1">一般股票 0.3%，ETF 0.1%</p>
+            <p className="text-[0.6875rem] text-gray-400 mt-1 pl-1">一般股票 0.3%，ETF 0.1%</p>
           </div>
 
+          {/* 費用計算說明 */}
+          <SectionLabel>費用計算說明</SectionLabel>
+          <div className="bg-primary-50 rounded-2xl p-4 mb-2">
+            <div className="flex flex-col gap-2">
+              {brokers.map((broker) => {
+                const eff  = (broker.feeRate * broker.feeDiscount * 100).toFixed(4);
+                const rate = (broker.feeRate * 100).toFixed(4).replace(/\.?0+$/, '');
+                const zhe  = (broker.feeDiscount * 10).toFixed(1);
+                return (
+                  <div key={broker.id} className="bg-primary-100/60 rounded-xl px-3 py-2">
+                    <p className="text-xs font-semibold text-primary-700 mb-0.5">{broker.name}</p>
+                    <p className="text-xs text-primary-600">手續費：{rate}% × {zhe}折 = 有效 {eff}%</p>
+                  </div>
+                );
+              })}
+              <div className="text-xs text-primary-600 mt-1 flex flex-col gap-0.5">
+                <p>· 交易稅：賣出金額 × {(((parseFloat(taxRateInput) || 0)).toFixed(2)).replace(/\.?0+$/, '')}%</p>
+                <p>· 損益 = 總回收金額 − 平均成本 × 股數</p>
+              </div>
+            </div>
+          </div>
+          </>
+          )}
+
+          {/* ── 偏好設定:介面主題 + 字體大小 + 隱私 ── */}
+          {section === 'preferences' && (
+          <>
           {/* 介面主題 */}
           <SectionLabel>介面主題</SectionLabel>
           <div className="flex gap-2 mb-6">
@@ -232,7 +284,7 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
               <span className="w-3.5 h-3.5 rounded-full flex-shrink-0 bg-violet-600" />
               <div className="text-left min-w-0">
                 <p className={`text-xs font-semibold truncate ${theme === 'default' ? 'text-violet-700' : 'text-gray-700'}`}>預設</p>
-                <p className="text-[10px] text-gray-400 truncate">紫色主調</p>
+                <p className="text-[0.625rem] text-gray-400 truncate">紫色主調</p>
               </div>
             </button>
 
@@ -248,7 +300,7 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
               <span className="w-3.5 h-3.5 rounded-full flex-shrink-0 bg-gray-500" />
               <div className="text-left min-w-0">
                 <p className={`text-xs font-semibold truncate ${theme === 'neutral' ? 'text-primary-700' : 'text-gray-700'}`}>中性色</p>
-                <p className="text-[10px] text-gray-400 truncate">灰階主調</p>
+                <p className="text-[0.625rem] text-gray-400 truncate">灰階主調</p>
               </div>
             </button>
 
@@ -265,11 +317,40 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
               <span className="w-3.5 h-3.5 rounded-full flex-shrink-0 bg-slate-800 ring-1 ring-slate-500" />
               <div className="text-left min-w-0">
                 <p className={`text-xs font-semibold truncate ${theme === 'dark' ? 'text-slate-100' : 'text-gray-700'}`}>暗色模式</p>
-                <p className={`text-[10px] truncate ${theme === 'dark' ? 'text-slate-400' : 'text-gray-400'}`}>深色背景</p>
+                <p className={`text-[0.625rem] truncate ${theme === 'dark' ? 'text-slate-400' : 'text-gray-400'}`}>深色背景</p>
               </div>
             </button>
 
           </div>
+
+          {/* 字體大小(無障礙)*/}
+          <SectionLabel>字體大小</SectionLabel>
+          <div className="flex gap-2 mb-2">
+            {FONT_SCALE_OPTIONS.map((opt) => {
+              const selected = fontScale === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  onClick={() => { setFontScale(opt.key); onFontScalePreview(opt.key); }}
+                  className={`flex-1 flex flex-col items-center gap-1 px-2 py-3 rounded-xl border-2 transition-all ${
+                    selected
+                      ? 'border-primary-600 bg-primary-50'
+                      : 'border-gray-200 bg-white active:bg-gray-50'
+                  }`}
+                >
+                  <span
+                    className={`font-bold leading-none ${selected ? 'text-primary-700' : 'text-gray-700'}`}
+                    style={{ fontSize: `${FONT_SCALE_PX[opt.key]}px` }}
+                  >
+                    {opt.sample}
+                  </span>
+                  <span className={`text-xs font-semibold ${selected ? 'text-primary-700' : 'text-gray-700'}`}>{opt.label}</span>
+                  <span className="text-[0.625rem] text-gray-400">{opt.hint}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[0.6875rem] text-gray-400 mb-6 pl-1">放大整個介面的文字,方便閱讀。</p>
 
           {/* 隱私設定 */}
           {isBiometricSupported() && (
@@ -310,6 +391,8 @@ export default function SettingsSheet({ settings, onSave, onThemePreview, onClos
               </div>
             </>
           )}
+          </>
+          )}
 
           <button
             onClick={handleSave}
@@ -345,7 +428,7 @@ function BrokerForm({ name, onName, feeRate, onFeeRate, discount, onDiscount, ef
               value={feeRate} onChange={(e) => onFeeRate(e.target.value)} />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
           </div>
-          <p className="text-[10px] text-gray-400 mt-1 pl-1">標準 0.1425%</p>
+          <p className="text-[0.625rem] text-gray-400 mt-1 pl-1">標準 0.1425%</p>
         </div>
         <div>
           <label className="label">折扣</label>
@@ -354,7 +437,7 @@ function BrokerForm({ name, onName, feeRate, onFeeRate, discount, onDiscount, ef
               value={discount} onChange={(e) => onDiscount(e.target.value)} />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
           </div>
-          <p className="text-[10px] text-gray-400 mt-1 pl-1">= {zhe} 折</p>
+          <p className="text-[0.625rem] text-gray-400 mt-1 pl-1">= {zhe} 折</p>
         </div>
       </div>
       <div className="bg-white rounded-xl px-3 py-2 flex items-center justify-between">

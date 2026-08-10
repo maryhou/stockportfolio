@@ -102,15 +102,17 @@ function parseBroker(v: unknown): Broker | null {
 
 function parseSettings(v: unknown): AppSettings | null {
   if (!isObj(v)) return null;
-  const { userName, brokers, taxRate, theme, dividendTransferFee } = v;
+  const { userName, brokers, taxRate, theme, fontScale, dividendTransferFee } = v;
   if (!isStr(userName) || !isNum(taxRate)) return null;
   const parsedBrokers = parseAll(brokers, parseBroker);
   if (!parsedBrokers || parsedBrokers.length === 0) return null;
   if (theme !== undefined && theme !== 'default' && theme !== 'neutral' && theme !== 'dark') return null;
+  if (fontScale !== undefined && fontScale !== 'normal' && fontScale !== 'large' && fontScale !== 'xlarge') return null;
   if (dividendTransferFee !== undefined && !isNum(dividendTransferFee)) return null;
   return {
     userName, brokers: parsedBrokers, taxRate,
     ...(theme !== undefined ? { theme } : {}),
+    ...(fontScale !== undefined ? { fontScale } : {}),
     ...(dividendTransferFee !== undefined ? { dividendTransferFee } : {}),
   };
 }

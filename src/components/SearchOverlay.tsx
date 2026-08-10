@@ -186,7 +186,7 @@ export default function SearchOverlay({ stocks, onStockClick, onClose }: SearchO
           >
             取消
           </button>
-          <kbd className="hidden md:inline-flex items-center text-[11px] text-gray-400 bg-gray-100 rounded-md px-2 py-1 font-mono cursor-pointer hover:bg-gray-200 transition-colors"
+          <kbd className="hidden md:inline-flex items-center text-[0.6875rem] text-gray-400 bg-gray-100 rounded-md px-2 py-1 font-mono cursor-pointer hover:bg-gray-200 transition-colors"
                onClick={onClose}>
             esc
           </kbd>
@@ -242,7 +242,7 @@ export default function SearchOverlay({ stocks, onStockClick, onClose }: SearchO
 
           {/* Desktop keyboard hint */}
           {flatItems.length > 0 && (
-            <p className="hidden md:block text-center text-[11px] text-gray-300 mt-2 pb-1 select-none">
+            <p className="hidden md:block text-center text-[0.6875rem] text-gray-300 mt-2 pb-1 select-none">
               ↑↓ 選擇　Enter 進入　Esc 關閉
             </p>
           )}
@@ -270,9 +270,9 @@ function Section({ label, count, children }: { label: string; count?: number; ch
   return (
     <div className="mb-5">
       <div className="flex items-center gap-1.5 mb-2 px-1">
-        <p className="text-[13px] font-semibold text-gray-500 tracking-wide">{label}</p>
+        <p className="text-[0.8125rem] font-semibold text-gray-500 tracking-wide">{label}</p>
         {count !== undefined && (
-          <span className="text-[12px] font-medium text-gray-400">({count})</span>
+          <span className="text-[0.75rem] font-medium text-gray-400">({count})</span>
         )}
       </div>
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -303,13 +303,13 @@ function StockRow({ stock, isFocused, onClick }: { stock: Stock; isFocused: bool
         ${isFocused ? 'bg-primary-50' : 'active:bg-gray-50 hover:bg-gray-50'}`}
     >
       <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-        <span className="text-[9px] font-bold text-primary-600 text-center leading-tight px-0.5">
+        <span className="text-[0.5625rem] font-bold text-primary-600 text-center leading-tight px-0.5">
           {stock.symbol}
         </span>
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-gray-800 truncate">{stock.name}</p>
-        <p className="text-[10px] text-gray-400 mt-0.5">
+        <p className="text-[0.625rem] text-gray-400 mt-0.5">
           {isClosed
             ? `${stock.symbol} · 已清倉`
             : `${stock.symbol} · ${remaining} 股 · ${formatPrice(stock.currentPrice)}`}
@@ -319,7 +319,7 @@ function StockRow({ stock, isFocused, onClick }: { stock: Stock; isFocused: bool
         <p className={`text-sm font-bold ${isZero ? 'text-gray-700' : isUp ? 'text-red-500' : 'text-emerald-600'}`}>
           {isUp ? '+' : ''}{formatNTD(displayPL)}
         </p>
-        <p className={`text-[10px] font-medium mt-0.5 ${isZero ? 'text-gray-400' : isUp ? 'text-red-400' : 'text-emerald-500'}`}>
+        <p className={`text-[0.625rem] font-medium mt-0.5 ${isZero ? 'text-gray-400' : isUp ? 'text-red-400' : 'text-emerald-500'}`}>
           {isZero ? '0.00%' : `${isUp ? '+' : ''}${displayPct.toFixed(2)}%`}
         </p>
       </div>
@@ -344,14 +344,14 @@ function TxRow({ tx, isFocused, onClick }: { tx: TxResult; isFocused: boolean; o
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-gray-800 truncate">{tx.name}</p>
-        <p className="text-[10px] text-gray-400 mt-0.5">{tx.date} · {tx.shares} 股</p>
+        <p className="text-[0.625rem] text-gray-400 mt-0.5">{tx.date} · {tx.shares} 股</p>
       </div>
       <div className="text-right flex-shrink-0">
         <p className="text-sm font-semibold text-gray-700">
           {tx.type === 'sell' ? '' : '-'}{formatNTD(tx.amount)}
         </p>
         {tx.profit !== null && (
-          <p className={`text-[10px] font-medium mt-0.5 ${tx.profit >= 0 ? 'text-red-400' : 'text-emerald-500'}`}>
+          <p className={`text-[0.625rem] font-medium mt-0.5 ${tx.profit >= 0 ? 'text-red-400' : 'text-emerald-500'}`}>
             損益 {tx.profit >= 0 ? '+' : ''}{formatNTD(tx.profit)}
           </p>
         )}

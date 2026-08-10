@@ -36,7 +36,7 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 function StatusBadge({ payDate }: { payDate: string }) {
   const upcoming = payDate > todayISO();
   return (
-    <span className={`inline-flex items-center text-[10px] font-bold rounded-full px-2 py-0.5 whitespace-nowrap
+    <span className={`inline-flex items-center text-[0.625rem] font-bold rounded-full px-2 py-0.5 whitespace-nowrap
       ${upcoming ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-500'}`}>
       {upcoming ? '即將配息' : '已入帳'}
     </span>
@@ -182,24 +182,24 @@ export default function DividendView({
             <div className="flex items-center justify-between gap-2 mb-1">
               <p className="text-white/70 text-xs font-medium">總股息收益</p>
               {yieldPct > 0 && (
-                <div className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/20 text-white whitespace-nowrap">
+                <div className="text-[0.6875rem] font-semibold px-2.5 py-1 rounded-full bg-white/20 text-white whitespace-nowrap">
                   年化殖利率 {yieldPct.toFixed(2)}%
                 </div>
               )}
             </div>
             <p className={`text-3xl font-bold text-white ${allDividends.length > 0 ? 'mb-1' : 'mb-3'}`}>{signedNTD(totalNet)}</p>
             {allDividends.length > 0 && (
-              <p className="text-white/60 text-[11px] font-medium mb-3">
+              <p className="text-white/60 text-[0.6875rem] font-medium mb-3">
                 自 {firstYear} 年起 · 累計 {allDividends.length} 筆入帳
               </p>
             )}
             <div className="flex gap-3">
               <div className="bg-white/15 rounded-xl px-4 py-2.5 flex-1">
-                <p className="text-white/70 text-[10px] font-medium mb-0.5">今年</p>
+                <p className="text-white/70 text-[0.625rem] font-medium mb-0.5">今年</p>
                 <p className="text-white text-lg font-bold">{signedNTD(thisYearTotal)}</p>
               </div>
               <div className="bg-white/15 rounded-xl px-4 py-2.5 flex-1">
-                <p className="text-white/70 text-[10px] font-medium mb-0.5">本月</p>
+                <p className="text-white/70 text-[0.625rem] font-medium mb-0.5">本月</p>
                 <p className="text-white text-lg font-bold">{signedNTD(thisMonthTotal)}</p>
               </div>
             </div>
@@ -233,8 +233,8 @@ export default function DividendView({
         {allDividends.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-4 pt-4 pb-3">
             <div className="flex items-center justify-between gap-2 mb-2">
-              <p className="text-[13px] font-semibold text-gray-500">歷年股息</p>
-              <p className="text-[13px] font-bold text-amber-500">累計 {signedNTD(filteredTotalNet)}</p>
+              <p className="text-[0.8125rem] font-semibold text-gray-500">歷年股息</p>
+              <p className="text-[0.8125rem] font-bold text-amber-500">累計 {signedNTD(filteredTotalNet)}</p>
             </div>
             <div>
               {visibleYears.map((y, i) => {
@@ -248,7 +248,7 @@ export default function DividendView({
                     className={`w-full flex items-center gap-3 rounded-xl px-2 py-2 transition-colors
                       ${isSelected ? 'bg-amber-50' : 'active:bg-gray-50'}`}
                   >
-                    <span className={`w-9 flex-shrink-0 text-left text-[12px] font-bold ${isSelected ? 'text-amber-600' : 'text-gray-400'}`}>
+                    <span className={`w-9 flex-shrink-0 text-left text-[0.75rem] font-bold ${isSelected ? 'text-amber-600' : 'text-gray-400'}`}>
                       {y}
                     </span>
                     <div className="flex-1 h-3 rounded-full bg-gray-100 overflow-hidden">
@@ -257,7 +257,7 @@ export default function DividendView({
                         style={{ width: `${widthPct}%` }}
                       />
                     </div>
-                    <span className={`flex-shrink-0 text-right text-[12px] font-bold whitespace-nowrap ${
+                    <span className={`flex-shrink-0 text-right text-[0.75rem] font-bold whitespace-nowrap ${
                       total > 0 ? (isSelected ? 'text-amber-600' : 'text-gray-600') : 'text-gray-300'}`}>
                       {total > 0 ? signedNTD(total) : '$0'}
                     </span>
@@ -268,7 +268,7 @@ export default function DividendView({
             {years.length > YEAR_COLLAPSE_LIMIT && (
               <button
                 onClick={() => setYearsExpanded(!yearsExpanded)}
-                className="w-full flex items-center justify-center gap-1 pt-2 pb-1 text-[12px] font-semibold text-gray-400 active:opacity-70"
+                className="w-full flex items-center justify-center gap-1 pt-2 pb-1 text-[0.75rem] font-semibold text-gray-400 active:opacity-70"
               >
                 {yearsExpanded ? '收合' : `顯示更多（還有 ${hiddenYearCount} 年）`}
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
@@ -283,8 +283,8 @@ export default function DividendView({
         {/* ── Monthly Bar Chart ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-4 pt-4 pb-3">
           <div className="flex items-center justify-between gap-2 mb-3">
-            <p className="text-[13px] font-semibold text-gray-500">{selectedYear} 月度股息</p>
-            <p className="text-[13px] font-bold text-amber-500">
+            <p className="text-[0.8125rem] font-semibold text-gray-500">{selectedYear} 月度股息</p>
+            <p className="text-[0.8125rem] font-bold text-amber-500">
               {selectedMonth !== null
                 ? `${selectedMonth + 1} 月股息 ${signedNTD(monthlyTotals[selectedMonth])}`
                 : `全年 ${signedNTD(selectedYearTotal)}`}
@@ -308,7 +308,7 @@ export default function DividendView({
                       style={{ height: `${heightPct}%` }}
                     />
                   </div>
-                  <span className={`text-[9px] font-medium
+                  <span className={`text-[0.5625rem] font-medium
                     ${isSelected ? 'text-amber-600 font-bold' : isCurrentMonth ? 'text-amber-500' : 'text-gray-300'}`}>
                     {MONTHS[i].replace('月', '')}
                   </span>
@@ -337,13 +337,13 @@ export default function DividendView({
         ) : (
           <div>
             <div className="flex items-center justify-between mb-2 px-1">
-              <p className="text-[13px] font-semibold text-gray-500">
+              <p className="text-[0.8125rem] font-semibold text-gray-500">
                 {selectedMonth === null ? `${selectedYear} 股息紀錄` : `${selectedMonth + 1} 月股息紀錄`}
               </p>
               {selectedMonth !== null && (
                 <button
                   onClick={() => setSelectedMonth(null)}
-                  className="text-[12px] font-semibold text-amber-500 active:opacity-70"
+                  className="text-[0.75rem] font-semibold text-amber-500 active:opacity-70"
                 >
                   顯示全部
                 </button>
@@ -378,19 +378,19 @@ export default function DividendView({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="inline-flex items-center bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full px-2 py-0.5">
+                      <span className="inline-flex items-center bg-gray-100 text-gray-500 text-[0.625rem] font-bold rounded-full px-2 py-0.5">
                         {d.stockSymbol}
                       </span>
                       <StatusBadge payDate={d.date} />
                     </div>
                     <p className="text-sm font-semibold text-gray-800 truncate">{d.stockName}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">
+                    <p className="text-[0.625rem] text-gray-400 mt-0.5">
                       {d.exDate ? `除息 ${d.exDate} · ` : ''}發放 {d.date} · {d.shares.toLocaleString()} 股
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-sm font-bold text-amber-500">+{formatNTD(d.netAmount)}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">每股 ${d.amountPerShare}</p>
+                    <p className="text-[0.625rem] text-gray-400 mt-0.5">每股 ${d.amountPerShare}</p>
                   </div>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="ml-1 flex-shrink-0">
                     <polyline points="9 18 15 12 9 6"/>
@@ -646,7 +646,7 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
                           ${isActive ? 'border-amber-400 bg-amber-50' : 'border-gray-200 bg-gray-50 active:bg-amber-50'}`}
                       >
                         <div>
-                          <p className="text-[10px] font-medium text-gray-400">
+                          <p className="text-[0.625rem] font-medium text-gray-400">
                             {rec.payDate ? `除息 ${rec.date} · 發放 ${rec.payDate}` : rec.date}
                           </p>
                           {pending ? (
@@ -656,7 +656,7 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
                           )}
                         </div>
                         {pending ? (
-                          <span className="text-[10px] font-semibold text-amber-500 whitespace-nowrap ml-2">待填金額</span>
+                          <span className="text-[0.625rem] font-semibold text-amber-500 whitespace-nowrap ml-2">待填金額</span>
                         ) : parseInt(sharesStr) > 0 && (
                           <p className={`text-sm font-bold ${isActive ? 'text-amber-500' : 'text-gray-400'}`}>
                             +{formatNTD(previewNet)}
@@ -803,7 +803,7 @@ function AddDividendSheet({ stocks, defaultTransferFee, editDividend, editStockI
           {/* Calculation preview */}
           {gross > 0 && (
             <div className="bg-amber-50 rounded-2xl p-4 space-y-2.5">
-              <p className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider mb-1">試算</p>
+              <p className="text-[0.6875rem] font-semibold text-amber-700 uppercase tracking-wider mb-1">試算</p>
               <Row label="應得股息" value={`+${formatNTD(gross)}`} valueClass="text-gray-800 font-semibold" />
               <HealthFeeRow
                 fee={healthFee}
@@ -912,7 +912,7 @@ function DividendDetailModal({ stock, dividend: d, defaultTransferFee, onSave, o
         <div className="flex items-start justify-between mb-5">
           <div>
             <div className="flex items-center gap-1.5">
-              <p className="text-[11px] text-gray-400 font-medium">{stock.symbol} · {d.date}</p>
+              <p className="text-[0.6875rem] text-gray-400 font-medium">{stock.symbol} · {d.date}</p>
               <StatusBadge payDate={d.date} />
             </div>
             <h2 className="text-lg font-bold text-gray-900">{stock.name}</h2>
@@ -934,7 +934,7 @@ function DividendDetailModal({ stock, dividend: d, defaultTransferFee, onSave, o
           <Row label="持有股數" value={`${d.shares.toLocaleString()} 股`} valueClass="text-gray-800 font-semibold" />
           <div className="border-t border-gray-200 pt-2">
             <Row label="應得股息" value={`+${formatNTD(d.grossAmount)}`} valueClass="text-gray-800 font-semibold" />
-            <div className="text-[10px] text-gray-400 mt-0.5 ml-auto text-right">
+            <div className="text-[0.625rem] text-gray-400 mt-0.5 ml-auto text-right">
               ${d.amountPerShare} × {d.shares.toLocaleString()} 股
             </div>
           </div>
@@ -1051,7 +1051,7 @@ function DividendDetailModal({ stock, dividend: d, defaultTransferFee, onSave, o
               ETF 配息依不同所得類別（如 54C、76）分別計算並進位，加總後可能與「每股配息 × 持有股數」的試算結果差 ±1 元。
             </p>
           </div>
-          <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
+          <p className="text-[0.6875rem] text-gray-400 mt-4 pt-4 border-t border-gray-100">
             實際金額請以銀行入帳明細或收益分配通知書為準。
           </p>
         </div>
@@ -1170,7 +1170,7 @@ function ImportDividendSheet({ stocks, settings, onConfirm, onClose }: ImportDiv
         <div className="flex items-center justify-between px-4 mb-1">
           <div>
             <h2 className="text-lg font-bold text-gray-900">匯入歷史股息</h2>
-            <p className="text-[11px] text-gray-400 mt-0.5">以官方公告的除息日持股數估算，可逐筆修改</p>
+            <p className="text-[0.6875rem] text-gray-400 mt-0.5">以官方公告的除息日持股數估算，可逐筆修改</p>
           </div>
           <button onClick={() => sheetRef.current?.close()} className="w-8 h-8 flex items-center justify-center rounded-full active:bg-gray-100">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round">
@@ -1241,9 +1241,9 @@ function ImportDividendSheet({ stocks, settings, onConfirm, onClose }: ImportDiv
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <p className="text-sm font-semibold text-gray-800">{item.stockName}</p>
-                          <span className="text-[10px] text-gray-400">{item.year}</span>
+                          <span className="text-[0.625rem] text-gray-400">{item.year}</span>
                         </div>
-                        <p className="text-[10px] text-gray-400 mt-0.5">
+                        <p className="text-[0.625rem] text-gray-400 mt-0.5">
                           {item.stockSymbol} · 每股 ${item.dividend.amountPerShare} · {item.dividend.shares.toLocaleString()} 股
                         </p>
                       </div>
@@ -1253,7 +1253,7 @@ function ImportDividendSheet({ stocks, settings, onConfirm, onClose }: ImportDiv
                         <p className={`text-sm font-bold ${isSelected ? 'text-amber-500' : 'text-gray-400'}`}>
                           +{formatNTD(item.dividend.netAmount)}
                         </p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">{item.refDate}</p>
+                        <p className="text-[0.625rem] text-gray-400 mt-0.5">{item.refDate}</p>
                       </div>
                     </button>
                   );
@@ -1328,7 +1328,7 @@ function FeeToggleRow({ label, fee, exempt, exemptHint, onToggle }: {
         </span>
       </button>
       {exempt && (
-        <p className="text-[10px] text-gray-400 mt-1 ml-[26px]">{exemptHint}</p>
+        <p className="text-[0.625rem] text-gray-400 mt-1 ml-[26px]">{exemptHint}</p>
       )}
     </div>
   );

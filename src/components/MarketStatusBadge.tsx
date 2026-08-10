@@ -11,7 +11,7 @@ import { getMarketStatus } from '../utils/marketStatus';
  */
 export default function MarketStatusBadge({ tone = 'light' }: { tone?: 'light' | 'onDark' }) {
   const open = getMarketStatus() === 'open';
-  const base = 'inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-0.5 whitespace-nowrap';
+  const base = 'inline-flex items-center gap-1 text-[0.625rem] font-semibold rounded-full px-2 py-0.5 whitespace-nowrap';
   const dot = <span className={`w-1.5 h-1.5 rounded-full ${open ? 'bg-emerald-400' : tone === 'onDark' ? 'bg-white/50' : 'bg-gray-300'}`} />;
   const label = open ? '盤中·即時' : '已收盤·收盤價';
 
