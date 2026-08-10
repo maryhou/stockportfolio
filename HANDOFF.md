@@ -316,6 +316,16 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
   只標記版本不打擾 onboarding。**改版規則:① 更新 `APP_VERSION` ② 改寫 `WHATS_NEW` 內容
   ③(如需公告)在 `SYSTEM_ANNOUNCEMENTS` 加一則新 id。** 已實測:彈出、CTA 跳偏好設定、關閉後重載不再彈。
 
+### 2026-08-10(續):通知中心點擊開詳情 modal
+
+原本通知卡只有帶 `actionType` 的能點(且描述 `line-clamp-2` 被截斷,系統公告看不到全文)。改為
+**每一則都可點開詳情**([NotificationDetailModal.tsx](src/components/NotificationDetailModal.tsx)):
+- 點卡片 → 開 modal 顯示完整標題/時間/全文(不截斷)+ 標記該則已讀。
+- 有 `actionType` 者在 modal 內顯示 CTA(stock→「查看持股」、activity→「查看交易紀錄」),點了關閉並導覽。
+- `NotificationsView` 的 `TYPE_CONFIG` 改 export 供 modal 重用;卡片一律可點(移除 isClickable 閘門)。
+- App:`notificationDetail` state;`handleNotificationClick` 開 modal、`handleNotificationAction` 導覽。
+- 已實測:系統公告開全文、到價通知開 CTA 並成功跳到個股頁。
+
 ## 未完成 / 待辦
 
 0. ~~**Vercel token 短效問題**~~:**2026-07-30 永久解決**。歷史上多次因 CLI 登入核發的

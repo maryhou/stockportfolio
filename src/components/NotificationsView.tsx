@@ -9,7 +9,7 @@ interface NotificationsViewProps {
   onDeleteNotification: (id: string) => void;
 }
 
-const TYPE_CONFIG = {
+export const TYPE_CONFIG = {
   target: { Icon: TargetIcon,        bg: 'bg-violet-100', iconColor: 'text-violet-600' },
   trade:  { Icon: TradeIcon,         bg: 'bg-emerald-100', iconColor: 'text-emerald-600' },
   pnl:    { Icon: CalendarTrendIcon, bg: 'bg-amber-100',   iconColor: 'text-amber-600' },
@@ -76,7 +76,6 @@ function SwipeableItem({
   onDelete: () => void;
 }) {
   const { Icon, bg, iconColor } = TYPE_CONFIG[n.type];
-  const isClickable = !!n.actionType;
 
   const [offsetX, setOffsetX]   = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -113,7 +112,7 @@ function SwipeableItem({
 
   function handleClick(e: React.MouseEvent) {
     if (drag.current.hasMoved) { e.preventDefault(); e.stopPropagation(); return; }
-    if (isClickable) onClick();
+    onClick(); // 每一則都可點開看完整細節
   }
 
   // Red backdrop opacity scales from 0 → 1 as card drags toward threshold
@@ -151,7 +150,7 @@ function SwipeableItem({
         }}
         className={`relative flex items-start gap-3 px-4 py-3.5 rounded-2xl border select-none ${
           n.read ? 'bg-white border-gray-100' : 'bg-gray-100 border-gray-200'
-        } ${isClickable ? 'cursor-pointer' : 'cursor-default'}`}
+        } cursor-pointer`}
       >
         {/* Type icon */}
         <div className={`w-10 h-10 rounded-full ${bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>

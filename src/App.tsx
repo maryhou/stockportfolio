@@ -22,6 +22,7 @@ import ToastContainer, { type ToastData } from './components/Toast';
 import PullToRefreshIndicator from './components/PullToRefreshIndicator';
 import OnboardingModal from './components/OnboardingModal';
 import WhatsNewModal, { type WhatsNewItem } from './components/WhatsNewModal';
+import NotificationDetailModal from './components/NotificationDetailModal';
 import SearchOverlay, { pushRecentId } from './components/SearchOverlay';
 import DividendView from './components/DividendView';
 import AppLock from './components/AppLock';
@@ -213,6 +214,7 @@ export default function App() {
   const [showAdd, setShowAdd] = useState(false);
   const [settingsSection, setSettingsSection] = useState<SettingsSection | null>(null);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const [notificationDetail, setNotificationDetail] = useState<AppNotification | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [isLocked, setIsLocked] = useState(() => {
     if (!isBiometricEnabled()) return false;
@@ -430,14 +432,16 @@ export default function App() {
     saveNotifications(notifications.filter((n) => n.id !== id));
   }
 
+  // 點通知 → 開詳情 modal 看完整內容(並標記該則已讀);導覽改由 modal 內的按鈕觸發。
   function handleNotificationClick(n: AppNotification) {
-    if (n.actionType === 'stock' && n.actionStockId) {
-      setSelectedStockId(n.actionStockId);
-      setView('activity');
-    } else if (n.actionType === 'activity') {
-      if (n.actionStockId) setSelectedStockId(n.actionStockId);
-      setView('activity');
-    }
+    setNotificationDetail(n);
+    if (!n.read) saveNotifications(notifications.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+  }
+
+  function handleNotificationAction(n: AppNotification) {
+    setNotificationDetail(null);
+    if (n.actionStockId) setSelectedStockId(n.actionStockId);
+    if (n.actionType === 'stock' || n.actionType === 'activity') setView('activity');
   }
 
   function pushNotification(notif: Omit<AppNotification, 'id' | 'time' | 'read'>) {
@@ -864,6 +868,14 @@ export default function App() {
           items={WHATS_NEW}
           onAdjustFont={whatsNewAdjustFont}
           onClose={dismissWhatsNew}
+        />
+      )}
+
+      {notificationDetail && (
+        <NotificationDetailModal
+          notification={notificationDetail}
+          onAction={notificationDetail.actionType ? () => handleNotificationAction(notificationDetail) : undefined}
+          onClose={() => setNotificationDetail(null)}
         />
       )}
     </div>
