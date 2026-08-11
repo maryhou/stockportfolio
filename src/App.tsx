@@ -464,10 +464,19 @@ export default function App() {
     });
   }
 
-  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+  const dismissToast = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const showToast = useCallback((
+    message: string,
+    type: 'success' | 'error' = 'success',
+    action?: ToastData['action'],
+  ) => {
     const id = ++toastId.current;
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
+    setToasts((prev) => [...prev, { id, message, type, action }]);
+    // 有復原按鈕的 toast 多留一點時間讓使用者反應
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), action ? 6000 : 3000);
   }, []);
 
   function handleSaveSettings(s: AppSettings) {
@@ -689,13 +698,25 @@ export default function App() {
   }
 
   function handleDeleteDividend(stockId: string, dividendId: string) {
+    const prevStocks = stocks;          // 復原用快照
     update(stocks.map((s) =>
       s.id !== stockId ? s : { ...s, dividends: (s.dividends ?? []).filter((d) => d.id !== dividendId) }
     ));
-    showToast('股息記錄已刪除');
+    showToast('股息記錄已刪除', 'success', {
+      label: '復原',
+      onClick: () => { update(prevStocks); showToast('已復原刪除'); },
+    });
   }
 
   function handleDeleteTx(stockId: string, type: 'buy' | 'sell', txId: string) {
+    const prevStocks = stocks;          // 復原用快照
+    const prevSelected = selectedStockId;
+    const undo = () => {
+      update(prevStocks);
+      setSelectedStockId(prevSelected);
+      showToast('已復原刪除');
+    };
+
     const updated = stocks.map((s) => {
       if (s.id !== stockId) return s;
       if (type === 'buy') return { ...s, buys: s.buys.filter((b) => b.id !== txId) };
@@ -707,10 +728,10 @@ export default function App() {
     if (target && target.buys.length === 0 && target.sells.length === 0) {
       update(updated.filter((s) => s.id !== stockId));
       setSelectedStockId(null);
-      showToast('最後一筆交易刪除，個股紀錄已移除');
+      showToast('最後一筆交易刪除，個股紀錄已移除', 'success', { label: '復原', onClick: undo });
     } else {
       update(updated);
-      showToast('交易記錄已刪除');
+      showToast('交易記錄已刪除', 'success', { label: '復原', onClick: undo });
     }
   }
 
@@ -854,7 +875,7 @@ export default function App() {
       </div>
 
       {/* Toast notifications — outside the constrained container, always on top */}
-      <ToastContainer toasts={toasts} />
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} theme={(previewTheme ?? settings.theme) ?? 'default'} />
 
       {showSearch && (
         <SearchOverlay

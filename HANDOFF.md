@@ -383,6 +383,25 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
   `text-[0.625rem]` 改 `text-xs`（rem，隨字體設定放大）。
 - 已在 mobile viewport 端到端實測：勾選切換、欄位隱藏/改名、試算、送出攤低均價、首頁/明細配股標示；tsc + 86 tests 通過。
 
+### 2026-08-11(續):Toast 優化 — 刪除可復原（Undo）+ 主題感知玻璃質感（branch `feature/toast-undo-ios`）
+
+刪除交易/股息容易誤刪且沒有救回機制；toast 樣式也想更 iOS。
+
+- **Undo 復原**（[App.tsx](src/App.tsx)）：`showToast` 加選用第三參數 `action?: { label, onClick }`；
+  有 action 的 toast 停留 6 秒（無 action 3 秒）。新增 `dismissToast(id)` 供動作點擊後立即關閉。
+  `handleDeleteTx` / `handleDeleteDividend` 刪除前先存 `prevStocks` 快照，toast 帶「復原」按鈕，
+  點擊 `update(prevStocks)` 還原（handleDeleteTx 連同 `selectedStockId` 一起還原，涵蓋「刪最後一筆→個股被移除→導航返回」的情況）。
+- **主題感知玻璃**（[Toast.tsx](src/components/Toast.tsx)）：`ToastContainer` 收 `theme` prop
+  （App 傳 `(previewTheme ?? settings.theme) ?? 'default'`，與 root `data-theme` 同源），
+  `ToastItem` 依 `dark = theme==='dark'` 切換：
+  - 深色主題 → 黑色玻璃 `bg-gray-900/70` + `backdrop-blur-2xl` + 白字 + 藍300 復原
+  - 預設／中性色 → 白色玻璃 `bg-white/70` + `backdrop-blur-2xl` + 深字 + 藍600 復原
+  - 成功=綠圈白勾、錯誤=紅圈白驚嘆（SVG 圖示，取代原本純文字 ✓/✕），復原鈕有 undo 箭頭圖示。
+  - **維護規則**：新增主題時若非 dark 系，會自動走白玻璃分支；要另設樣式再擴充 `dark` 判斷。
+- **驗證踩雷**：dev HMR 有時序差，改 `theme` prop 當下畫面可能還是舊樣式，**要硬重載**才準；
+  toast 只存活 3~6 秒，用 MutationObserver 在出現瞬間攔 className 才驗得到（實測 dark theme = `bg-gray-900`）。
+- tsc + 86 tests 通過（本次純 UI，無新增測試）。已實測：刪除→復原還原、dark=黑玻璃 / 預設=白玻璃。
+
 ## 未完成 / 待辦
 
 0. ~~**Vercel token 短效問題**~~:**2026-07-30 永久解決**。歷史上多次因 CLI 登入核發的
