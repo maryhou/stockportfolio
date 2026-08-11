@@ -193,6 +193,16 @@ describe('持股與成本', () => {
     expect(calcRemainingShares(buys, sells)).toBe(600);
     expect(calcTotalInvested(buys)).toBe(100_085);
   });
+
+  it('配股（price=0）攤低均價、加股數、不增加成本', () => {
+    const base = [buy({ price: 100, shares: 1000, fee: 85 })];
+    const withDividend = [...base, buy({ id: 'bd', price: 0, shares: 100, fee: 0, stockDividend: true })];
+    // 成本不變 (100,085)，股數 1000→1100，均價被攤低
+    expect(calcTotalInvested(withDividend)).toBe(100_085);
+    expect(calcRemainingShares(withDividend, [])).toBe(1100);
+    expect(calcAvgCost(withDividend)).toBeCloseTo(100_085 / 1100); // ≈ 91.0
+    expect(calcAvgCost(withDividend)).toBeLessThan(calcAvgCost(base));
+  });
 });
 
 describe('已實現損益', () => {

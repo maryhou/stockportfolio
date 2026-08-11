@@ -25,8 +25,10 @@ export default function EditTransactionModal({
     sheetRef.current?.close();
   }
 
+  // Detect 配股（股票股利）: 免費取得，只編輯股數；priceN 固定 0
+  const isDividendTx = txType === 'buy' && !!(transaction as BuyTransaction).stockDividend;
   // Detect imported transaction (匯入初始持倉 — fee already baked into price)
-  const isImportedTx = txType === 'buy' && !!(transaction as BuyTransaction).imported;
+  const isImportedTx = txType === 'buy' && !isDividendTx && !!(transaction as BuyTransaction).imported;
 
   // Broker — default to transaction's brokerId, or first broker
   const [brokerId, setBrokerId] = useState(transaction.brokerId ?? settings.brokers[0]?.id ?? '');
@@ -51,8 +53,9 @@ export default function EditTransactionModal({
 
   const sharesN = parseInt(shares) || 0;
 
-  // Effective price: for imported, derive from total cost / shares
+  // Effective price: 配股固定 0；imported 由總成本反推；否則用價格欄
   const priceN = (() => {
+    if (isDividendTx) return 0;
     if (isImportedTx) {
       const tc = parseFloat(totalCostEdit) || 0;
       return tc > 0 && sharesN > 0 ? tc / sharesN : 0;
@@ -85,10 +88,12 @@ export default function EditTransactionModal({
   }, [price, shares]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSave() {
-    if (!priceN || !sharesN || !date) return;
+    // 配股：只需股數與日期（成本為 0）；其餘需正的價格
+    if (!sharesN || !date || (!isDividendTx && !priceN)) return;
     if (txType === 'buy') {
       const saved: BuyTransaction = { id: transaction.id, date, price: priceN, shares: sharesN, fee, brokerId };
-      if (isImportedTx) saved.imported = true;
+      if (isDividendTx) { saved.imported = true; saved.stockDividend = true; }
+      else if (isImportedTx) saved.imported = true;
       onSave(saved);
     } else {
       onSave({ id: transaction.id, date, price: priceN, shares: sharesN, fee, tax, netProceeds, profit, brokerId } as SellTransaction);
@@ -148,12 +153,17 @@ export default function EditTransactionModal({
 
           {/* Date */}
           <div className="mb-4">
-            <label className="label">{isImportedTx ? '追蹤起始日期' : '交易日期'}</label>
+            <label className="label">{isDividendTx ? '配股基準日' : isImportedTx ? '追蹤起始日期' : '交易日期'}</label>
             <input type="date" className="input input-date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
 
-          {/* Imported: total cost + shares; Normal: price + shares */}
-          {isImportedTx ? (
+          {/* 配股: only shares; Imported: total cost + shares; Normal: price + shares */}
+          {isDividendTx ? (
+            <div className="mb-4">
+              <label className="label">獲配股數</label>
+              <input type="number" className="input" value={shares} onChange={(e) => setShares(e.target.value)} />
+            </div>
+          ) : isImportedTx ? (
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div>
                 <label className="label">匯入總成本 (NT$)</label>
@@ -181,8 +191,8 @@ export default function EditTransactionModal({
             </div>
           )}
 
-          {/* Fee — locked for imported; editable for normal */}
-          {isImportedTx ? (
+          {/* Fee — 配股無費用（隱藏）; locked for imported; editable for normal */}
+          {isDividendTx ? null : isImportedTx ? (
             <div className="mb-4">
               <label className="label">手續費</label>
               <div className="relative">
@@ -206,11 +216,19 @@ export default function EditTransactionModal({
           )}
 
           {/* Preview */}
-          {priceN > 0 && sharesN > 0 && (
-            <div className={`rounded-2xl p-4 mb-5 ${isImportedTx ? 'bg-blue-50' : isBuy ? 'bg-primary-50' : 'bg-emerald-50'}`}>
+          {sharesN > 0 && (priceN > 0 || isDividendTx) && (
+            <div className={`rounded-2xl p-4 mb-5 ${isImportedTx || isDividendTx ? 'bg-blue-50' : isBuy ? 'bg-primary-50' : 'bg-emerald-50'}`}>
               <p className="text-xs font-semibold text-gray-500 mb-2">計算預覽</p>
               <div className="flex flex-col gap-1.5">
-                {isImportedTx ? (
+                {isDividendTx ? (
+                  <>
+                    <PreviewRow label="獲配股數" value={`${sharesN} 股`} />
+                    <PreviewRow label="取得成本" value={formatNTD(0)} highlight />
+                    <div className="mt-1 pt-1 border-t border-blue-100">
+                      <p className="text-xs text-blue-500 leading-relaxed">配股免費取得，會使你的平均成本自動攤低</p>
+                    </div>
+                  </>
+                ) : isImportedTx ? (
                   <>
                     <PreviewRow label="買入均價/股（含費用）" value={formatPrice(priceN)} />
                     <PreviewRow label="目前持有股數" value={`${sharesN} 股`} />
@@ -220,7 +238,7 @@ export default function EditTransactionModal({
                       highlight
                     />
                     <div className="mt-1 pt-1 border-t border-blue-100">
-                      <p className="text-[0.625rem] text-blue-400">後續新增的買賣交易將以此成本為基礎計算損益</p>
+                      <p className="text-xs text-blue-500 leading-relaxed">後續新增的買賣交易將以此成本為基礎計算損益</p>
                     </div>
                   </>
                 ) : isBuy ? (
@@ -257,9 +275,9 @@ export default function EditTransactionModal({
           {/* Save */}
           <button
             onClick={handleSave}
-            disabled={!priceN || !sharesN || !date}
+            disabled={!sharesN || !date || (!isDividendTx && !priceN)}
             className={`w-full py-4 rounded-2xl font-semibold text-white transition-all mb-3 ${
-              isImportedTx
+              isImportedTx || isDividendTx
                 ? 'bg-blue-500 active:bg-blue-600 disabled:bg-blue-200'
                 : isBuy
                 ? 'bg-primary-600 active:bg-primary-700 disabled:bg-primary-200'

@@ -13,6 +13,7 @@ export interface BuyTransaction {
   fee: number;
   brokerId?: string;    // which broker executed this trade
   imported?: boolean;   // true for 匯入初始持倉 (fee already included in price)
+  stockDividend?: boolean; // true for 配股（股票股利）: 免費取得，price=0、fee=0，攤低均價
 }
 
 export interface SellTransaction {

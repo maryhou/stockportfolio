@@ -82,11 +82,14 @@ export default function AddTransactionSheet({
   const [feeOverride, setFeeOverride] = useState('');
   // 匯入持倉專用：直接輸入總成本（優先於均價×股數）
   const [totalCostInput, setTotalCostInput] = useState('');
+  // 匯入持倉專用：此筆為配股（股票股利），免費取得，只填股數
+  const [isStockDividend, setIsStockDividend] = useState(false);
 
   const sharesN = parseInt(shares) || 0;
   const totalCostN = parseFloat(totalCostInput) || 0;
-  // 匯入模式：若填了總成本，反推均價（精確到小數）；否則用均價欄位
+  // 配股：成本 0；匯入模式：若填了總成本，反推均價（精確到小數）；否則用均價欄位
   const priceN = (() => {
+    if (txType === 'import' && isStockDividend) return 0;
     if (txType === 'import' && totalCostN > 0 && sharesN > 0) return totalCostN / sharesN;
     return parseFloat(price) || 0;
   })();
@@ -182,12 +185,15 @@ export default function AddTransactionSheet({
   }
 
   function handleSubmit() {
-    if (!priceN || !sharesN || !date) return;
+    // 配股：成本為 0，只需股數與日期；其餘皆需正的均價
+    if (!sharesN || !date) return;
+    if (!isStockDividend && !priceN) return;
 
     // ── 匯入初始持倉 ──────────────────────────────────────────────────────────
     if (txType === 'import') {
-      // fee = 0：費用已內含在券商均價中
+      // fee = 0：費用已內含在券商均價中；配股則另標 stockDividend、price=0
       const tx: BuyTransaction = { id: `b${Date.now()}`, date, price: priceN, shares: sharesN, fee: 0, imported: true, brokerId };
+      if (isStockDividend) tx.stockDividend = true;
       if (isNewStock) {
         if (!newName || !newSymbol) return;
         onAddStock({ id: newSymbol, name: newName, symbol: newSymbol, targetPrice: 0, currentPrice: priceN, buys: [tx], sells: [] });
@@ -264,7 +270,7 @@ export default function AddTransactionSheet({
             {TABS.map((t) => (
               <button
                 key={t.key}
-                onClick={() => setTxType(t.key)}
+                onClick={() => { setTxType(t.key); if (t.key !== 'import') setIsStockDividend(false); }}
                 className={`relative z-10 flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200 ${
                   txType === t.key ? 'text-white' : 'text-gray-400'
                 }`}
@@ -282,10 +288,14 @@ export default function AddTransactionSheet({
                 <circle cx="12" cy="8" r="1" fill="#3b82f6" stroke="none"/>
               </svg>
               <div>
-                <p className="text-xs font-semibold text-blue-700">適用情境</p>
+                <p className="text-xs font-semibold text-blue-700">{isStockDividend ? '配股（股票股利）' : '適用情境'}</p>
                 <p className="text-xs text-blue-600 mt-0.5 leading-relaxed">
-                  中途開始記帳時，直接填入券商顯示的<span className="font-semibold">平均成本/股</span>與目前持有股數。
-                  手續費已內含在均價中，不另外計算。
+                  {isStockDividend ? (
+                    <>配股是<span className="font-semibold">免費取得</span>，不需填成本；只登記獲配股數即可，系統會自動攤低你的平均成本。</>
+                  ) : (
+                    <>中途開始記帳時，直接填入券商顯示的<span className="font-semibold">平均成本/股</span>與目前持有股數。
+                    手續費已內含在均價中，不另外計算。</>
+                  )}
                 </p>
               </div>
             </div>
@@ -392,6 +402,31 @@ export default function AddTransactionSheet({
             )}
           </div>
 
+          {/* 匯入模式：配股（股票股利）勾選 */}
+          {isImport && (
+            <button
+              type="button"
+              onClick={() => setIsStockDividend((v) => !v)}
+              className={`w-full mb-4 flex items-center gap-2.5 p-3 rounded-2xl border transition-colors text-left ${
+                isStockDividend ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'
+              }`}
+            >
+              <span className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border ${
+                isStockDividend ? 'bg-blue-500 border-blue-500' : 'bg-white border-gray-300'
+              }`}>
+                {isStockDividend && (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+              </span>
+              <span>
+                <span className={`text-sm font-semibold ${isStockDividend ? 'text-blue-700' : 'text-gray-700'}`}>此為配股（股票股利）</span>
+                <span className="block text-xs text-gray-400 mt-0.5">免費取得的股票，只需填獲配股數</span>
+              </span>
+            </button>
+          )}
+
           {/* Closed-stock warning (buy only) */}
           {isBuyingClosedStock && (
             <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-3.5 flex items-start gap-2.5">
@@ -411,31 +446,38 @@ export default function AddTransactionSheet({
 
           {/* Date */}
           <div className="mb-4">
-            <label className="label">{isImport ? '追蹤起始日期' : '交易日期'}</label>
+            <label className="label">{isStockDividend ? '配股基準日' : isImport ? '追蹤起始日期' : '交易日期'}</label>
             <input type="date" className="input input-date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
 
-          {/* Price & Shares */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div>
-              <label className="label">
-                {isImport ? '均價/股 (NT$)' : txType === 'buy' ? '買入股價 (NT$)' : '賣出股價 (NT$)'}
-              </label>
-              <input
-                type="number" className="input" placeholder="0"
-                value={isImport && totalCostN > 0 && sharesN > 0 ? (totalCostN / sharesN).toFixed(4) : price}
-                onChange={(e) => { setPrice(e.target.value); if (isImport) setTotalCostInput(''); }}
-                readOnly={isImport && totalCostN > 0}
-              />
-            </div>
-            <div>
-              <label className="label">{isImport ? '目前持有股數' : '股數'}</label>
+          {/* Price & Shares — 配股時只留獲配股數 */}
+          {isStockDividend ? (
+            <div className="mb-4">
+              <label className="label">獲配股數</label>
               <input type="number" className="input" placeholder="0" value={shares} onChange={(e) => setShares(e.target.value)} />
             </div>
-          </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <label className="label">
+                  {isImport ? '均價/股 (NT$)' : txType === 'buy' ? '買入股價 (NT$)' : '賣出股價 (NT$)'}
+                </label>
+                <input
+                  type="number" className="input" placeholder="0"
+                  value={isImport && totalCostN > 0 && sharesN > 0 ? (totalCostN / sharesN).toFixed(4) : price}
+                  onChange={(e) => { setPrice(e.target.value); if (isImport) setTotalCostInput(''); }}
+                  readOnly={isImport && totalCostN > 0}
+                />
+              </div>
+              <div>
+                <label className="label">{isImport ? '目前持有股數' : '股數'}</label>
+                <input type="number" className="input" placeholder="0" value={shares} onChange={(e) => setShares(e.target.value)} />
+              </div>
+            </div>
+          )}
 
-          {/* 匯入模式：總成本欄位 */}
-          {isImport && (
+          {/* 匯入模式：總成本欄位（配股免填） */}
+          {isImport && !isStockDividend && (
             <div className="mb-4">
               <label className="label">
                 總成本 (NT$)
@@ -469,11 +511,19 @@ export default function AddTransactionSheet({
           )}
 
           {/* Calculation preview */}
-          {priceN > 0 && sharesN > 0 && (
+          {sharesN > 0 && (priceN > 0 || isStockDividend) && (
             <div className={`rounded-2xl p-4 mb-5 ${isImport ? 'bg-blue-50' : txType === 'sell' ? 'bg-emerald-50' : 'bg-primary-50'}`}>
               <p className="text-xs font-semibold text-gray-500 mb-2">計算預覽</p>
               <div className="flex flex-col gap-1.5">
-                {isImport ? (
+                {isStockDividend ? (
+                  <>
+                    <PreviewRow label="獲配股數" value={`${sharesN} 股`} />
+                    <PreviewRow label="取得成本" value={formatNTD(0)} highlight />
+                    <div className="mt-1 pt-1 border-t border-blue-100">
+                      <p className="text-xs text-blue-500 leading-relaxed">配股免費取得，會使你的平均成本自動攤低</p>
+                    </div>
+                  </>
+                ) : isImport ? (
                   <>
                     <PreviewRow label="持有股數" value={`${sharesN} 股`} />
                     <PreviewRow label="均價/股（含費用）" value={formatPrice(priceN)} />
@@ -483,7 +533,7 @@ export default function AddTransactionSheet({
                       highlight
                     />
                     <div className="mt-1 pt-1 border-t border-blue-100">
-                      <p className="text-[0.625rem] text-blue-400">後續新增的買賣交易將以此成本為基礎計算損益</p>
+                      <p className="text-xs text-blue-500 leading-relaxed">後續新增的買賣交易將以此成本為基礎計算損益</p>
                     </div>
                   </>
                 ) : txType === 'buy' ? (
@@ -523,7 +573,7 @@ export default function AddTransactionSheet({
           {/* Submit */}
           <button
             onClick={handleSubmit}
-            disabled={!priceN || !sharesN || (isNewStock && (!newSymbol || !newName))}
+            disabled={!sharesN || (!isStockDividend && !priceN) || (isNewStock && (!newSymbol || !newName))}
             className={`w-full py-4 rounded-2xl font-semibold text-white transition-all ${
               isImport
                 ? 'bg-blue-500 active:bg-blue-600 disabled:bg-blue-200'
@@ -532,7 +582,7 @@ export default function AddTransactionSheet({
                 : 'bg-emerald-500 active:bg-emerald-600 disabled:bg-emerald-200'
             } disabled:cursor-not-allowed`}
           >
-            {isImport ? '確認匯入持倉' : `確認${txType === 'buy' ? '買入' : '賣出'}`}
+            {isStockDividend ? '確認登記配股' : isImport ? '確認匯入持倉' : `確認${txType === 'buy' ? '買入' : '賣出'}`}
           </button>
         </div>
     </BottomSheet>

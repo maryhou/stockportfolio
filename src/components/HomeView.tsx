@@ -176,6 +176,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
       key: `buy-${tx.id}`,
       stockId: stock.id, txId: tx.id, symbol: stock.symbol, name: stock.name, type: 'buy' as const,
       date: tx.date, shares: tx.shares, amount: Math.floor(tx.price * tx.shares) + tx.fee, profit: null,
+      stockDividend: !!tx.stockDividend,
     })),
   ]).sort((a, b) => b.date.localeCompare(a.date) || b.key.localeCompare(a.key)).slice(0, 10);
 
@@ -880,28 +881,29 @@ function MiniChart({ prices, isUp }: { prices: number[]; isUp: boolean }) {
   );
 }
 
-function RecentItem({ symbol, name, type, date, shares, amount, profit, onClick }: {
+function RecentItem({ symbol, name, type, date, shares, amount, profit, stockDividend, onClick }: {
   symbol: string; name: string; type: 'buy' | 'sell';
   date: string; shares: number; amount: number; profit: number | null;
+  stockDividend?: boolean;
   onClick: () => void;
 }) {
   return (
     <button onClick={onClick} className="w-full flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 text-left active:scale-[0.98] transition-transform">
       <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-        type === 'buy' ? 'bg-primary-100' : 'bg-emerald-50'
+        stockDividend ? 'bg-amber-100' : type === 'buy' ? 'bg-primary-100' : 'bg-emerald-50'
       }`}>
-        <span className={`text-sm font-bold ${type === 'buy' ? 'text-primary-600' : 'text-emerald-600'}`}>
-          {type === 'buy' ? '買' : '賣'}
+        <span className={`text-sm font-bold ${stockDividend ? 'text-amber-600' : type === 'buy' ? 'text-primary-600' : 'text-emerald-600'}`}>
+          {stockDividend ? '配' : type === 'buy' ? '買' : '賣'}
         </span>
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs text-gray-400 leading-none mb-0.5">{symbol}</p>
         <p className="text-base font-semibold text-gray-800">{name}</p>
-        <p className="text-xs text-gray-400">{date} · {shares} 股</p>
+        <p className="text-xs text-gray-400">{stockDividend ? `${date} · 配股 +${shares} 股` : `${date} · ${shares} 股`}</p>
       </div>
       <div className="text-right">
-        <p className="text-sm font-semibold text-gray-700">
-          {type === 'sell' ? '' : '-'}{formatNTD(amount)}
+        <p className={`text-sm font-semibold ${stockDividend ? 'text-amber-600' : 'text-gray-700'}`}>
+          {stockDividend ? '免費配股' : `${type === 'sell' ? '' : '-'}${formatNTD(amount)}`}
         </p>
         {profit !== null && (
           <p className={`text-xs font-medium ${profit >= 0 ? 'text-red-500' : 'text-emerald-500'}`}>

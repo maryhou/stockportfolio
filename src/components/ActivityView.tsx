@@ -133,7 +133,7 @@ function PortfolioOverview({ stocks, onSelectStock }: { stocks: Stock[]; onSelec
   const allTrades = displayStocks
     .flatMap((st) => [
       ...st.sells.map((tx) => ({ stockId: st.id, stockName: st.name, stockSymbol: st.symbol, type: 'sell' as const, date: tx.date, shares: tx.shares, price: tx.price, amount: tx.netProceeds, profit: tx.profit, id: tx.id })),
-      ...st.buys.map((tx) => ({ stockId: st.id, stockName: st.name, stockSymbol: st.symbol, type: 'buy' as const, date: tx.date, shares: tx.shares, price: tx.price, amount: Math.floor(tx.price * tx.shares) + tx.fee, profit: null, id: tx.id })),
+      ...st.buys.map((tx) => ({ stockId: st.id, stockName: st.name, stockSymbol: st.symbol, type: 'buy' as const, date: tx.date, shares: tx.shares, price: tx.price, amount: Math.floor(tx.price * tx.shares) + tx.fee, profit: null, id: tx.id, stockDividend: !!tx.stockDividend })),
     ])
     .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
 
@@ -362,25 +362,26 @@ function StockSummaryRow({ stock, color, onClick }: { stock: Stock; color: strin
   );
 }
 
-function TradeTileRow({ stockName, stockSymbol, type, date, shares, price, amount, profit, onClick }: {
+function TradeTileRow({ stockName, stockSymbol, type, date, shares, price, amount, profit, stockDividend, onClick }: {
   stockName: string; stockSymbol: string; type: 'buy' | 'sell';
   date: string; shares: number; price: number; amount: number; profit: number | null;
+  stockDividend?: boolean;
   onClick: () => void;
 }) {
   return (
     <button onClick={onClick} className="w-full bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 flex items-center gap-3 text-left active:scale-[0.98] transition-transform">
-      <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${type === 'buy' ? 'bg-primary-100' : 'bg-emerald-50'}`}>
-        <span className={`text-xs font-bold ${type === 'buy' ? 'text-primary-600' : 'text-emerald-600'}`}>{type === 'buy' ? '買' : '賣'}</span>
+      <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${stockDividend ? 'bg-amber-100' : type === 'buy' ? 'bg-primary-100' : 'bg-emerald-50'}`}>
+        <span className={`text-xs font-bold ${stockDividend ? 'text-amber-600' : type === 'buy' ? 'text-primary-600' : 'text-emerald-600'}`}>{stockDividend ? '配' : type === 'buy' ? '買' : '賣'}</span>
       </div>
       <div className="flex-1 min-w-0">
         {/* 代號在上、名稱在下:字體放大時不會像並排時互相擠到換行跑版 */}
         <p className="text-xs text-gray-400 leading-tight">{stockSymbol}</p>
         <p className="text-sm font-semibold text-gray-800 leading-tight">{stockName}</p>
-        <p className="text-xs text-gray-400 mt-0.5">{date} · {formatNumber(price)} × {shares} 股</p>
+        <p className="text-xs text-gray-400 mt-0.5">{stockDividend ? `${date} · 配股 +${shares} 股` : `${date} · ${formatNumber(price)} × ${shares} 股`}</p>
       </div>
       <div className="text-right flex-shrink-0">
-        <p className="text-sm font-semibold text-gray-700">
-          {type === 'sell' ? '' : '-'}{formatNTD(amount)}
+        <p className={`text-sm font-semibold ${stockDividend ? 'text-amber-600' : 'text-gray-700'}`}>
+          {stockDividend ? '免費配股' : `${type === 'sell' ? '' : '-'}${formatNTD(amount)}`}
         </p>
         {profit !== null && (
           <p className={`text-xs font-medium ${profit >= 0 ? 'text-red-500' : 'text-emerald-500'}`}>
@@ -795,7 +796,8 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
                 </SwipeableRow>
               ) : (() => {
                 const buyTx = tx as BuyTransaction;
-                const isImported = !!buyTx.imported;
+                const isDividend = !!buyTx.stockDividend;
+                const isImported = !isDividend && !!buyTx.imported;
                 const totalCost = isImported
                   ? Math.round(buyTx.price * buyTx.shares)
                   : Math.floor(buyTx.price * buyTx.shares) + buyTx.fee;
@@ -804,7 +806,7 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
                     key={tx.id}
                     onDelete={() => onDeleteTx('buy', tx.id)}
                     onEdit={() => setEditTx({ type: 'buy', tx })}
-                    confirmMessage="確定要刪除這筆買入紀錄嗎？刪除後損益將重新計算。"
+                    confirmMessage={isDividend ? '確定要刪除這筆配股紀錄嗎？刪除後股數與均價將重新計算。' : '確定要刪除這筆買入紀錄嗎？刪除後損益將重新計算。'}
                   >
                   <button
                     onClick={() => setEditTx({ type: 'buy', tx })}
@@ -812,12 +814,12 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isImported ? 'bg-blue-100' : 'bg-primary-100'}`}>
-                          <span className={`text-xs font-bold ${isImported ? 'text-blue-600' : 'text-primary-600'}`}>{isImported ? '匯' : '買'}</span>
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isDividend ? 'bg-amber-100' : isImported ? 'bg-blue-100' : 'bg-primary-100'}`}>
+                          <span className={`text-xs font-bold ${isDividend ? 'text-amber-600' : isImported ? 'text-blue-600' : 'text-primary-600'}`}>{isDividend ? '配' : isImported ? '匯' : '買'}</span>
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-gray-800">
-                            {isImported ? `均價 $${formatNumber(buyTx.price)} × ${buyTx.shares} 股` : `成交價 $${formatNumber(buyTx.price)} × ${buyTx.shares} 股`}
+                            {isDividend ? `配股 +${buyTx.shares} 股` : isImported ? `均價 $${formatNumber(buyTx.price)} × ${buyTx.shares} 股` : `成交價 $${formatNumber(buyTx.price)} × ${buyTx.shares} 股`}
                           </p>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <p className="text-[0.6875rem] text-gray-400">{buyTx.date}</p>
@@ -826,11 +828,25 @@ function StockDetail({ stock, settings, marketHistory, onBack, onUpdateTarget, o
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold text-gray-700">-{formatNTD(totalCost)}</p>
-                        <p className="text-xs text-gray-400">{isImported ? '已含費用' : '含手續費'}</p>
+                        {isDividend ? (
+                          <>
+                            <p className="text-sm font-bold text-amber-600">免費配股</p>
+                            <p className="text-xs text-gray-400">取得成本 $0</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm font-bold text-gray-700">-{formatNTD(totalCost)}</p>
+                            <p className="text-xs text-gray-400">{isImported ? '已含費用' : '含手續費'}</p>
+                          </>
+                        )}
                       </div>
                     </div>
-                    {isImported ? (
+                    {isDividend ? (
+                      <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-2 gap-2 text-center">
+                        <MiniStat label="配股股數" value={`${buyTx.shares} 股`} />
+                        <MiniStat label="取得成本" value={formatNTD(0)} />
+                      </div>
+                    ) : isImported ? (
                       <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-3 gap-2 text-center">
                         <MiniStat label="買入均價/股" value={formatNumber(buyTx.price)} />
                         <MiniStat label="持有股數" value={`${buyTx.shares} 股`} />

@@ -55,6 +55,14 @@ describe('parseStocksJson', () => {
     expect(parseStocksJson(JSON.stringify([adjusted]))).toEqual([adjusted]);
   });
 
+  it('round-trips a stock-dividend (配股) buy', () => {
+    const dividendShares = {
+      ...validStock,
+      buys: [{ id: 'b1', date: '2026-07-16', price: 0, shares: 56, fee: 0, imported: true, stockDividend: true }],
+    };
+    expect(parseStocksJson(JSON.stringify([dividendShares]))).toEqual([dividendShares]);
+  });
+
   it('strips unknown keys instead of persisting them', () => {
     const dirty = { ...validStock, __proto__hack: 'x', extra: { deep: true } };
     const [result] = parseStocksJson(JSON.stringify([dirty]));
@@ -74,6 +82,7 @@ describe('parseStocksJson', () => {
     ['bad sell record', JSON.stringify([{ ...validStock, sells: [{ ...validStock.sells[0], tax: 'x' }] }])],
     ['bad dividend record', JSON.stringify([{ ...validStock, dividends: [{ id: 'd1' }] }])],
     ['bad optional type', JSON.stringify([{ ...validStock, buys: [{ ...validStock.buys[0], brokerId: 7 }] }])],
+    ['non-boolean stockDividend', JSON.stringify([{ ...validStock, buys: [{ ...validStock.buys[0], stockDividend: 'yes' }] }])],
     ['non-boolean healthFeeExempt', JSON.stringify([{ ...validStock, dividends: [{ ...validStock.dividends![0], healthFeeExempt: 'yes' }] }])],
     ['non-boolean transferFeeExempt', JSON.stringify([{ ...validStock, dividends: [{ ...validStock.dividends![0], transferFeeExempt: 1 }] }])],
     ['non-number dividendAdjustment', JSON.stringify([{ ...validStock, dividends: [{ ...validStock.dividends![0], dividendAdjustment: '-1' }] }])],

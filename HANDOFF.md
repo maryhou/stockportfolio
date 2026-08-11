@@ -358,6 +358,31 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
 - 已在 preview 實測(mobile 375 標準/大/特大、desktop/768 3 欄)並用 span 量測防截字;tsc + 83 tests 通過。
 - **附帶**:`.claude/launch.json` dev server 固定 5174 加 `--strictPort`(埠被佔用直接報錯、不靜默漂移)。
 
+### 2026-08-11:匯入持倉支援配股（股票股利）（branch `feature/import-stock-dividend`）
+
+**需求**：股票股利（配股）是免費取得的股票，沒有均價/總成本，只有獲配股數。匯入持倉時要能只填股數。
+
+- **資料模型**（[types/index.ts](src/types/index.ts)）：`BuyTransaction` 加選用 `stockDividend?: boolean`。
+  配股 = `price:0, fee:0, imported:true, stockDividend:true` 的買入。**沿用現有計算不用改**：
+  `calcAvgCost` 把 0 成本股數攤進分母 → **均價自動攤低**；`calcTotalInvested` +0；`calcRemainingShares` +N。
+  （實測：006208 原 9774股@86.35，登記 1000 配股 → 10774股@78.34，總成本不變。）
+- **新增**（[AddTransactionSheet.tsx](src/components/AddTransactionSheet.tsx)）：匯入持倉分頁，股票選擇下方加
+  checkbox「此為配股（股票股利）」（`isStockDividend`）。勾選後：banner 換文案、日期→「配股基準日」、
+  **隱藏均價/總成本、只留「獲配股數」單欄**、試算顯示「取得成本 $0」、按鈕→「確認登記配股」。
+  `priceN` 在配股時固定 0；送出/disabled guard 放寬成「只需股數+日期」。離開分頁自動 reset 勾選。
+- **編輯**（[EditTransactionModal.tsx](src/components/EditTransactionModal.tsx)）：**必須同步處理，否則配股 price=0
+  會被 `!priceN` guard 擋住無法編輯、且存檔會掉旗標**。偵測 `isDividendTx`、只編輯獲配股數、guard 放寬、
+  存檔保留 `stockDividend:true`。
+- **顯示配股標示**（琥珀「配」badge、「配股 +N 股」、「免費配股」）：[ActivityView.tsx](src/components/ActivityView.tsx)
+  交易明細列 + `TradeTileRow`；[HomeView.tsx](src/components/HomeView.tsx) 最近交易 `RecentItem`。
+  判斷順序 `isDividend` 先於 `isImported`（配股也帶 imported）。列表 map 要多帶 `stockDividend` 欄位。
+- **匯入驗證**（[validateImport.ts](src/utils/validateImport.ts)）：`parseBuy` 逐欄驗證 `stockDividend`（非 boolean 拒絕）。
+  **維護規則**：此欄與資料模型/顯示需同步。
+- 測試 83→86（validateImport 配股往返 + 拒絕、calcAvgCost 配股攤低均價）。
+- **UI 小字**：匯入試算兩行提示（一般匯入「後續新增的買賣交易…」＋配股「配股免費取得…」）由
+  `text-[0.625rem]` 改 `text-xs`（rem，隨字體設定放大）。
+- 已在 mobile viewport 端到端實測：勾選切換、欄位隱藏/改名、試算、送出攤低均價、首頁/明細配股標示；tsc + 86 tests 通過。
+
 ## 未完成 / 待辦
 
 0. ~~**Vercel token 短效問題**~~:**2026-07-30 永久解決**。歷史上多次因 CLI 登入核發的

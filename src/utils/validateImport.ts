@@ -6,7 +6,7 @@
  * validates every field, and rebuilds each record with only known keys so
  * unknown/extra properties never reach state or the cloud.
  *
- * Optional fields (dividends, brokerId, imported, exDate, healthFeeExempt,
+ * Optional fields (dividends, brokerId, imported, stockDividend, exDate, healthFeeExempt,
  * transferFeeExempt, dividendAdjustment, note) may be missing — older exports didn't have them.
  */
 import type { Stock, BuyTransaction, SellTransaction, DividendTransaction, AppSettings, Broker } from '../types';
@@ -19,14 +19,16 @@ const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFin
 
 function parseBuy(v: unknown): BuyTransaction | null {
   if (!isObj(v)) return null;
-  const { id, date, price, shares, fee, brokerId, imported } = v;
+  const { id, date, price, shares, fee, brokerId, imported, stockDividend } = v;
   if (!isStr(id) || !isStr(date) || !isNum(price) || !isNum(shares) || !isNum(fee)) return null;
   if (brokerId !== undefined && !isStr(brokerId)) return null;
   if (imported !== undefined && typeof imported !== 'boolean') return null;
+  if (stockDividend !== undefined && typeof stockDividend !== 'boolean') return null;
   return {
     id, date, price, shares, fee,
     ...(brokerId !== undefined ? { brokerId } : {}),
     ...(imported !== undefined ? { imported } : {}),
+    ...(stockDividend !== undefined ? { stockDividend } : {}),
   };
 }
 
