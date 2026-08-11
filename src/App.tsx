@@ -48,6 +48,14 @@ const STOCKS_DIRTY_KEY = 'stock-tracker-stocks-dirty';
 /** System announcements injected once per ID — add new entries here for future updates. */
 const SYSTEM_ANNOUNCEMENTS: import('./types').AppNotification[] = [
   {
+    id: 'sys-v7-home-metrics',
+    type: 'system',
+    title: '介面優化:首頁三欄金額更清楚',
+    description: '首頁上方「已實現損益／累積總損益／總回收金額」現在會跟著字體大小一起放大;放大時自動調整排列(不再被切到),並精簡了金額顯示。',
+    time: '系統公告',
+    read: false,
+  },
+  {
     id: 'sys-v7-font-size',
     type: 'system',
     title: '新功能:字體大小調整',
