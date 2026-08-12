@@ -16,6 +16,7 @@ interface ProfileViewProps {
   onOpenPreferences: () => void;
   onOpenBrokerSettings: () => void;
   onImport: (backup: PortfolioBackup) => void;
+  onImportError: (msg: string) => void;
   onClearAll: () => void;
   currentUser: User | null;
   cloudSyncing: boolean;
@@ -23,11 +24,10 @@ interface ProfileViewProps {
   onSignOut: () => void;
 }
 
-export default function ProfileView({ stocks, settings, onOpenPreferences, onOpenBrokerSettings, onImport, onClearAll, currentUser, cloudSyncing, onSignIn, onSignOut }: ProfileViewProps) {
+export default function ProfileView({ stocks, settings, onOpenPreferences, onOpenBrokerSettings, onImport, onImportError, onClearAll, currentUser, cloudSyncing, onSignIn, onSignOut }: ProfileViewProps) {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showPLInfo,       setShowPLInfo]       = useState(false);
   const [showReturnInfo,   setShowReturnInfo]   = useState(false);
-  const [importError, setImportError]   = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Stats ──────────────────────────────────────────────────────────────────
@@ -88,13 +88,12 @@ export default function ProfileView({ stocks, settings, onOpenPreferences, onOpe
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setImportError('');
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
         onImport(parsePortfolioJson(ev.target?.result as string));
       } catch {
-        setImportError('匯入失敗：檔案格式不正確');
+        onImportError('匯入失敗：檔案格式不正確');
       }
     };
     reader.readAsText(file);
@@ -436,7 +435,6 @@ export default function ProfileView({ stocks, settings, onOpenPreferences, onOpe
             </svg>
           </button>
           <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleFileChange} />
-          {importError && <p className="text-xs text-red-500 px-4 pb-3">{importError}</p>}
 
           <div className="h-px bg-gray-50 mx-4" />
 

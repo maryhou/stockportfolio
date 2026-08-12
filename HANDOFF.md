@@ -402,6 +402,19 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
   toast 只存活 3~6 秒，用 MutationObserver 在出現瞬間攔 className 才驗得到（實測 dark theme = `bg-gray-900`）。
 - tsc + 86 tests 通過（本次純 UI，無新增測試）。已實測：刪除→復原還原、dark=黑玻璃 / 預設=白玻璃。
 
+### 2026-08-12:匯入失敗改用 error toast（統一成功/失敗回饋）（branch `feature/import-error-toast`）
+
+匯入成功走頂端 toast，但失敗原本是 ProfileView 卡片內的內嵌紅字（位置不一致、不會自動消失）。改為統一。
+
+- **[ProfileView.tsx](src/components/ProfileView.tsx)**：移除 `importError` state 與內嵌紅字 `<p>`；
+  新增 prop `onImportError: (msg: string) => void`，`handleFileChange` 的 catch 改呼叫它。
+- **[App.tsx](src/App.tsx)**：ProfileView 加 `onImportError={(msg) => showToast(msg, 'error')}`。
+  這是**目前 app 唯一實際觸發 `'error'` 型 toast 的地方**（其餘 13 個都是 success）。
+- error toast = 紅圈驚嘆玻璃，主題邏輯與 success 相同（深色→黑玻璃、預設/中性→白玻璃）。
+- **驗證踩雷**：改 prop 期間 HMR 時序差會讓 ProfileView 短暫拿到 undefined `onImportError` 而 crash console，
+  **硬重載即恢復**（非程式問題）。用 JS 塞壞 JSON 檔（DataTransfer + dispatch change）可觸發匯入失敗來測。
+- tsc + 86 tests 通過。DOM 實測 error toast：白玻璃 + `bg-red-500` 圈 + 正確訊息。
+
 ## 未完成 / 待辦
 
 0. ~~**Vercel token 短效問題**~~:**2026-07-30 永久解決**。歷史上多次因 CLI 登入核發的

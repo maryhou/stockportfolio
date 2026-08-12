@@ -833,6 +833,7 @@ export default function App() {
                   }
                   showToast(backup.settings ? '資料與設定已匯入' : '資料已匯入');
                 }}
+                onImportError={(msg) => showToast(msg, 'error')}
                 onClearAll={() => {
                   update([]);
                   // Keep only system announcements (版本更新公告 etc.);
