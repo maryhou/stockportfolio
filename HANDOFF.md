@@ -1,6 +1,6 @@
 # HANDOFF — WealthTrack 投資日誌
 
-> 最後更新:2026-08-10。給下一個接手的人(或下一次 Claude session)的交接文件。
+> 最後更新:2026-08-26。給下一個接手的人(或下一次 Claude session)的交接文件。
 > 架構與目錄結構詳見 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
 ## 專案是什麼
@@ -414,6 +414,26 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
 - **驗證踩雷**：改 prop 期間 HMR 時序差會讓 ProfileView 短暫拿到 undefined `onImportError` 而 crash console，
   **硬重載即恢復**（非程式問題）。用 JS 塞壞 JSON 檔（DataTransfer + dispatch change）可觸發匯入失敗來測。
 - tsc + 86 tests 通過。DOM 實測 error toast：白玻璃 + `bg-red-500` 圈 + 正確訊息。
+
+### 2026-08-26:首頁股息卡在大/特大字體改直式堆疊卡（已 merge 到 main）
+
+首頁 `DividendCard` 原本「本月股息收益 ｜ 今年」左右並排，字體放大時大金額互相
+擠壓/截字。字體「大 / 特大」改為直式堆疊卡（版型比照使用者提供的截圖）：
+
+- **[DividendCard.tsx](src/components/DividendCard.tsx)**：新增 `fontScale?: AppFontScale` prop
+  （由 [HomeView.tsx](src/components/HomeView.tsx) 傳入現成的 `fontScale`），
+  `stacked = fontScale==='large'||'xlarge'` 時 render 全新直式卡、否則走原本橫排（兩套 JSX 分支）。
+- **直式卡版型**：① 標題列＝圖示 + 「股息收益」(text-base 粗) + chevron(20px，比橫排的 14px 大)
+  ② 主角＝「今年累積」大金額(text-2xl) + 年化殖利率 ③ 虛線分隔(`border-dashed`)
+  ④ 底部＝本月收益(琥珀) ｜ N 筆股息紀錄 + 文件圖示。
+- **調校過程**（使用者逐項回饋）：今年累積金額 text-3xl→**text-2xl**（xlarge 下 37.5px 太大）；
+  灰色標籤 text-sm→**text-xs**；**移除**年化殖利率旁的 ⓘ 圖示（不需要）；標題列 chevron 放大到 20px；
+  **金額移除 `+` 號**（股息恆為正，多餘）——**橫排(normal)與堆疊版都移除**，兩版一致。
+- 文字一律用 rem 級距（隨字體設定放大），金額 `whitespace-nowrap tabular-nums` 防斷行/對齊。
+  與 ProfileView「我的投資成績」、HomeView Hero 三欄既有「大字體改堆疊」慣例一致。
+- 已在 mobile large/xlarge 端到端實測（設定 fontScale + reload）；tsc + 86 tests 通過。
+  7 個微調 commit squash 成單一 commit merge 進 main，Vercel 部署綠燈；後續 normal 去 + 另補一 commit。
+  **驗證期間曾把 fontScale 切成 normal/large 測試，已還原成 xlarge**（非程式變更）。
 
 ## 未完成 / 待辦
 
