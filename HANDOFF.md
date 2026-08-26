@@ -435,6 +435,26 @@ Firebase(Google 登入 + Firestore 雲端同步),Vercel serverless functions 代
   7 個微調 commit squash 成單一 commit merge 進 main，Vercel 部署綠燈；後續 normal 去 + 另補一 commit。
   **驗證期間曾把 fontScale 切成 normal/large 測試，已還原成 xlarge**（非程式變更）。
 
+### 2026-08-26（續）：onboarding 命名步驟可略過（預設「使用者」）（已 merge 到 main）
+
+初次使用者不必強迫輸入名字即可快速進到 app：
+
+- **[OnboardingModal.tsx](src/components/OnboardingModal.tsx)**：step 2（命名）在「下一步」下方新增
+  「先略過，稍後在設定裡命名」按鈕（樣式同 step 1 略過鈕）。略過 = `handleSkipName` 以
+  常數 `DEFAULT_USER_NAME='使用者'` 帶入 name 並前進 step 3。未登入者未命名的 fallback
+  由 `'投資人'` 改為 `'使用者'`（登入者仍傳 `''` → 用其 Google 名稱）。
+- **關鍵**：[App.tsx](src/App.tsx) `handleOnboardingComplete('')` 空字串會**保留**
+  `DEFAULT_SETTINGS.userName`（='Mary'），所以略過**必須明確傳 '使用者'**，不能只送空字串。
+- 使用者日後可在 我的 → 偏好設定 → 個人 改名字。
+- 已 mobile 端到端實測（step1 略過→step2 略過命名→step3 開始使用 → `settings.userName='使用者'`、
+  首頁「Hello, 使用者」）；tsc + 86 tests、Vercel 部署綠燈。
+
+> ⚠️ **本次事故教訓（務必遵守）**：測試 onboarding 時為了叫出 modal 清了 preview 的
+> localStorage，備份存在 `window` 變數後 `location.reload()` → **備份被 reload 清掉、
+> preview 的 stock 資料遺失**（該 preview 未登入 Firebase，無雲端副本；使用者確認是測試資料）。
+> 這正是本檔既有的多次警告。**規則：需要清 localStorage 測試時，把備份寫到磁碟檔（scratchpad）
+> 或「先還原再 reload」，絕不要把還原用備份放在會被 reload 清掉的頁面變數裡。**
+
 ## 未完成 / 待辦
 
 0. ~~**Vercel token 短效問題**~~:**2026-07-30 永久解決**。歷史上多次因 CLI 登入核發的
