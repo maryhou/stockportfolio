@@ -326,7 +326,7 @@ export default function HomeView({ stocks, settings, onStockClick, onViewAllHold
       </div>
 
       {/* Dividend Card */}
-      <DividendCard stocks={stocks} onClick={onDividendClick} />
+      <DividendCard stocks={stocks} onClick={onDividendClick} fontScale={fontScale} />
 
       {/* Holdings + Recent: side-by-side on desktop */}
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
