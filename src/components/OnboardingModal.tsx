@@ -7,6 +7,9 @@ interface OnboardingModalProps {
 
 type Step = 1 | 2 | 3;
 
+// 未命名時的系統暫定名稱(可日後在「設定」修改)
+const DEFAULT_USER_NAME = '使用者';
+
 export default function OnboardingModal({ onComplete, onGoogleSignIn }: OnboardingModalProps) {
   const [step, setStep]           = useState<Step>(1);
   const [name, setName]           = useState('');
@@ -33,7 +36,14 @@ export default function OnboardingModal({ onComplete, onGoogleSignIn }: Onboardi
   }
 
   function handleFinish() {
-    onComplete(name.trim() || (signedIn ? '' : '投資人'));
+    // 有輸入用輸入的;沒輸入時 —— 登入者用其 Google 名稱(傳 ''),未登入者用系統暫定名稱
+    onComplete(name.trim() || (signedIn ? '' : DEFAULT_USER_NAME));
+  }
+
+  // 略過命名:以系統暫定名稱「使用者」帶入,直接進到最後一步(日後可在設定改)
+  function handleSkipName() {
+    setName(DEFAULT_USER_NAME);
+    setStep(3);
   }
 
   // Steps shown in indicator: always 3
@@ -171,6 +181,13 @@ export default function OnboardingModal({ onComplete, onGoogleSignIn }: Onboardi
                 className="w-full py-3.5 rounded-2xl font-semibold text-white bg-primary-600 active:bg-primary-700 disabled:bg-primary-200 transition-colors"
               >
                 下一步
+              </button>
+
+              <button
+                onClick={handleSkipName}
+                className="w-full py-2.5 mt-2 rounded-2xl text-sm font-semibold text-gray-400 active:text-gray-600 transition-colors"
+              >
+                先略過，稍後在設定裡命名
               </button>
             </>
           )}
